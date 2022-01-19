@@ -5,6 +5,7 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import Divider from '@material-ui/core/Divider';
 import Drawer from '@material-ui/core/Drawer';
 import Hidden from '@material-ui/core/Hidden';
+import Icon from '@material-ui/core/Icon';
 import IconButton from '@material-ui/core/IconButton';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -12,6 +13,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import MenuIcon from '@material-ui/icons/Menu';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
+import PhotoLibraryIcon from '@material-ui/icons/PhotoLibrary';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import GalleryApp from './GalleryApp';
@@ -68,7 +70,14 @@ function ResponsiveDrawer(props) {
 
   const drawer = (
     <div>
-      <div className={classes.toolbar} />
+      <Toolbar>
+        <Icon color='secondary'>
+          <PhotoLibraryIcon />
+        </Icon>
+        <Typography variant="h5" fontWeight="fontWeightBold" noWrap>
+          &nbsp;Photo Gallery
+        </Typography>
+      </Toolbar>
       <Divider />
       <List>
         {['Inbox1', 'Starred1', 'Send email1', 'Drafts1',
