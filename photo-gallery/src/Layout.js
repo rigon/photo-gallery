@@ -1,21 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import AppBar from '@material-ui/core/AppBar';
+import Box from '@material-ui/core/Box';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Divider from '@material-ui/core/Divider';
 import Drawer from '@material-ui/core/Drawer';
 import Hidden from '@material-ui/core/Hidden';
-import Icon from '@material-ui/core/Icon';
 import IconButton from '@material-ui/core/IconButton';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
 import MenuIcon from '@material-ui/icons/Menu';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
-import PhotoLibraryIcon from '@material-ui/icons/PhotoLibrary';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
+import AlbumsList from './AlbumsList';
 import GalleryApp from './GalleryApp';
 
 const drawerWidth = "300px";
@@ -71,24 +68,14 @@ function ResponsiveDrawer(props) {
   const drawer = (
     <div>
       <Toolbar>
-        <Icon color='secondary'>
-          <PhotoLibraryIcon />
-        </Icon>
-        <Typography variant="h5" fontWeight="fontWeightBold" noWrap>
-          &nbsp;Photo Gallery
-        </Typography>
+        <Box mx="auto">
+          <Typography variant="h5" fontWeight="fontWeightBold" noWrap>
+            Photo Gallery
+          </Typography>
+        </Box>
       </Toolbar>
       <Divider />
-      <List>
-        {['Inbox1', 'Starred1', 'Send email1', 'Drafts1',
-          'Inbox2', 'Starred2', 'Send email2', 'Drafts2',
-          'Inbox3', 'Starred3', 'Send email3', 'Drafts3',
-          'Inbox4', 'Starred4', 'Send email4', 'Drafts4'].map((text, index) => (
-          <ListItem button key={text}>
-            <ListItemText primary={text} />
-          </ListItem>
-        ))}
-      </List>
+      <AlbumsList />
     </div>
   );
 
