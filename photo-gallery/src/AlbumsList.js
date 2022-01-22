@@ -14,7 +14,7 @@ class AlbumsList extends Component {
     }
 
     componentDidMount() {
-        fetch('http://localhost:8080/albums')
+        fetch('/albums')
             .then((response) => response.json())
             .then(albumsList => {
                 this.setState({ albums: albumsList });
