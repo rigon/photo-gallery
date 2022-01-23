@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/gorilla/mux"
 )
+
+var PhotosPath string
 
 // spaHandler implements the http.Handler interface, so we can use it
 // to respond to HTTP requests. The path to the static directory and
@@ -58,23 +61,69 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func albums(w http.ResponseWriter, req *http.Request) {
+	var albums []string
+
+	files, err := ioutil.ReadDir(PhotosPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		//fmt.Println(file.Name(), file.IsDir())
+		if file.IsDir() {
+			albums = append(albums, file.Name())
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	str := []string{"hey", "man", "hello", "see", "you"}
-	json.NewEncoder(w).Encode(str)
+	json.NewEncoder(w).Encode(albums)
 }
 
 func album(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(req)
 	albumName := vars["album"]
-	w.Write([]byte(albumName))
+	var photos []string
+
+	files, err := ioutil.ReadDir(filepath.Join(PhotosPath, albumName))
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range files {
+		//fmt.Println(file.Name(), file.IsDir())
+		if !file.IsDir() {
+			photos = append(photos, file.Name())
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(photos)
 }
 
-func main() {
-	router := mux.NewRouter()
+func photo(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	albumName := vars["album"]
+	photoName := vars["photo"]
+	http.ServeFile(w, req, filepath.Join(PhotosPath, albumName, photoName))
+}
 
+var thumb = photo
+var live = photo
+
+func main() {
+	argLength := len(os.Args[1:])
+	fmt.Printf("Arg length is %d\n", argLength)
+	if argLength != 1 {
+		fmt.Println("Invalid number of arguments")
+		return
+	}
+	PhotosPath = os.Args[1]
+
+	router := mux.NewRouter()
 	router.HandleFunc("/albums", albums)
 	router.HandleFunc("/album/{album}", album)
+	router.HandleFunc("/album/{album}/photo/{photo}", photo)
+	router.HandleFunc("/album/{album}/thumb/{photo}", thumb)
+	router.HandleFunc("/album/{album}/live/{photo}", live)
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
