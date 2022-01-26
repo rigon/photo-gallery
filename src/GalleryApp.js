@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { useParams } from 'react-router-dom';
 import Gallery from "react-photo-gallery";
 import Carousel, { Modal, ModalGateway } from "react-images";
 import { photos } from "./photos";
@@ -7,9 +8,20 @@ class GalleryApp extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            photos: [],
             currentImage: 0,
             viewerIsOpen: false
         };
+    }
+
+    componentDidMount() {
+        //const { album } = useParams();
+        const album = "";
+        fetch(`/album/${album}`)
+            .then((response) => response.json())
+            .then(photosList => {
+                this.setState({ photos: photos });
+            });
     }
 
     render() {
@@ -28,13 +40,13 @@ class GalleryApp extends Component {
 
         return (
             <div>
-                <Gallery photos={photos} onClick={openLightbox} />
+                <Gallery photos={this.state.photos} onClick={openLightbox} />
                 <ModalGateway>
                     {this.state.viewerIsOpen ? (
                     <Modal onClose={closeLightbox}>
                         <Carousel
                         currentIndex={this.state.currentImage}
-                        views={photos.map(x => ({
+                        views={this.state.photos.map(x => ({
                             ...x,
                             srcset: x.srcSet,
                             caption: x.title

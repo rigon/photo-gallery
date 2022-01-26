@@ -22,7 +22,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/datta-able-react-lite-v1.0
-/photo-gallery2
 /gallery
 *.exe

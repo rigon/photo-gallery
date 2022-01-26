@@ -21,8 +21,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "cd server && go run ."
   },
+  "proxy": "http://localhost:3080",
   "eslintConfig": {
     "extends": [
       "react-app",
