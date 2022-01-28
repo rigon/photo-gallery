@@ -3,13 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"image/jpeg"
+	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/adrium/goheif"
 	"github.com/gorilla/mux"
 )
 
@@ -79,10 +84,18 @@ func albums(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(albums)
 }
 
+type Photo struct {
+	Src    string `json:"src"`
+	Thumb  string `json:"thumb"`
+	Title  string `json:"title"`
+	Width  int    `default:"1" json:"width"`
+	Height int    `default:"1" json:"height"`
+}
+
 func album(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	albumName := vars["album"]
-	var photos []string
+	var photos []*Photo
 
 	files, err := ioutil.ReadDir(filepath.Join(PhotosPath, albumName))
 	if err != nil {
@@ -91,7 +104,13 @@ func album(w http.ResponseWriter, req *http.Request) {
 	for _, file := range files {
 		//fmt.Println(file.Name(), file.IsDir())
 		if !file.IsDir() {
-			photos = append(photos, file.Name())
+			photo := new(Photo)
+			photo.Src = "/album/" + albumName + "/photo/" + file.Name()
+			photo.Thumb = "/album/" + albumName + "/thumb/" + file.Name()
+			photo.Title = file.Name()
+			photo.Height = 1 + rand.Intn(2)
+			photo.Width = 1 + rand.Intn(3)
+			photos = append(photos, photo)
 		}
 	}
 
@@ -103,13 +122,46 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	albumName := vars["album"]
 	photoName := vars["photo"]
-	http.ServeFile(w, req, filepath.Join(PhotosPath, albumName, photoName))
+	filename := filepath.Join(PhotosPath, albumName, photoName)
+	if strings.HasSuffix(photoName, ".heic") {
+		convertPhoto(w, filename)
+	} else {
+		http.ServeFile(w, req, filepath.Join(PhotosPath, albumName, photoName))
+	}
 }
 
 var thumb = photo
 var live = photo
 
+func convertPhoto(w io.Writer, filename string) {
+	fi, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fi.Close()
+
+	exif, err := goheif.ExtractExif(fi)
+	if err != nil {
+		log.Printf("Warning: no EXIF from %s: %v\n", filename, err)
+	}
+
+	img, err := goheif.Decode(fi)
+	if err != nil {
+		log.Fatalf("Failed to parse %s: %v\n", filename, err)
+	}
+
+	wimg, _ := newWriterExif(w, exif)
+	err = jpeg.Encode(wimg, img, nil)
+	if err != nil {
+		log.Fatalf("Failed to encode %s: %v\n", filename, err)
+	}
+
+	log.Printf("Convert %s successfully\n", filename)
+}
+
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	argLength := len(os.Args[1:])
 	fmt.Printf("Arg length is %d\n", argLength)
 	if argLength != 1 {
