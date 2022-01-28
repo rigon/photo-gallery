@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"image/jpeg"
-	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -14,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrium/goheif"
 	"github.com/gorilla/mux"
 )
 
@@ -132,32 +129,6 @@ func photo(w http.ResponseWriter, req *http.Request) {
 
 var thumb = photo
 var live = photo
-
-func convertPhoto(w io.Writer, filename string) {
-	fi, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer fi.Close()
-
-	exif, err := goheif.ExtractExif(fi)
-	if err != nil {
-		log.Printf("Warning: no EXIF from %s: %v\n", filename, err)
-	}
-
-	img, err := goheif.Decode(fi)
-	if err != nil {
-		log.Fatalf("Failed to parse %s: %v\n", filename, err)
-	}
-
-	wimg, _ := newWriterExif(w, exif)
-	err = jpeg.Encode(wimg, img, nil)
-	if err != nil {
-		log.Fatalf("Failed to encode %s: %v\n", filename, err)
-	}
-
-	log.Printf("Convert %s successfully\n", filename)
-}
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
