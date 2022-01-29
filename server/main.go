@@ -105,8 +105,8 @@ func album(w http.ResponseWriter, req *http.Request) {
 			photo.Src = "/album/" + albumName + "/photo/" + file.Name()
 			photo.Thumb = "/album/" + albumName + "/thumb/" + file.Name()
 			photo.Title = file.Name()
-			photo.Height = 1 + rand.Intn(2)
-			photo.Width = 1 + rand.Intn(3)
+			photo.Height = 1
+			photo.Width = 1 + rand.Intn(2)
 			photos = append(photos, photo)
 		}
 	}
