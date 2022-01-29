@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image/jpeg"
 	"io"
 	"log"
@@ -66,27 +67,27 @@ func convertPhoto(w io.Writer, filename string) {
 	}
 	defer fi.Close()
 
-	log.Printf("ExtractExif\t")
+	fmt.Printf("ExtractExif\t")
 	exif, err := goheif.ExtractExif(fi)
 	if err != nil {
 		log.Printf("Warning: no EXIF from %s: %v\n", filename, err)
 	}
 
-	log.Printf("Decode\t")
+	fmt.Printf("Decode\t")
 	img, err := goheif.Decode(fi)
 	if err != nil {
 		log.Fatalf("Failed to parse %s: %v\n", filename, err)
 	}
 
-	log.Printf("Resize\t")
+	fmt.Printf("Resize\t")
 	resized := resize.Resize(0, 200, img, resize.Lanczos3)
 
-	log.Printf("WriteExif\t")
+	fmt.Printf("WriteExif\t")
 	wimg, _ := newWriterExif(w, exif)
-	log.Printf("Encode\t")
+	fmt.Printf("Encode\t")
 	err = jpeg.Encode(wimg, resized, nil)
 	if err != nil {
 		log.Fatalf("Failed to encode %s: %v\n", filename, err)
 	}
-	log.Printf("DONE\n")
+	fmt.Printf("DONE\n")
 }
