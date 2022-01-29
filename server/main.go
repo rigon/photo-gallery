@@ -120,7 +120,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	filename := filepath.Join(PhotosPath, albumName, photoName)
-	if strings.HasSuffix(photoName, ".heic") {
+	if strings.HasSuffix(strings.ToLower(photoName), ".heic") {
 		convertPhoto(w, filename)
 	} else {
 		http.ServeFile(w, req, filepath.Join(PhotosPath, albumName, photoName))
@@ -160,7 +160,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler: router,
-		Addr:    "127.0.0.1:3080",
+		Addr:    "0.0.0.0:3080",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

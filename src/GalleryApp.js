@@ -20,7 +20,7 @@ class GalleryApp extends Component {
         fetch(`/album/${album}`)
             .then((response) => response.json())
             .then(photosList => {
-                this.setState({ photos: photos });
+                this.setState({ photos: photosList });
             });
     }
 

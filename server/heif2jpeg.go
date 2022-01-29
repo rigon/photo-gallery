@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/adrium/goheif"
+	"github.com/nfnt/resize"
 )
 
 // Skip Writer for exif writing
@@ -58,27 +59,34 @@ func newWriterExif(w io.Writer, exif []byte) (io.Writer, error) {
 }
 
 func convertPhoto(w io.Writer, filename string) {
+	log.Printf("Converting %s\n", filename)
 	fi, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer fi.Close()
 
+	log.Printf("ExtractExif\t")
 	exif, err := goheif.ExtractExif(fi)
 	if err != nil {
 		log.Printf("Warning: no EXIF from %s: %v\n", filename, err)
 	}
 
+	log.Printf("Decode\t")
 	img, err := goheif.Decode(fi)
 	if err != nil {
 		log.Fatalf("Failed to parse %s: %v\n", filename, err)
 	}
 
+	log.Printf("Resize\t")
+	resized := resize.Resize(0, 200, img, resize.Lanczos3)
+
+	log.Printf("WriteExif\t")
 	wimg, _ := newWriterExif(w, exif)
-	err = jpeg.Encode(wimg, img, nil)
+	log.Printf("Encode\t")
+	err = jpeg.Encode(wimg, resized, nil)
 	if err != nil {
 		log.Fatalf("Failed to encode %s: %v\n", filename, err)
 	}
-
-	log.Printf("Convert %s successfully\n", filename)
+	log.Printf("DONE\n")
 }
