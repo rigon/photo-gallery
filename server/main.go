@@ -3,131 +3,91 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 )
 
-var PhotosPath string
-
-// spaHandler implements the http.Handler interface, so we can use it
-// to respond to HTTP requests. The path to the static directory and
-// path to the index file within that static directory are used to
-// serve the SPA in the given static directory.
-type spaHandler struct {
-	staticPath string
-	indexPath  string
+type AppConfig struct {
+	PhotosPath string
+	ThumbsPath string
 }
 
-// ServeHTTP inspects the URL path to locate a file within the static dir
-// on the SPA handler. If a file is found, it will be served. If not, the
-// file located at the index path on the SPA handler will be served. This
-// is suitable behavior for serving an SPA (single page application).
-func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// get the absolute path to prevent directory traversal
-	path := r.URL.Path
-	// path, err := filepath.Abs(r.URL.Path)
-	// if err != nil {
-	// 	// if we failed to get the absolute path respond with a 400 bad request
-	// 	// and stop
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
-
-	// prepend the path with the path to the static directory
-	path = filepath.Join(h.staticPath, path)
-
-	fmt.Println(path)
-	// check whether a file exists at the given path
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		// file does not exist, serve index.html
-		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
-		return
-	} else if err != nil {
-		// if we got an error (that wasn't that the file doesn't exist) stating the
-		// file, return a 500 internal server error and stop
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// otherwise, use http.FileServer to serve the static dir
-	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
-}
+var config AppConfig
 
 func albums(w http.ResponseWriter, req *http.Request) {
-	var albums []string
+	var albums []*Album
 
-	files, err := ioutil.ReadDir(PhotosPath)
+	albums, err := ListAlbums(config)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	for _, file := range files {
-		//fmt.Println(file.Name(), file.IsDir())
-		if file.IsDir() {
-			albums = append(albums, file.Name())
-		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(albums)
 }
 
-type Photo struct {
-	Src    string `json:"src"`
-	Thumb  string `json:"thumb"`
-	Title  string `json:"title"`
-	Width  int    `default:"1" json:"width"`
-	Height int    `default:"1" json:"height"`
-}
-
 func album(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	albumName := vars["album"]
-	var photos []*Photo
 
-	files, err := ioutil.ReadDir(filepath.Join(PhotosPath, albumName))
+	album, err := GetAlbum(config, albumName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, file := range files {
-		//fmt.Println(file.Name(), file.IsDir())
-		if !file.IsDir() {
-			photo := new(Photo)
-			photo.Src = "/album/" + albumName + "/photo/" + file.Name()
-			photo.Thumb = "/album/" + albumName + "/thumb/" + file.Name()
-			photo.Title = file.Name()
-			photo.Height = 1
-			photo.Width = 1 + rand.Intn(2)
-			photos = append(photos, photo)
-		}
-	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(photos)
+	json.NewEncoder(w).Encode(album)
 }
 
 func photo(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	albumName := vars["album"]
 	photoName := vars["photo"]
-	filename := filepath.Join(PhotosPath, albumName, photoName)
-	if strings.HasSuffix(strings.ToLower(photoName), ".heic") {
-		convertPhoto(w, filename)
-	} else {
-		http.ServeFile(w, req, filepath.Join(PhotosPath, albumName, photoName))
+	// filename := filepath.Join(config.PhotosPath, albumName, photoName)
+	// if strings.HasSuffix(strings.ToLower(photoName), ".heic") {
+	// 	convertPhoto(w, filename)
+	// } else {
+	http.ServeFile(w, req, filepath.Join(config.PhotosPath, albumName, photoName))
+	// }
+
+	album, err := FindAlbum(config, albumName)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	photo, err := album.FindPhoto(photoName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//mime.TypeByExtension()
+	photo.GetImage(w, config, *album)
 }
 
-var thumb = photo
+func thumb(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	albumName := vars["album"]
+	photoName := vars["photo"]
+
+	album, err := FindAlbum(config, albumName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	photo, err := album.FindPhoto(photoName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	photo.GetThumbnail(w, config, *album)
+}
+
 var live = photo
 
 func main() {
@@ -135,11 +95,13 @@ func main() {
 
 	argLength := len(os.Args[1:])
 	fmt.Printf("Arg length is %d\n", argLength)
-	if argLength != 1 {
+	if argLength != 2 {
 		fmt.Println("Invalid number of arguments")
 		return
 	}
-	PhotosPath = os.Args[1]
+
+	config.PhotosPath = os.Args[1]
+	config.ThumbsPath = os.Args[2]
 
 	router := mux.NewRouter()
 	router.HandleFunc("/albums", albums)
