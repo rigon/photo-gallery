@@ -17,6 +17,7 @@ class AlbumsList extends Component {
         fetch('/albums')
             .then((response) => response.json())
             .then(albumsList => {
+                console.log(albumsList);
                 this.setState({ albums: albumsList });
             });
     }
@@ -24,10 +25,10 @@ class AlbumsList extends Component {
     render() {
         return (
             <List>
-            { this.state.albums.map((text, index) => (
-                <ListItem button key={text} component={Link} to={text}>
+            { this.state.albums.map((album, index) => (
+                <ListItem button key={album.name} component={Link} to={album.name}>
                     <Typography noWrap>
-                        <ListItemText primary={text} />
+                        <ListItemText primary={album.name} />
                     </Typography>
                 </ListItem>
             ))}

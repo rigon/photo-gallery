@@ -19,8 +19,8 @@ class GalleryApp extends Component {
         const album = "";
         fetch(`/album/${album}`)
             .then((response) => response.json())
-            .then(photosList => {
-                this.setState({ photos: photosList });
+            .then(album => {
+                this.setState({ photos: album.photos });
             });
     }
 
