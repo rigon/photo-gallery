@@ -48,8 +48,13 @@ func GetAlbum(config AppConfig, albumName string) (album *Album, err error) {
 		return
 	}
 
+	album.GetPhotos(config)
+	return
+}
+
+func (album *Album) GetPhotos(config AppConfig) error {
 	// Read album (or folder) contents
-	files, err := ioutil.ReadDir(filepath.Join(config.PhotosPath, albumName))
+	files, err := ioutil.ReadDir(filepath.Join(config.PhotosPath, album.Name))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,25 +63,26 @@ func GetAlbum(config AppConfig, albumName string) (album *Album, err error) {
 	for _, file := range files {
 		if !file.IsDir() {
 			photo := new(Photo)
-			photo.Src = "/album/" + albumName + "/photo/" + file.Name()
-			photo.Thumb = "/album/" + albumName + "/thumb/" + file.Name()
+			photo.Src = "/album/" + album.Name + "/photo/" + file.Name()
+			photo.Thumb = "/album/" + album.Name + "/thumb/" + file.Name()
 			photo.Title = file.Name()
 			photo.Height = 1
 			photo.Width = 1 + rand.Intn(2)
 			album.Photos = append(album.Photos, photo)
 		}
 	}
-	return
+	return nil
 }
 
-func (album Album) FindPhoto(photoName string) (*Photo, error) {
+func (album *Album) FindPhoto(photoName string) (*Photo, error) {
+	album.GetPhotos(config)
 	for _, photo := range album.Photos {
 		if photo.Title == photoName { // Found
 			return photo, nil
 		}
 	}
 
-	return nil, errors.New("photo not found in album")
+	return nil, errors.New("photo not found in album: [" + album.Name + "] " + photoName)
 }
 
 func (album Album) GenerateThumbnails(config AppConfig) {

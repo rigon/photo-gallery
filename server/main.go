@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -53,7 +52,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	// if strings.HasSuffix(strings.ToLower(photoName), ".heic") {
 	// 	convertPhoto(w, filename)
 	// } else {
-	http.ServeFile(w, req, filepath.Join(config.PhotosPath, albumName, photoName))
+	//http.ServeFile(w, req, filepath.Join(config.PhotosPath, albumName, photoName))
 	// }
 
 	album, err := FindAlbum(config, albumName)

@@ -119,7 +119,7 @@ func DecodeImage(filepath string) (image.Image, []byte, error) {
 	return img, exifData, err
 }
 
-func CreateThumbnail(filepath string, thumbpath string) error {
+func CreateThumbnail(filepath string, thumbpath string, w io.Writer) error {
 	// Decode original image
 	img, exif, err := DecodeImage(filepath)
 	if err != nil {
@@ -137,7 +137,8 @@ func CreateThumbnail(filepath string, thumbpath string) error {
 	resized := resize.Resize(0, 200, img, resize.Lanczos3)
 
 	// Encode thumbnail
-	err = EncodeImage(fout, resized, exif)
+	multiw := io.MultiWriter(w, fout)
+	err = EncodeImage(multiw, resized, exif)
 	if err != nil {
 		return err
 	}

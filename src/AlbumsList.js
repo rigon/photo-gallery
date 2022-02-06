@@ -17,7 +17,6 @@ class AlbumsList extends Component {
         fetch('/albums')
             .then((response) => response.json())
             .then(albumsList => {
-                console.log(albumsList);
                 this.setState({ albums: albumsList });
             });
     }
