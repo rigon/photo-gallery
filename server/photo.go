@@ -12,7 +12,7 @@ import (
 
 type Photo struct {
 	Src    string `json:"src"`
-	Thumb  string `json:"thumb"`
+	Full   string `json:"full"`
 	Title  string `json:"title"`
 	Width  int    `default:"1" json:"width"`
 	Height int    `default:"1" json:"height"`
@@ -47,7 +47,7 @@ func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) erro
 }
 
 func (photo Photo) GetImage(w io.Writer, config AppConfig, album Album) error {
-	path := filepath.Join(config.ThumbsPath, album.Name, photo.Title)
+	path := filepath.Join(config.PhotosPath, album.Name, photo.Title)
 
 	// Decode original image
 	img, exif, err := DecodeImage(path)

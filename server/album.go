@@ -63,8 +63,8 @@ func (album *Album) GetPhotos(config AppConfig) error {
 	for _, file := range files {
 		if !file.IsDir() {
 			photo := new(Photo)
-			photo.Src = "/album/" + album.Name + "/photo/" + file.Name()
-			photo.Thumb = "/album/" + album.Name + "/thumb/" + file.Name()
+			photo.Src = "/album/" + album.Name + "/thumb/" + file.Name()
+			photo.Full = "/album/" + album.Name + "/photo/" + file.Name()
 			photo.Title = file.Name()
 			photo.Height = 1
 			photo.Width = 1 + rand.Intn(2)

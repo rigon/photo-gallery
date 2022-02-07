@@ -15,13 +15,7 @@ func TestCreateThumbnails(t *testing.T) {
 }
 
 func TestDecodeEncodeImage(t *testing.T) {
-	file, err := os.Open("tests/collection/album1/demo1.heic")
-	if err != nil {
-		t.Errorf("Failed to open file: %s\n", err)
-	}
-	defer file.Close()
-
-	img, exif, err := DecodeImage(file)
+	img, exif, err := DecodeImage("tests/collection/album1/demo1.heic")
 	if err != nil {
 		t.Errorf("Failed decode image: %s\n", err)
 	}

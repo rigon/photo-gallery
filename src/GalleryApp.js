@@ -46,11 +46,10 @@ class GalleryApp extends Component {
                     <Modal onClose={closeLightbox}>
                         <Carousel
                         currentIndex={this.state.currentImage}
-                        views={this.state.photos.map(x => ({
-                            ...x,
-                            srcset: x.srcSet,
-                            caption: x.title
-                        }))}
+                        views={this.state.photos.map(photo => ({
+                                src: photo.full,
+                                caption: photo.title
+                            }))}
                         />
                     </Modal>
                     ) : null}

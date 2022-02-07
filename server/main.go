@@ -54,6 +54,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	// } else {
 	//http.ServeFile(w, req, filepath.Join(config.PhotosPath, albumName, photoName))
 	// }
+	log.Printf("Photo [%s] %s\n", albumName, photoName)
 
 	album, err := FindAlbum(config, albumName)
 	if err != nil {
@@ -73,6 +74,7 @@ func thumb(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	albumName := vars["album"]
 	photoName := vars["photo"]
+	log.Printf("Thumb [%s] %s\n", albumName, photoName)
 
 	album, err := FindAlbum(config, albumName)
 	if err != nil {
