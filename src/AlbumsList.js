@@ -25,7 +25,7 @@ class AlbumsList extends Component {
         return (
             <List>
             { this.state.albums.map((album, index) => (
-                <ListItem button key={album.name} component={Link} to={album.name}>
+                <ListItem button key={album.name} component={Link} to={"/" + album.name}>
                     <Typography noWrap>
                         <ListItemText primary={album.name} />
                     </Typography>

@@ -2,7 +2,10 @@ import React, { Component } from 'react';
 import { useParams } from 'react-router-dom';
 import Gallery from "react-photo-gallery";
 import Carousel, { Modal, ModalGateway } from "react-images";
-import { photos } from "./photos";
+
+function withParams(Component) {
+    return props => <Component {...props} params={useParams()} />;
+}
 
 class GalleryApp extends Component {
     constructor(props) {
@@ -15,8 +18,7 @@ class GalleryApp extends Component {
     }
 
     componentDidMount() {
-        //const { album } = useParams();
-        const album = "";
+        let { album } = this.props.params;;
         fetch(`/album/${album}`)
             .then((response) => response.json())
             .then(album => {
@@ -59,4 +61,4 @@ class GalleryApp extends Component {
     }
 }
 
-export default GalleryApp;
+export default withParams(GalleryApp);
