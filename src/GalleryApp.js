@@ -18,7 +18,7 @@ class GalleryApp extends Component {
     }
 
     componentDidMount() {
-        let { album } = this.props.params;;
+        let { album } = this.props.params;
         fetch(`/album/${album}`)
             .then((response) => response.json())
             .then(album => {

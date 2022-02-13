@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams, Outlet } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import AppBar from '@material-ui/core/AppBar';
 import Box from '@material-ui/core/Box';
@@ -13,7 +14,6 @@ import Typography from '@material-ui/core/Typography';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import AlbumsList from './AlbumsList';
-import GalleryApp from './GalleryApp';
 
 const drawerWidth = "300px";
 
@@ -60,6 +60,7 @@ function ResponsiveDrawer(props) {
   const classes = useStyles();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  let { album } = useParams();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -96,7 +97,7 @@ function ResponsiveDrawer(props) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap>
-            Responsive drawer
+            { album }
           </Typography>
         </Toolbar>
       </AppBar>
@@ -133,7 +134,7 @@ function ResponsiveDrawer(props) {
       </nav>
       <main className={classes.content}>
         <div className={classes.toolbar} />
-        <GalleryApp />
+        <Outlet />
       </main>
     </div>
   );
