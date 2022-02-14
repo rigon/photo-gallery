@@ -116,7 +116,7 @@ func main() {
 	})
 
 	spa := spaHandler{
-		staticPath: "photo-gallery/build",
+		staticPath: "../build",
 		indexPath:  "index.html",
 	}
 	router.PathPrefix("/").Handler(spa)
