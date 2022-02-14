@@ -2,7 +2,10 @@ import React, { Component } from 'react';
 import { useParams } from 'react-router-dom';
 import Gallery from "react-photo-gallery";
 import Carousel, { Modal, ModalGateway } from "react-images";
-import { photos } from "./photos";
+
+function withParams(Component) {
+    return props => <Component {...props} params={useParams()} />;
+}
 
 class GalleryApp extends Component {
     constructor(props) {
@@ -12,16 +15,30 @@ class GalleryApp extends Component {
             currentImage: 0,
             viewerIsOpen: false
         };
+        
+        this.currentAlbum = null;
+    }
+
+    fetchPhotos(album) {
+        fetch(`/album/${album}`)
+            .then((response) => response.json())
+            .then(album => {
+                this.setState({ photos: album.photos });
+            });
     }
 
     componentDidMount() {
-        //const { album } = useParams();
-        const album = "";
-        fetch(`/album/${album}`)
-            .then((response) => response.json())
-            .then(photosList => {
-                this.setState({ photos: photosList });
-            });
+        let { album } = this.props.params;
+        this.fetchPhotos(album);
+    }
+
+    shouldComponentUpdate(nextProps) {
+        if(nextProps.params.album !== this.currentAlbum) {
+            this.currentAlbum = nextProps.params.album;
+            this.fetchPhotos(nextProps.params.album);
+            return false;
+        }
+        return true;
     }
 
     render() {
@@ -46,11 +63,10 @@ class GalleryApp extends Component {
                     <Modal onClose={closeLightbox}>
                         <Carousel
                         currentIndex={this.state.currentImage}
-                        views={this.state.photos.map(x => ({
-                            ...x,
-                            srcset: x.srcSet,
-                            caption: x.title
-                        }))}
+                        views={this.state.photos.map(photo => ({
+                                src: photo.full,
+                                caption: photo.title
+                            }))}
                         />
                     </Modal>
                     ) : null}
@@ -60,4 +76,4 @@ class GalleryApp extends Component {
     }
 }
 
-export default GalleryApp;
+export default withParams(GalleryApp);
