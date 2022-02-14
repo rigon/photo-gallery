@@ -15,15 +15,30 @@ class GalleryApp extends Component {
             currentImage: 0,
             viewerIsOpen: false
         };
+        
+        this.currentAlbum = null;
     }
 
-    componentDidMount() {
-        let { album } = this.props.params;
+    fetchPhotos(album) {
         fetch(`/album/${album}`)
             .then((response) => response.json())
             .then(album => {
                 this.setState({ photos: album.photos });
             });
+    }
+
+    componentDidMount() {
+        let { album } = this.props.params;
+        this.fetchPhotos(album);
+    }
+
+    shouldComponentUpdate(nextProps) {
+        if(nextProps.params.album !== this.currentAlbum) {
+            this.currentAlbum = nextProps.params.album;
+            this.fetchPhotos(nextProps.params.album);
+            return false;
+        }
+        return true;
     }
 
     render() {
