@@ -11,11 +11,12 @@ import (
 )
 
 type Photo struct {
-	Src    string            `json:"src"`
-	Title  string            `json:"title"`
-	Width  int               `default:"1" json:"width"`
-	Height int               `default:"1" json:"height"`
-	Extra  map[string]string `json:"extra"`
+	Src       string   `json:"src"`
+	Title     string   `json:"title"`
+	Width     int      `default:"1" json:"width"`
+	Height    int      `default:"1" json:"height"`
+	Files     []string `json:"files"`
+	Filenames []string `json:"-"`
 }
 
 func (photo Photo) HashName(album Album) string {
@@ -25,29 +26,32 @@ func (photo Photo) HashName(album Album) string {
 }
 
 func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) error {
-	srcimg := filepath.Join(config.PhotosPath, album.Name, photo.Title+".JPG")
-	path := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")
+	// TODO: Brute-force, find a clever way to process thumbnails
+	for _, filename := range photo.Filenames {
+		srcimg := filepath.Join(config.PhotosPath, album.Name, filename)
+		path := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")
 
-	// If the file doesn't exist
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		// Create thumbnail
-		err := CreateThumbnail(srcimg, path, w)
-		if err != nil {
-			log.Printf("Failed to creating thumbnail for [%s] %s: %v\n", album.Name, photo.Title, err)
-			return err
+		// If the file doesn't exist
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			// Create thumbnail
+			err := CreateThumbnail(srcimg, path, w)
+			if err != nil {
+				log.Printf("Failed to creating thumbnail for [%s] %s: %v\n", album.Name, photo.Title, err)
+				return err
+			}
+		} else {
+			data, err := ioutil.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			w.Write(data)
 		}
-	} else {
-		data, err := ioutil.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		w.Write(data)
 	}
 	return nil
 }
 
-func (photo Photo) GetImage(w io.Writer, config AppConfig, album Album) error {
-	path := filepath.Join(config.PhotosPath, album.Name, photo.Title)
+func (photo Photo) GetImage(w io.Writer, config AppConfig, album Album, fileNumber int) error {
+	path := filepath.Join(config.PhotosPath, album.Name, photo.Filenames[fileNumber])
 
 	// Decode original image
 	img, exif, err := DecodeImage(path)

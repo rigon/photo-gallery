@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -66,19 +67,20 @@ func (album *Album) GetPhotos(config AppConfig) error {
 	for _, file := range files {
 		if !file.IsDir() {
 			fileExt := path.Ext(file.Name())
-			fileName := strings.TrimSuffix(file.Name(), fileExt)
+			fileName := strings.ToLower(strings.TrimSuffix(file.Name(), fileExt))
 
 			photo, photoExists := photos[fileName]
 			if !photoExists {
 				photo = new(Photo)
 				photo.Title = fileName
 				photo.Src = path.Join("album", album.Name, "photo", fileName, "thumb")
-				photo.Extra = make(map[string]string)
 				photo.Height = 1
 				photo.Width = 1 + rand.Intn(2)
 				photos[fileName] = photo
 			}
-			photo.Extra[fileExt] = path.Join("album", album.Name, "photo", fileName, "extra", fileExt)
+			fileNumber := len(photo.Files)
+			photo.Files = append(photo.Files, path.Join("album", album.Name, "photo", fileName, "file", strconv.Itoa(fileNumber)))
+			photo.Filenames = append(photo.Filenames, file.Name())
 		}
 	}
 

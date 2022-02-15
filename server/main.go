@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -48,6 +49,10 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	albumName := vars["album"]
 	photoName := vars["photo"]
+	fileNumber, err := strconv.Atoi(vars["file"])
+	if err != nil {
+		log.Fatal(err)
+	}
 	// filename := filepath.Join(config.PhotosPath, albumName, photoName)
 	// if strings.HasSuffix(strings.ToLower(photoName), ".heic") {
 	// 	convertPhoto(w, filename)
@@ -67,7 +72,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//mime.TypeByExtension()
-	photo.GetImage(w, config, *album)
+	photo.GetImage(w, config, *album, fileNumber)
 }
 
 func thumb(w http.ResponseWriter, req *http.Request) {
@@ -89,8 +94,6 @@ func thumb(w http.ResponseWriter, req *http.Request) {
 	photo.GetThumbnail(w, config, *album)
 }
 
-var live = photo
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -107,9 +110,8 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/albums", albums)
 	router.HandleFunc("/album/{album}", album)
-	router.HandleFunc("/album/{album}/photo/{photo}", photo)
 	router.HandleFunc("/album/{album}/photo/{photo}/thumb", thumb)
-	router.HandleFunc("/album/{album}/live/{photo}", live)
+	router.HandleFunc("/album/{album}/photo/{photo}/file/{file}", photo)
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
