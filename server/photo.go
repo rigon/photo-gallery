@@ -11,11 +11,11 @@ import (
 )
 
 type Photo struct {
-	Src    string `json:"src"`
-	Full   string `json:"full"`
-	Title  string `json:"title"`
-	Width  int    `default:"1" json:"width"`
-	Height int    `default:"1" json:"height"`
+	Src    string            `json:"src"`
+	Title  string            `json:"title"`
+	Width  int               `default:"1" json:"width"`
+	Height int               `default:"1" json:"height"`
+	Extra  map[string]string `json:"extra"`
 }
 
 func (photo Photo) HashName(album Album) string {
@@ -25,7 +25,7 @@ func (photo Photo) HashName(album Album) string {
 }
 
 func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) error {
-	srcimg := filepath.Join(config.PhotosPath, album.Name, photo.Title)
+	srcimg := filepath.Join(config.PhotosPath, album.Name, photo.Title+".JPG")
 	path := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")
 
 	// If the file doesn't exist

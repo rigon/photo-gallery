@@ -5,7 +5,9 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"path"
 	"path/filepath"
+	"strings"
 )
 
 type Album struct {
@@ -60,17 +62,31 @@ func (album *Album) GetPhotos(config AppConfig) error {
 	}
 
 	// Iterate over folder items
+	photos := make(map[string]*Photo)
 	for _, file := range files {
 		if !file.IsDir() {
-			photo := new(Photo)
-			photo.Src = "/album/" + album.Name + "/thumb/" + file.Name()
-			photo.Full = "/album/" + album.Name + "/photo/" + file.Name()
-			photo.Title = file.Name()
-			photo.Height = 1
-			photo.Width = 1 + rand.Intn(2)
-			album.Photos = append(album.Photos, photo)
+			fileExt := path.Ext(file.Name())
+			fileName := strings.TrimSuffix(file.Name(), fileExt)
+
+			photo, photoExists := photos[fileName]
+			if !photoExists {
+				photo = new(Photo)
+				photo.Title = fileName
+				photo.Src = path.Join("album", album.Name, "photo", fileName, "thumb")
+				photo.Extra = make(map[string]string)
+				photo.Height = 1
+				photo.Width = 1 + rand.Intn(2)
+				photos[fileName] = photo
+			}
+			photo.Extra[fileExt] = path.Join("album", album.Name, "photo", fileName, "extra", fileExt)
 		}
 	}
+
+	album.Photos = make([]*Photo, 0, len(photos))
+	for _, photo := range photos {
+		album.Photos = append(album.Photos, photo)
+	}
+
 	return nil
 }
 

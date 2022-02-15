@@ -22,7 +22,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "cd server && go run ."
+    "server": "cd server && go build && ./photo-gallery"
   },
   "proxy": "http://localhost:3080",
   "eslintConfig": {

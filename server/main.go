@@ -108,7 +108,7 @@ func main() {
 	router.HandleFunc("/albums", albums)
 	router.HandleFunc("/album/{album}", album)
 	router.HandleFunc("/album/{album}/photo/{photo}", photo)
-	router.HandleFunc("/album/{album}/thumb/{photo}", thumb)
+	router.HandleFunc("/album/{album}/photo/{photo}/thumb", thumb)
 	router.HandleFunc("/album/{album}/live/{photo}", live)
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
