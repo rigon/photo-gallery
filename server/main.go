@@ -72,7 +72,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//mime.TypeByExtension()
-	photo.GetImage(w, config, *album, fileNumber)
+	photo.GetImage(fileNumber, w)
 }
 
 func thumb(w http.ResponseWriter, req *http.Request) {

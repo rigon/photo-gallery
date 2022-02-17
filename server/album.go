@@ -78,9 +78,12 @@ func (album *Album) GetPhotos(config AppConfig) error {
 				photo.Width = 1 + rand.Intn(2)
 				photos[fileName] = photo
 			}
-			fileNumber := len(photo.Files)
-			photo.Files = append(photo.Files, path.Join("album", album.Name, "photo", fileName, "file", strconv.Itoa(fileNumber)))
-			photo.Filenames = append(photo.Filenames, file.Name())
+			photoFile := File{
+				Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
+				Url:  path.Join("album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
+			photoFile.DetermineFileType()
+
+			photo.Files = append(photo.Files, photoFile)
 		}
 	}
 

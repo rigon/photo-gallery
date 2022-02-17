@@ -64,7 +64,7 @@ class GalleryApp extends Component {
                         <Carousel
                         currentIndex={this.state.currentImage}
                         views={this.state.photos.map(photo => ({
-                                src: photo.files[0],
+                                src: photo.files[0].url,
                                 caption: photo.title
                             }))}
                         />
