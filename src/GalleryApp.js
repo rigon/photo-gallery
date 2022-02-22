@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { useParams } from 'react-router-dom';
 import Gallery from "react-photo-gallery";
 import Carousel, { Modal, ModalGateway } from "react-images";
+import Thumbnail from "./Thumbnail";
 
 function withParams(Component) {
     return props => <Component {...props} params={useParams()} />;
@@ -57,7 +58,7 @@ class GalleryApp extends Component {
 
         return (
             <div>
-                <Gallery photos={this.state.photos} onClick={openLightbox} />
+                <Gallery photos={this.state.photos} onClick={openLightbox} targetRowHeight={120} margin={1} renderImage={ Thumbnail } />
                 <ModalGateway>
                     {this.state.viewerIsOpen ? (
                     <Modal onClose={closeLightbox}>
