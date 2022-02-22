@@ -5,7 +5,7 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import { Typography } from '@material-ui/core';
 
-class AlbumsList extends Component {
+class AlbumList extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -26,9 +26,9 @@ class AlbumsList extends Component {
             <List>
             { this.state.albums.map((album, index) => (
                 <ListItem button key={album.name} component={Link} to={`/${album.name}`}>
-                    <Typography noWrap>
-                        <ListItemText primary={album.name} />
-                    </Typography>
+                    <ListItemText>
+                        <Typography noWrap>{album.name}</Typography>
+                    </ListItemText>
                 </ListItem>
             ))}
             </List>
@@ -36,4 +36,4 @@ class AlbumsList extends Component {
     }
 }
 
-export default AlbumsList;
+export default AlbumList;
