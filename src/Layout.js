@@ -9,6 +9,8 @@ import Drawer from '@material-ui/core/Drawer';
 import Hidden from '@material-ui/core/Hidden';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
+import ZoomOutIcon from '@material-ui/icons/ZoomOut';
+import ZoomInIcon from '@material-ui/icons/ZoomIn';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
@@ -107,6 +109,13 @@ function ResponsiveDrawer(props) {
           <Typography variant="h6" noWrap>
             { album }
           </Typography>
+          <Box sx={{ flexGrow: 1 }} />
+          <IconButton aria-label="zoom out" color="inherit">
+            <ZoomOutIcon />
+          </IconButton>
+          <IconButton aria-label="zoom in" color="inherit">
+            <ZoomInIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
       <nav className={classes.drawer} aria-label="mailbox folders">
