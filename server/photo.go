@@ -13,6 +13,7 @@ import (
 type Photo struct {
 	Src    string `json:"src"`
 	Title  string `json:"title"`
+	Type   string `json:"type"`
 	Width  int    `default:"1" json:"width"`
 	Height int    `default:"1" json:"height"`
 	Files  []File `json:"files"`

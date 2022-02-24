@@ -1,14 +1,52 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Box from '@material-ui/core/Box';
+import PlayIcon from '@material-ui/icons/PlayCircleFilledTwoTone';
+import MoreIcon from '@material-ui/icons/More';
 
-const imgWithClick = { cursor: 'pointer' };
+const imgStyle = {
+  height: '100%',
+  width: '100%',
+  objectFit: 'cover',
+  position: 'absolute',
+};
+const overlayIconStyle = {
+  color: 'white',
+  position: 'relative',
+  margin: 'auto',
+  fontSize: '50px',
+};
+const overlayBadgeStyle = {
+  color: 'white',
+  position: 'absolute',
+  fontSize: '15px',
+  right: 5,
+  top: 5,
+};
 
 const Thumbnail = ({ index, onClick, photo, margin, direction, top, left, key }) => {
-  const imgStyle = { margin: margin, display: 'block' };
+  const boxStyle = {
+    position: 'relative',
+    margin: margin,
+    width: photo.width,
+    height: photo.height,
+    border: '1px solid black',
+    display: 'flex',
+    alignItems: 'center',
+  }
+  // Column direction style
   if (direction === 'column') {
-    imgStyle.position = 'absolute';
-    imgStyle.left = left;
-    imgStyle.top = top;
+    Object.assign(boxStyle, {
+      position: 'absolute',
+      left: left,
+      top: top,
+    });
+  }
+  // Clickable thumbnails style
+  if (onClick) {
+    Object.assign(boxStyle, {
+      cursor: 'pointer',
+    });
   }
 
   const handleClick = event => {
@@ -16,13 +54,20 @@ const Thumbnail = ({ index, onClick, photo, margin, direction, top, left, key })
   };
 
   return (
-    <img
-      key={key}
-      style={onClick ? { ...imgStyle, ...imgWithClick } : imgStyle}
-      {...photo}
-      onClick={onClick ? handleClick : null}
-      alt={photo.title}
-    />
+    <Box key={key} style={boxStyle} onClick={onClick && handleClick} title={photo.title}>
+      <img
+        style={imgStyle}
+        src={photo.src}
+        srcSet={photo.srcSet}
+        alt={photo.title}
+      />
+      { photo.type === "video" &&
+        <PlayIcon style={overlayIconStyle}/>
+      }
+      { photo.files.length > 1 &&
+        <MoreIcon style={overlayBadgeStyle}/>
+      }
+    </Box>
   );
 };
 

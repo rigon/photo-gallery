@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -52,6 +51,7 @@ func GetAlbum(config AppConfig, albumName string) (album *Album, err error) {
 	}
 
 	album.GetPhotos(config)
+	album.Count = len(album.Photos)
 	return
 }
 
@@ -75,7 +75,8 @@ func (album *Album) GetPhotos(config AppConfig) error {
 				photo.Title = fileName
 				photo.Src = path.Join("album", album.Name, "photo", fileName, "thumb")
 				photo.Height = 1
-				photo.Width = 1 + rand.Intn(2)
+				photo.Width = 1 // + rand.Intn(2)
+				photo.Type = "photo"
 				photos[fileName] = photo
 			}
 			photoFile := File{

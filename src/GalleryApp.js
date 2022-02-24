@@ -59,19 +59,19 @@ class GalleryApp extends Component {
         return (
             <div>
                 <Gallery photos={this.state.photos} onClick={openLightbox} targetRowHeight={120} margin={1} renderImage={ Thumbnail } />
-                <ModalGateway>
-                    {this.state.viewerIsOpen ? (
-                    <Modal onClose={closeLightbox}>
-                        <Carousel
-                        currentIndex={this.state.currentImage}
-                        views={this.state.photos.map(photo => ({
-                                src: photo.files[0].url,
-                                caption: photo.title
-                            }))}
-                        />
-                    </Modal>
-                    ) : null}
-                </ModalGateway>
+                { this.state.viewerIsOpen &&
+                    <ModalGateway>
+                        <Modal onClose={closeLightbox}>
+                            <Carousel
+                            currentIndex={this.state.currentImage}
+                            views={this.state.photos.map(photo => ({
+                                    src: photo.files[0].url,
+                                    caption: photo.title
+                                }))}
+                            />
+                        </Modal>
+                    </ModalGateway>
+                }
             </div>
         );
     }
