@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Box from '@material-ui/core/Box';
 import PlayIcon from '@material-ui/icons/PlayCircleFilledTwoTone';
-import MoreIcon from '@material-ui/icons/More';
+import MoreIcon from '@material-ui/icons/CameraEnhance';
 
 const imgStyle = {
   height: '100%',

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { useParams } from 'react-router-dom';
-import Gallery from "react-photo-gallery";
+import ReactPhotoGallery from "react-photo-gallery";
 import Carousel, { Modal, ModalGateway } from "react-images";
 import Thumbnail from "./Thumbnail";
 
@@ -8,7 +8,7 @@ function withParams(Component) {
     return props => <Component {...props} params={useParams()} />;
 }
 
-class GalleryApp extends Component {
+class Gallery extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -25,7 +25,7 @@ class GalleryApp extends Component {
             .then((response) => response.json())
             .then(album => {
                 this.setState({ photos: album.photos });
-            });
+            }); 
     }
 
     componentDidMount() {
@@ -58,15 +58,20 @@ class GalleryApp extends Component {
 
         return (
             <div>
-                <Gallery photos={this.state.photos} onClick={openLightbox} targetRowHeight={120} margin={1} renderImage={ Thumbnail } />
+                <ReactPhotoGallery photos={this.state.photos} onClick={openLightbox} targetRowHeight={120} margin={1} renderImage={ Thumbnail } />
                 { this.state.viewerIsOpen &&
                     <ModalGateway>
                         <Modal onClose={closeLightbox}>
                             <Carousel
-                            currentIndex={this.state.currentImage}
-                            views={this.state.photos.map(photo => ({
-                                    src: photo.files[0].url,
-                                    caption: photo.title
+                                currentIndex={this.state.currentImage}
+                                views={this.state.photos.map(photo => ({
+                                    caption: photo.title,
+                                    source: {
+                                        download: photo.files[0].url,
+                                        fullscreen: photo.files[0].url,
+                                        regular: photo.files[0].url,
+                                        thumbnail: photo.src,
+                                    }
                                 }))}
                             />
                         </Modal>
@@ -77,4 +82,4 @@ class GalleryApp extends Component {
     }
 }
 
-export default withParams(GalleryApp);
+export default withParams(Gallery);
