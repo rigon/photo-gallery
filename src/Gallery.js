@@ -1,7 +1,11 @@
+import "react-image-gallery/styles/css/image-gallery.css";
+
 import React, { Component } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactPhotoGallery from "react-photo-gallery";
-import Carousel, { Modal, ModalGateway } from "react-images";
+import Dialog from '@material-ui/core/Dialog';
+import ImageGallery from 'react-image-gallery';
+
 import Thumbnail from "./Thumbnail";
 
 function withParams(Component) {
@@ -59,24 +63,18 @@ class Gallery extends Component {
         return (
             <div>
                 <ReactPhotoGallery photos={this.state.photos} onClick={openLightbox} targetRowHeight={120} margin={1} renderImage={ Thumbnail } />
-                { this.state.viewerIsOpen &&
-                    <ModalGateway>
-                        <Modal onClose={closeLightbox}>
-                            <Carousel
-                                currentIndex={this.state.currentImage}
-                                views={this.state.photos.map(photo => ({
-                                    caption: photo.title,
-                                    source: {
-                                        download: photo.files[0].url,
-                                        fullscreen: photo.files[0].url,
-                                        regular: photo.files[0].url,
-                                        thumbnail: photo.src,
-                                    }
-                                }))}
-                            />
-                        </Modal>
-                    </ModalGateway>
-                }
+                <Dialog fullWidth maxWidth={false} open={this.state.viewerIsOpen} onClose={closeLightbox}>
+                    <ImageGallery currentImage lazyLoad showIndex
+                        slideDuration={150}
+                        showThumbnails={false}
+                        startIndex={this.state.currentImage}
+                        items={this.state.photos.map(photo => ({
+                            originalTitle: photo.title,
+                            description: photo.title,
+                            original: photo.files[0].url,
+                            thumbnail: photo.src,
+                        }))} />
+                </Dialog>
             </div>
         );
     }
