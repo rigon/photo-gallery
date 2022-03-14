@@ -76,13 +76,12 @@ func (album *Album) GetPhotos(config AppConfig) error {
 				photo.Thumb = path.Join("album", album.Name, "photo", fileName, "thumb")
 				photo.Height = 1
 				photo.Width = 1 // + rand.Intn(2)
-				photo.Type = "photo"
 				photos[fileName] = photo
 			}
 			photoFile := File{
 				Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
 				Url:  path.Join("album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
-			photoFile.DetermineFileType()
+			photoFile.DetermineType()
 
 			photo.Files = append(photo.Files, photoFile)
 		}
@@ -90,6 +89,7 @@ func (album *Album) GetPhotos(config AppConfig) error {
 
 	album.Photos = make([]*Photo, 0, len(photos))
 	for _, photo := range photos {
+		photo.DetermineType()
 		album.Photos = append(album.Photos, photo)
 	}
 

@@ -13,7 +13,7 @@ type File struct {
 	Path string `json:"-"`
 }
 
-func (file *File) DetermineFileType() error {
+func (file *File) DetermineType() error {
 	f, err := os.Open(file.Path)
 	if err != nil {
 		return err

@@ -87,3 +87,17 @@ func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
 	}
 	return nil
 }
+
+func (photo *Photo) DetermineType() {
+	isVideo := true
+	for _, file := range photo.Files {
+		if file.Type == "image" {
+			isVideo = false
+		}
+	}
+	if isVideo {
+		photo.Type = "video"
+	} else {
+		photo.Type = "photo"
+	}
+}
