@@ -57,7 +57,7 @@ const Thumbnail = ({ index, onClick, photo, margin, direction, top, left, key })
     <Box key={key} style={boxStyle} onClick={onClick && handleClick} title={photo.title}>
       <img
         style={imgStyle}
-        src={photo.src}
+        src={photo.thumbnail}
         srcSet={photo.srcSet}
         alt={photo.title}
       />
@@ -73,7 +73,7 @@ const Thumbnail = ({ index, onClick, photo, margin, direction, top, left, key })
 
 export const photoPropType = PropTypes.shape({
   key: PropTypes.string,
-  src: PropTypes.string.isRequired,
+  thumbnail: PropTypes.string.isRequired,
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   alt: PropTypes.string,

@@ -73,7 +73,7 @@ func (album *Album) GetPhotos(config AppConfig) error {
 			if !photoExists {
 				photo = new(Photo)
 				photo.Title = fileName
-				photo.Src = path.Join("album", album.Name, "photo", fileName, "thumb")
+				photo.Thumb = path.Join("album", album.Name, "photo", fileName, "thumb")
 				photo.Height = 1
 				photo.Width = 1 // + rand.Intn(2)
 				photo.Type = "photo"

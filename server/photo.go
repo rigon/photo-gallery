@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -11,7 +12,7 @@ import (
 )
 
 type Photo struct {
-	Src    string `json:"src"`
+	Thumb  string `json:"thumbnail"`
 	Title  string `json:"title"`
 	Type   string `json:"type"`
 	Width  int    `default:"1" json:"width"`
@@ -28,18 +29,18 @@ func (photo Photo) HashName(album Album) string {
 func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) error {
 	// TODO: Brute-force, find a clever way to process thumbnails
 	for _, file := range photo.Files {
-		path := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")
+		outputPath := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")
 
 		// If the file doesn't exist
-		if _, err := os.Stat(path); os.IsNotExist(err) {
+		if _, err := os.Stat(outputPath); os.IsNotExist(err) {
 			// Create thumbnail
-			err := CreateThumbnail(file.Path, path, w)
+			err := CreateThumbnail(file, outputPath, w)
 			if err != nil {
 				log.Printf("Failed to creating thumbnail for [%s] %s: %v\n", album.Name, photo.Title, err)
 				return err
 			}
 		} else {
-			data, err := ioutil.ReadFile(path)
+			data, err := ioutil.ReadFile(outputPath)
 			if err != nil {
 				return err
 			}
@@ -50,6 +51,29 @@ func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) erro
 }
 
 func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
+	file := photo.Files[fileNumber]
+	if file.Type == "video" {
+		// Open input file video
+		fin, err := os.Open(file.Path)
+		if err != nil {
+			return nil
+		}
+		defer fin.Close()
+		// create buffer
+		b := make([]byte, 1024)
+		for {
+			// read content to buffer
+			readTotal, err := fin.Read(b)
+			if err != nil {
+				if err != io.EOF {
+					fmt.Println(err)
+				}
+				break
+			}
+			w.Write(b[:readTotal]) // print content from buffer
+		}
+	}
+
 	// Decode original image
 	img, exif, err := DecodeImage(photo.Files[fileNumber].Path)
 	if err != nil {
