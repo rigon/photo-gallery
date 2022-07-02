@@ -4,8 +4,10 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"math/rand"
+	"path"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 type Album struct {
@@ -49,6 +51,7 @@ func GetAlbum(config AppConfig, albumName string) (album *Album, err error) {
 	}
 
 	album.GetPhotos(config)
+	album.Count = len(album.Photos)
 	return
 }
 
@@ -60,17 +63,36 @@ func (album *Album) GetPhotos(config AppConfig) error {
 	}
 
 	// Iterate over folder items
+	photos := make(map[string]*Photo)
 	for _, file := range files {
 		if !file.IsDir() {
-			photo := new(Photo)
-			photo.Src = "/album/" + album.Name + "/thumb/" + file.Name()
-			photo.Full = "/album/" + album.Name + "/photo/" + file.Name()
-			photo.Title = file.Name()
-			photo.Height = 1
-			photo.Width = 1 + rand.Intn(2)
-			album.Photos = append(album.Photos, photo)
+			fileExt := path.Ext(file.Name())
+			fileName := strings.ToLower(strings.TrimSuffix(file.Name(), fileExt))
+
+			photo, photoExists := photos[fileName]
+			if !photoExists {
+				photo = new(Photo)
+				photo.Title = fileName
+				photo.Thumb = path.Join("album", album.Name, "photo", fileName, "thumb")
+				photo.Height = 1
+				photo.Width = 1 // + rand.Intn(2)
+				photos[fileName] = photo
+			}
+			photoFile := File{
+				Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
+				Url:  path.Join("album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
+			photoFile.DetermineType()
+
+			photo.Files = append(photo.Files, photoFile)
 		}
 	}
+
+	album.Photos = make([]*Photo, 0, len(photos))
+	for _, photo := range photos {
+		photo.DetermineType()
+		album.Photos = append(album.Photos, photo)
+	}
+
 	return nil
 }
 

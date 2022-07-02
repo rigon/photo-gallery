@@ -11,7 +11,7 @@
     "@testing-library/user-event": "^13.5.0",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
-    "react-images": "^1.2.0-beta.7",
+    "react-image-gallery": "^1.2.7",
     "react-photo-gallery": "^8.0.0",
     "react-router-dom": "^6.2.1",
     "react-scripts": "5.0.0",
@@ -22,7 +22,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "cd server && go run ."
+    "server": "cd server && go build && ./photo-gallery"
   },
   "proxy": "http://localhost:3080",
   "eslintConfig": {

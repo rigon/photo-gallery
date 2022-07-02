@@ -1,3 +1,9 @@
+
+# Encoding videos in Raspberry PI 4
+
+    ffmpeg -i input.mp4 -c:v h264_v4l2m2m -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,fps=30" -b:v 25M /tmp/test.mp4
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

@@ -119,13 +119,28 @@ func DecodeImage(filepath string) (image.Image, []byte, error) {
 	return img, exifData, err
 }
 
-func CreateThumbnail(filepath string, thumbpath string, w io.Writer) error {
-	// Decode original image
-	img, exif, err := DecodeImage(filepath)
+func CreateThumbnail(file File, thumbpath string, w io.Writer) error {
+	var img image.Image
+	var exif []byte
+	var err error
+
+	switch file.Type {
+	case "image":
+		// Decode original image
+		img, exif, err = DecodeImage(file.Path)
+	case "video":
+		// Get a frame from the video
+		img, err = GetVideoFrame(file.Path)
+	}
+
 	if err != nil {
 		return err
 	}
 
+	return CreateThumbnailFromImage(img, exif, thumbpath, w)
+}
+
+func CreateThumbnailFromImage(img image.Image, exif []byte, thumbpath string, w io.Writer) error {
 	// Open output file thumbnail
 	fout, err := os.OpenFile(thumbpath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {

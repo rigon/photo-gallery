@@ -13,7 +13,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
-import AlbumsList from './AlbumsList';
+import AlbumList from './AlbumList';
 
 const drawerWidth = "300px";
 
@@ -76,7 +76,7 @@ function ResponsiveDrawer(props) {
         </Box>
       </Toolbar>
       <Divider />
-      <AlbumsList />
+      <AlbumList />
     </div>
   );
 
