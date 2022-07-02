@@ -3,6 +3,9 @@
 
     ffmpeg -i input.mp4 -c:v h264_v4l2m2m -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,fps=30" -b:v 25M /tmp/test.mp4
 
+# Build docker multi-arch
+
+    docker buildx build --push -t rigon/photo-gallery --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/s390x .
 
 # Getting Started with Create React App
 
