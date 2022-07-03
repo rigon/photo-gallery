@@ -17,8 +17,12 @@ type AppConfig struct {
 	PhotosPath string
 	ThumbsPath string
 }
+type AppData struct {
+	Album *Album
+}
 
 var config AppConfig
+var data AppData
 
 func albums(w http.ResponseWriter, req *http.Request) {
 	var albums []*Album
@@ -41,6 +45,9 @@ func album(w http.ResponseWriter, req *http.Request) {
 		log.Fatal(err)
 	}
 
+	// Cache selected album
+	data.Album = album
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(album)
 }
@@ -61,12 +68,15 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	// }
 	log.Printf("Photo [%s] %s\n", albumName, photoName)
 
-	album, err := FindAlbum(config, albumName)
-	if err != nil {
-		log.Fatal(err)
+	// Check if cached album is the one we want
+	if data.Album == nil || data.Album.Name != albumName {
+		data.Album, err = GetAlbum(config, albumName)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	photo, err := album.FindPhoto(photoName)
+	photo, err := data.Album.FindPhoto(photoName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,22 +86,26 @@ func photo(w http.ResponseWriter, req *http.Request) {
 }
 
 func thumb(w http.ResponseWriter, req *http.Request) {
+	var err error
 	vars := mux.Vars(req)
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	log.Printf("Thumb [%s] %s\n", albumName, photoName)
 
-	album, err := FindAlbum(config, albumName)
+	// Check if cached album is the one we want
+	if data.Album == nil || data.Album.Name != albumName {
+		data.Album, err = GetAlbum(config, albumName)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	photo, err := data.Album.FindPhoto(photoName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	photo, err := album.FindPhoto(photoName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	photo.GetThumbnail(w, config, *album)
+	photo.GetThumbnail(w, config, *data.Album)
 }
 
 func main() {

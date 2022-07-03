@@ -97,7 +97,6 @@ func (album *Album) GetPhotos(config AppConfig) error {
 }
 
 func (album *Album) FindPhoto(photoName string) (*Photo, error) {
-	album.GetPhotos(config)
 	for _, photo := range album.Photos {
 		if photo.Title == photoName { // Found
 			return photo, nil
