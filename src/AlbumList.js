@@ -25,7 +25,7 @@ class AlbumList extends Component {
         return (
             <List>
             { this.state.albums.map((album, index) => (
-                <ListItem button key={album.name} component={Link} to={`/${album.name}`}>
+                <ListItem button key={album.name} component={Link} to={`/${album.name}`} onClick={this.props.onClick}>
                     <ListItemText>
                         <Typography noWrap>{album.name}</Typography>
                     </ListItemText>

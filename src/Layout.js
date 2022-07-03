@@ -65,6 +65,9 @@ function ResponsiveDrawer(props) {
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+  const handleDrawerClose = () => {
+    setMobileOpen(false);
+  };
 
   const drawer = (
     <div>
@@ -76,7 +79,7 @@ function ResponsiveDrawer(props) {
         </Box>
       </Toolbar>
       <Divider />
-      <AlbumList />
+      <AlbumList onClick={handleDrawerClose} />
     </div>
   );
 
