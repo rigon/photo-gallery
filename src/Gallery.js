@@ -26,6 +26,8 @@ class Gallery extends Component {
     }
 
     fetchPhotos(album) {
+        // Clear gallery when a new album is selected
+        this.setState({ photos: [] });
         fetch(`/album/${album}`)
             .then((response) => response.json())
             .then(album => {
