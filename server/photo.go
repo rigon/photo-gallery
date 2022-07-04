@@ -51,39 +51,47 @@ func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) erro
 }
 
 func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
+	fmt.Println("GetImage")
+
 	file := photo.Files[fileNumber]
-	if file.Type == "video" {
-		// Open input file video
-		fin, err := os.Open(file.Path)
+
+	// If the file requires transcoding
+	if file.Type == "image" && file.Ext == ".heic" {
+		fmt.Println("DecodeImage")
+		// Decode original image
+		img, exif, err := DecodeImage(file.Path)
 		if err != nil {
-			return nil
+			return err
 		}
-		defer fin.Close()
-		// create buffer
-		b := make([]byte, 1024)
-		for {
-			// read content to buffer
-			readTotal, err := fin.Read(b)
-			if err != nil {
-				if err != io.EOF {
-					fmt.Println(err)
-				}
-				break
+
+		fmt.Println("EncodeImage")
+		// Encode thumbnail
+		err = EncodeImage(w, img, exif)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Open input file
+	fin, err := os.Open(file.Path)
+	if err != nil {
+		return nil
+	}
+	defer fin.Close()
+	// create buffer
+	b := make([]byte, 4096)
+	for {
+		// read content to buffer
+		readTotal, err := fin.Read(b)
+		fmt.Println(readTotal)
+		if err != nil {
+			if err != io.EOF {
+				fmt.Println(err)
 			}
-			w.Write(b[:readTotal]) // print content from buffer
+			break
 		}
-	}
-
-	// Decode original image
-	img, exif, err := DecodeImage(photo.Files[fileNumber].Path)
-	if err != nil {
-		return err
-	}
-
-	// Encode thumbnail
-	err = EncodeImage(w, img, exif)
-	if err != nil {
-		return err
+		w.Write(b[:readTotal]) // print content from buffer
 	}
 	return nil
 }

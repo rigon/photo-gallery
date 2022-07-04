@@ -11,6 +11,7 @@ type File struct {
 	Type string `json:"type"`
 	Url  string `json:"url"`
 	Path string `json:"-"`
+	Ext  string `json:"-"`
 }
 
 func (file *File) DetermineType() error {
@@ -30,7 +31,7 @@ func (file *File) DetermineType() error {
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
 	filetype := http.DetectContentType(buffer)
-	fileext := strings.ToLower(path.Ext(file.Path))
+	file.Ext = strings.ToLower(path.Ext(file.Path))
 
 	switch {
 	case strings.HasPrefix(filetype, "image/"):
@@ -38,7 +39,7 @@ func (file *File) DetermineType() error {
 	case strings.HasPrefix(filetype, "video/"):
 		file.Type = "video"
 	default:
-		switch fileext {
+		switch file.Ext {
 		case ".heic":
 			file.Type = "image"
 		case ".mov":
