@@ -79,7 +79,7 @@ function ResponsiveDrawer(props) {
         </Box>
       </Toolbar>
       <Divider />
-      <AlbumList onClick={handleDrawerClose} />
+      <AlbumList onClick={handleDrawerClose} selected={album} />
     </div>
   );
 
