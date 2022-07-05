@@ -30,7 +30,7 @@ const Thumbnail = ({ index, onClick, photo, margin, direction, top, left, key })
     margin: margin,
     width: photo.width,
     height: photo.height,
-    border: '1px solid black',
+    backgroundColor: '#eee',
     display: 'flex',
     alignItems: 'center',
   }
