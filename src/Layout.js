@@ -74,6 +74,12 @@ function ResponsiveDrawer(props) {
   const handleDrawerClose = () => {
     setMobileOpen(false);
   };
+  const increaseZoom = () => {
+    
+  };
+  const decreaseZoom = () => {
+    
+  };
 
   const drawer = (
     <div>
@@ -110,10 +116,10 @@ function ResponsiveDrawer(props) {
             { album }
           </Typography>
           <Box sx={{ flexGrow: 1 }} />
-          <IconButton aria-label="zoom out" color="inherit">
+          <IconButton onClick={decreaseZoom}aria-label="zoom out" color="inherit">
             <ZoomOutIcon />
           </IconButton>
-          <IconButton aria-label="zoom in" color="inherit">
+          <IconButton onClick={increaseZoom} aria-label="zoom in" color="inherit">
             <ZoomInIcon />
           </IconButton>
         </Toolbar>
