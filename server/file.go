@@ -1,17 +1,20 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 type File struct {
-	Type string `json:"type"`
-	Url  string `json:"url"`
-	Path string `json:"-"`
-	Ext  string `json:"-"`
+	Type string    `json:"type"`
+	Url  string    `json:"url"`
+	Date time.Time `json:"date"`
+	Path string    `json:"-"`
+	Ext  string    `json:"-"`
 }
 
 func (file *File) DetermineType() error {
@@ -47,5 +50,24 @@ func (file *File) DetermineType() error {
 		}
 	}
 
+	return nil
+}
+
+func (file *File) DetermineDate() error {
+	date, err := GetImageDateTime(file.Path)
+	// If no error use this date
+	if err == nil {
+		file.Date = *date
+		return nil
+	}
+
+	stat, err := os.Stat(file.Path)
+	if err != nil {
+		return err
+	}
+	if os.IsNotExist(err) {
+		return errors.New("file not found")
+	}
+	file.Date = stat.ModTime()
 	return nil
 }

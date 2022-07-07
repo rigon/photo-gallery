@@ -31,3 +31,11 @@ func TestDecodeEncodeImage(t *testing.T) {
 		t.Errorf("Failed to encode: %s\n", err)
 	}
 }
+
+func TestGetImageDateTime(t *testing.T) {
+	time, err := GetImageDateTime("tests/collection/album1/demo1.heic")
+	if err != nil {
+		t.Errorf("Failed decode image: %s\n", err)
+	}
+	t.Log(time)
+}
