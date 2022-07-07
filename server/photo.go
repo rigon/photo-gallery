@@ -9,15 +9,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Photo struct {
-	Thumb  string `json:"thumbnail"`
-	Title  string `json:"title"`
-	Type   string `json:"type"`
-	Width  int    `default:"1" json:"width"`
-	Height int    `default:"1" json:"height"`
-	Files  []File `json:"files"`
+	Thumb  string    `json:"thumbnail"`
+	Title  string    `json:"title"`
+	Type   string    `json:"type"`
+	Date   time.Time `json:"date"`
+	Width  int       `default:"1" json:"width"`
+	Height int       `default:"1" json:"height"`
+	Files  []File    `json:"files"`
 }
 
 func (photo Photo) HashName(album Album) string {
@@ -51,20 +53,16 @@ func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) erro
 }
 
 func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
-	fmt.Println("GetImage")
-
 	file := photo.Files[fileNumber]
 
 	// If the file requires transcoding
 	if file.Type == "image" && file.Ext == ".heic" {
-		fmt.Println("DecodeImage")
 		// Decode original image
 		img, exif, err := DecodeImage(file.Path)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("EncodeImage")
 		// Encode thumbnail
 		err = EncodeImage(w, img, exif)
 		if err != nil {
@@ -101,11 +99,23 @@ func (photo *Photo) DetermineType() {
 	for _, file := range photo.Files {
 		if file.Type == "image" {
 			isVideo = false
+			break
 		}
 	}
 	if isVideo {
 		photo.Type = "video"
 	} else {
 		photo.Type = "photo"
+	}
+}
+
+func (photo *Photo) DetermineDate() {
+	photo.Date = photo.Files[0].Date
+	// Pick image's date if there are videos before
+	for _, file := range photo.Files {
+		if file.Type == "image" {
+			photo.Date = file.Date
+			break
+		}
 	}
 }

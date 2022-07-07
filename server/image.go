@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"image"
 	_ "image/gif"
 	"image/jpeg"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	heif "github.com/adrium/goheif"
 	"github.com/nfnt/resize"
@@ -119,6 +121,48 @@ func DecodeImage(filepath string) (image.Image, []byte, error) {
 	return img, exifData, err
 }
 
+func GetImageDateTime(filename string) (*time.Time, error) {
+	var exifData *exif.Exif
+	var err error
+
+	// Open input file image
+	fin, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer fin.Close()
+
+	_, format, err := image.DecodeConfig(fin)
+	if err != nil {
+		return nil, err
+	}
+
+	// Rewind to the start
+	fin.Seek(0, io.SeekStart)
+
+	// Extract EXIF
+	switch format {
+	case "heic":
+		exifBin, e := heif.ExtractExif(fin)
+		if e != nil {
+			break
+		}
+		exifData, err = exif.Decode(bytes.NewReader(exifBin))
+		// Error handled bellow
+	case "jpeg":
+		exifData, err = exif.Decode(fin)
+		// Error handled bellow
+	default:
+		log.Printf("Warning: not able to extract EXIF data from '%s' image format\n", format)
+	}
+	if exifData == nil || err != nil {
+		log.Println("Warning: error while extracting EXIF from image")
+	}
+
+	time, err := exifData.DateTime()
+	return &time, err
+}
+
 func CreateThumbnail(file File, thumbpath string, w io.Writer) error {
 	var img image.Image
 	var exif []byte
@@ -149,7 +193,7 @@ func CreateThumbnailFromImage(img image.Image, exif []byte, thumbpath string, w 
 	defer fout.Close()
 
 	// Resize image for thumbnail size
-	resized := resize.Resize(0, 200, img, resize.Lanczos3)
+	resized := resize.Thumbnail(200, 200, img, resize.Bilinear)
 
 	// Encode thumbnail
 	multiw := io.MultiWriter(w, fout)
