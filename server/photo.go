@@ -44,7 +44,9 @@ func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) erro
 			if err != nil {
 				return err
 			}
-			w.Write(data)
+			if w != nil {
+				w.Write(data)
+			}
 		}
 	}
 	return nil
@@ -84,7 +86,6 @@ func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
 	for {
 		// read content to buffer
 		readTotal, err := fin.Read(b)
-		fmt.Println(readTotal)
 		if err != nil {
 			if err != io.EOF {
 				fmt.Println(err)

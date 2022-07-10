@@ -98,8 +98,12 @@ func DecodeImage(filepath string) (image.Image, []byte, error) {
 	case "heic":
 		exifData, err = heif.ExtractExif(fin)
 	case "jpeg":
-		x, e := exif.Decode(fin)
-		exifData, err = x.Raw, e
+		var ex *exif.Exif
+		ex, err = exif.Decode(fin)
+		if ex == nil || err != nil {
+			break
+		}
+		exifData = ex.Raw
 	default:
 		exifData, err = nil, nil
 	}
@@ -152,8 +156,11 @@ func CreateThumbnailFromImage(img image.Image, exif []byte, thumbpath string, w 
 	resized := resize.Resize(0, 200, img, resize.Lanczos3)
 
 	// Encode thumbnail
-	multiw := io.MultiWriter(w, fout)
-	err = EncodeImage(multiw, resized, exif)
+	var mw io.Writer = fout
+	if w != nil {
+		mw = io.MultiWriter(w, fout)
+	}
+	err = EncodeImage(mw, resized, exif)
 	if err != nil {
 		return err
 	}

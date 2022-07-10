@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"sync"
 )
 
@@ -29,6 +30,7 @@ func init() {
 
 func AddWork(config AppConfig, album Album, photos ...*Photo) {
 	for _, photo := range photos {
+		log.Printf("Background Thumb [%s] %s\n", album.Name, photo.Title)
 		wg.Add(1)
 		w := new(Work)
 		w.config = config
