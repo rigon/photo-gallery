@@ -2,9 +2,10 @@
 FROM golang:1.14-alpine3.13 AS server
 RUN apk update && apk add musl-dev gcc g++ ffmpeg-libs ffmpeg-dev
 WORKDIR /app
-COPY server/ .
-RUN go mod download
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o photo-gallery
+COPY server/go.mod server/go.sum ./
+RUN go mod download -x
+COPY server/ ./
+RUN CGO_ENABLED=1 GOOS=linux go build -v -installsuffix cgo -o photo-gallery
 # For static compilation (not working): -ldflags '-extldflags "-static"'
 
 # Fronted
