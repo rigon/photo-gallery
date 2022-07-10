@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	_ "image/gif"
 	"image/jpeg"
@@ -159,8 +160,11 @@ func GetImageDateTime(filename string) (*time.Time, error) {
 	default:
 		log.Printf("Warning: not able to extract EXIF data from '%s' image format\n", format)
 	}
-	if exifData == nil || err != nil {
-		log.Println("Warning: error while extracting EXIF from image")
+	if err != nil {
+		return nil, err
+	}
+	if exifData == nil {
+		return nil, errors.New("error while extracting EXIF from image")
 	}
 
 	time, err := exifData.DateTime()
