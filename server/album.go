@@ -83,7 +83,7 @@ func (album *Album) GetPhotos(config AppConfig) error {
 				Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
 				Url:  path.Join("album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
 			photoFile.DetermineType()
-			photoFile.DetermineDate()
+			//photoFile.DetermineDate()
 
 			photo.Files = append(photo.Files, photoFile)
 		}
@@ -92,7 +92,7 @@ func (album *Album) GetPhotos(config AppConfig) error {
 	album.Photos = make([]*Photo, 0, len(photos))
 	for _, photo := range photos {
 		photo.DetermineType()
-		photo.DetermineDate()
+		photo.DetermineDate(*album)
 		album.Photos = append(album.Photos, photo)
 	}
 
@@ -100,6 +100,10 @@ func (album *Album) GetPhotos(config AppConfig) error {
 	sort.Slice(album.Photos, func(i, j int) bool {
 		return album.Photos[i].Date.Before(album.Photos[j].Date)
 	})
+	// Sort photos by name (ascending)
+	// sort.Slice(album.Photos, func(i, j int) bool {
+	// 	return album.Photos[i].Title < album.Photos[j].Title
+	// })
 
 	return nil
 }

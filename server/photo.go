@@ -110,13 +110,39 @@ func (photo *Photo) DetermineType() {
 	}
 }
 
-func (photo *Photo) DetermineDate() {
-	photo.Date = photo.Files[0].Date
-	// Pick image's date if there are videos before
-	for _, file := range photo.Files {
-		if file.Type == "image" {
-			photo.Date = file.Date
-			break
+func (photo *Photo) DetermineDate(album Album) {
+	// photo.Date = photo.Files[0].Date
+	// // Pick image's date if there are videos before
+	// for _, file := range photo.Files {
+	// 	if file.Type == "image" {
+	// 		photo.Date = file.Date
+	// 		break
+	// 	}
+	// }
+
+	path := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")
+	date, err := GetImageDateTime(path)
+	fmt.Println(path, date, err)
+	// If no error use this date
+	if err != nil {
+		for _, file := range photo.Files {
+			date, err = GetImageDateTime(file.Path)
+			if err == nil {
+				break
+			}
 		}
 	}
+	if date == nil {
+		date = &photo.Files[0].Date
+	}
+	photo.Date = *date
+
+	// stat, err := os.Stat(path)
+	// if err != nil {
+	// 	return
+	// }
+	// if os.IsNotExist(err) {
+	// 	return errors.New("file not found")
+	// }
+	// photo.Date = stat.ModTime()
 }
