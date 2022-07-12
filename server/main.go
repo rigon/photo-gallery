@@ -137,7 +137,7 @@ func main() {
 	// WebDAV
 	wd := &webdav.Handler{
 		Prefix:     "/webdav",
-		FileSystem: webdav.Dir(config.PhotosPath),
+		FileSystem: CreateWebDavFS(config),
 		LockSystem: webdav.NewMemLS(),
 		Logger: func(r *http.Request, err error) {
 			if err != nil {
