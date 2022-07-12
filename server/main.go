@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/net/webdav"
 )
 
 type AppConfig struct {
@@ -122,6 +123,8 @@ func main() {
 	config.ThumbsPath = os.Args[2]
 
 	router := mux.NewRouter()
+
+	// API
 	router.HandleFunc("/albums", albums)
 	router.HandleFunc("/album/{album}", album)
 	router.HandleFunc("/album/{album}/photo/{photo}/thumb", thumb)
@@ -131,18 +134,35 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	})
 
+	// WebDAV
+	wd := &webdav.Handler{
+		Prefix:     "/webdav",
+		FileSystem: webdav.Dir(config.PhotosPath),
+		LockSystem: webdav.NewMemLS(),
+		Logger: func(r *http.Request, err error) {
+			if err != nil {
+				fmt.Printf("WebDAV %s: %s, ERROR: %s\n", r.Method, r.URL, err)
+			} else {
+				fmt.Printf("WebDAV %s: %s \n", r.Method, r.URL)
+			}
+		},
+	}
+	router.PathPrefix("/webdav").Handler(wd)
+
+	// Frontend
 	spa := spaHandler{
 		staticPath: "../build",
 		indexPath:  "index.html",
 	}
 	router.PathPrefix("/").Handler(spa)
 
+	// Start server
 	srv := &http.Server{
 		Handler: router,
 		Addr:    "0.0.0.0:3080",
-		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		// // Good practice: enforce timeouts for servers you create!
+		// WriteTimeout: 15 * time.Second,
+		// ReadTimeout:  15 * time.Second,
 	}
 
 	log.Fatal(srv.ListenAndServe())
