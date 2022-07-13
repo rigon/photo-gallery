@@ -75,14 +75,14 @@ func (album *Album) GetPhotos(config Collection) error {
 			if !photoExists {
 				photo = new(Photo)
 				photo.Title = fileName
-				photo.Thumb = path.Join("album", album.Name, "photo", fileName, "thumb")
+				photo.Thumb = path.Join("/collection", strconv.Itoa(config.Index), "album", album.Name, "photo", fileName, "thumb")
 				photo.Height = 1
 				photo.Width = 1 // + rand.Intn(2)
 				photos[fileName] = photo
 			}
 			photoFile := File{
 				Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
-				Url:  path.Join("album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
+				Url:  path.Join("/collection", strconv.Itoa(config.Index), "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
 			photoFile.DetermineType()
 
 			photo.Files = append(photo.Files, photoFile)

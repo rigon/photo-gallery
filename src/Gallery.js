@@ -25,10 +25,10 @@ class Gallery extends Component {
         this.currentAlbum = null;
     }
 
-    fetchPhotos(album) {
+    fetchPhotos(collection, album) {
         // Clear gallery when a new album is selected
         this.setState({ photos: [] });
-        fetch(`/album/${album}`)
+        fetch(`/collection/${collection}/album/${album}`)
             .then((response) => response.json())
             .then(album => {
                 this.setState({ photos: album.photos });
@@ -36,14 +36,14 @@ class Gallery extends Component {
     }
 
     componentDidMount() {
-        let { album } = this.props.params;
-        this.fetchPhotos(album);
+        let { collection, album } = this.props.params;
+        this.fetchPhotos(collection, album);
     }
 
     shouldComponentUpdate(nextProps) {
         if(nextProps.params.album !== this.currentAlbum) {
             this.currentAlbum = nextProps.params.album;
-            this.fetchPhotos(nextProps.params.album);
+            this.fetchPhotos(nextProps.params.collection, nextProps.params.album);
             return false;
         }
         return true;

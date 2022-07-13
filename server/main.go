@@ -15,6 +15,7 @@ import (
 )
 
 type Collection struct {
+	Index           int
 	Name            string
 	PhotosPath      string
 	ThumbsPath      string
@@ -153,12 +154,14 @@ func main() {
 
 	app.Collections = make([]*Collection, 2)
 	app.Collections[0] = new(Collection)
+	app.Collections[0].Index = 0
 	app.Collections[0].Name = "Default"
 	app.Collections[0].PhotosPath = os.Args[1]
 	app.Collections[0].ThumbsPath = os.Args[2]
 	app.Collections[0].RenameOnReplace = true
 
 	app.Collections[1] = new(Collection)
+	app.Collections[1].Index = 1
 	app.Collections[1].Name = "Default 2"
 	app.Collections[1].PhotosPath = os.Args[1]
 	app.Collections[1].ThumbsPath = os.Args[2]

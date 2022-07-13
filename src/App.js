@@ -14,7 +14,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="/:album" element={<Gallery />} />
+          <Route path="/:collection/:album" element={<Gallery />} />
         </Route>
       </Routes>
     </Router>
