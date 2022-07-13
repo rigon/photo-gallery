@@ -14,21 +14,50 @@ import (
 	"golang.org/x/net/webdav"
 )
 
-type AppConfig struct {
-	PhotosPath string
-	ThumbsPath string
-}
-type AppData struct {
-	Album *Album
+type Collection struct {
+	Name            string
+	PhotosPath      string
+	ThumbsPath      string
+	Album           *Album
+	ReadOnly        bool
+	RenameOnReplace bool
 }
 
-var config AppConfig
-var data AppData
+type App struct {
+	Collections []*Collection
+}
+
+var app App
+
+func getCollection(collection string) Collection {
+	i, err := strconv.Atoi(collection)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if i < 0 || i >= len(app.Collections) {
+		log.Fatal(err)
+	}
+
+	return *app.Collections[i]
+}
+
+func collections(w http.ResponseWriter, req *http.Request) {
+	collections := make([]string, len(app.Collections))
+
+	for i, c := range app.Collections {
+		collections[i] = c.Name
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(collections)
+}
 
 func albums(w http.ResponseWriter, req *http.Request) {
-	var albums []*Album
+	vars := mux.Vars(req)
+	collection := getCollection(vars["collection"])
 
-	albums, err := ListAlbums(config)
+	albums, err := ListAlbums(collection)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,15 +68,16 @@ func albums(w http.ResponseWriter, req *http.Request) {
 
 func album(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
+	collection := getCollection(vars["collection"])
 	albumName := vars["album"]
 
-	album, err := GetAlbum(config, albumName)
+	album, err := GetAlbum(collection, albumName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Cache selected album
-	data.Album = album
+	collection.Album = album
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(album)
@@ -55,6 +85,7 @@ func album(w http.ResponseWriter, req *http.Request) {
 
 func photo(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
+	collection := getCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	fileNumber, err := strconv.Atoi(vars["file"])
@@ -70,14 +101,14 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Photo [%s] %s\n", albumName, photoName)
 
 	// Check if cached album is the one we want
-	if data.Album == nil || data.Album.Name != albumName {
-		data.Album, err = GetAlbum(config, albumName)
+	if collection.Album == nil || collection.Album.Name != albumName {
+		collection.Album, err = GetAlbum(collection, albumName)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	photo, err := data.Album.FindPhoto(photoName)
+	photo, err := collection.Album.FindPhoto(photoName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,24 +120,25 @@ func photo(w http.ResponseWriter, req *http.Request) {
 func thumb(w http.ResponseWriter, req *http.Request) {
 	var err error
 	vars := mux.Vars(req)
+	collection := getCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	log.Printf("Thumb [%s] %s\n", albumName, photoName)
 
 	// Check if cached album is the one we want
-	if data.Album == nil || data.Album.Name != albumName {
-		data.Album, err = GetAlbum(config, albumName)
+	if collection.Album == nil || collection.Album.Name != albumName {
+		collection.Album, err = GetAlbum(collection, albumName)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	photo, err := data.Album.FindPhoto(photoName)
+	photo, err := collection.Album.FindPhoto(photoName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	photo.GetThumbnail(w, config, *data.Album)
+	photo.GetThumbnail(w, collection, *collection.Album)
 }
 
 func main() {
@@ -119,17 +151,28 @@ func main() {
 		return
 	}
 
-	config.PhotosPath = os.Args[1]
-	config.ThumbsPath = os.Args[2]
+	app.Collections = make([]*Collection, 2)
+	app.Collections[0] = new(Collection)
+	app.Collections[0].Name = "Default"
+	app.Collections[0].PhotosPath = os.Args[1]
+	app.Collections[0].ThumbsPath = os.Args[2]
+	app.Collections[0].RenameOnReplace = true
+
+	app.Collections[1] = new(Collection)
+	app.Collections[1].Name = "Default 2"
+	app.Collections[1].PhotosPath = os.Args[1]
+	app.Collections[1].ThumbsPath = os.Args[2]
+	app.Collections[1].RenameOnReplace = true
 
 	router := mux.NewRouter()
 
 	// API
-	router.HandleFunc("/albums", albums)
-	router.HandleFunc("/album/{album}", album)
-	router.HandleFunc("/album/{album}/photo/{photo}/thumb", thumb)
-	router.HandleFunc("/album/{album}/photo/{photo}/file/{file}", photo)
-	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/collections", collections)
+	router.HandleFunc("/collection/{collection}/albums", albums)
+	router.HandleFunc("/collection/{collection}/album/{album}", album)
+	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
+	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
+	router.HandleFunc("/collection/{collection}/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	})
@@ -137,7 +180,7 @@ func main() {
 	// WebDAV
 	wd := &webdav.Handler{
 		Prefix:     "/webdav",
-		FileSystem: CreateWebDavFS(config),
+		FileSystem: CreateWebDavFS(app.Collections),
 		LockSystem: webdav.NewMemLS(),
 		Logger: func(r *http.Request, err error) {
 			if err != nil {

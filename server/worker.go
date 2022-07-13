@@ -6,7 +6,7 @@ import (
 )
 
 type Work struct {
-	config AppConfig
+	config Collection
 	album  Album
 	photo  Photo
 }
@@ -28,7 +28,7 @@ func init() {
 	}
 }
 
-func AddWork(config AppConfig, album Album, photos ...*Photo) {
+func AddWork(config Collection, album Album, photos ...*Photo) {
 	for _, photo := range photos {
 		log.Printf("Background Thumb [%s] %s\n", album.Name, photo.Title)
 		wg.Add(1)

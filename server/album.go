@@ -17,7 +17,9 @@ type Album struct {
 	Photos []*Photo `json:"photos"`
 }
 
-func ListAlbums(config AppConfig) (albums []*Album, err error) {
+func ListAlbums(config Collection) (albums []*Album, err error) {
+	albums = make([]*Album, 0)
+
 	files, err := ioutil.ReadDir(config.PhotosPath)
 	if err != nil {
 		return
@@ -33,7 +35,7 @@ func ListAlbums(config AppConfig) (albums []*Album, err error) {
 	return
 }
 
-func FindAlbum(config AppConfig, albumName string) (*Album, error) {
+func FindAlbum(config Collection, albumName string) (*Album, error) {
 	albums, _ := ListAlbums(config)
 	for _, elem := range albums {
 		if elem.Name == albumName { // Found
@@ -44,7 +46,7 @@ func FindAlbum(config AppConfig, albumName string) (*Album, error) {
 	return nil, errors.New("album not found")
 }
 
-func GetAlbum(config AppConfig, albumName string) (album *Album, err error) {
+func GetAlbum(config Collection, albumName string) (album *Album, err error) {
 	album, err = FindAlbum(config, albumName)
 	if err != nil {
 		return
@@ -55,7 +57,7 @@ func GetAlbum(config AppConfig, albumName string) (album *Album, err error) {
 	return
 }
 
-func (album *Album) GetPhotos(config AppConfig) error {
+func (album *Album) GetPhotos(config Collection) error {
 	// Read album (or folder) contents
 	files, err := ioutil.ReadDir(filepath.Join(config.PhotosPath, album.Name))
 	if err != nil {
@@ -106,6 +108,6 @@ func (album *Album) FindPhoto(photoName string) (*Photo, error) {
 	return nil, errors.New("photo not found in album: [" + album.Name + "] " + photoName)
 }
 
-func (album Album) GenerateThumbnails(config AppConfig) {
+func (album Album) GenerateThumbnails(config Collection) {
 	AddWork(config, album, album.Photos...)
 }
