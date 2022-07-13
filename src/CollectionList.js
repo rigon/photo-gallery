@@ -29,10 +29,9 @@ class CollectionList extends Component {
         return (
             <FormControl variant="filled" fullWidth>
                 <InputLabel id="collection-label">Collection</InputLabel>
-                <Select labelId="collection-label" value={this.props.selected} onChange={this.handleChange}>
+                <Select labelId="collection-label" value={this.props.selected}>
                     { this.state.collections.map((collection, index) => (
-                        <MenuItem key={collection} value={index}>{collection}</MenuItem>
-                        // <ListItem button key={album.name} component={Link} to={`/${album.name}`} onClick={this.props.onClick} selected={album.name === this.props.selected}>
+                        <MenuItem key={collection} value={index} component={Link} to={`/${index}`}>{collection}</MenuItem>
                     ))}
                 </Select>
             </FormControl>

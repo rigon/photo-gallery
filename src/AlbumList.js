@@ -13,13 +13,23 @@ class AlbumList extends Component {
         };
     }
 
-    componentDidMount() {
+    fetchCollections() {
         fetch(`/collection/${this.props.collection}/albums`)
             .then((response) => response.json())
             .then(albumsList => {
                 this.setState({ albums: albumsList });
             });
     }
+    
+    componentDidMount() {
+        this.fetchCollections()
+    }
+    
+    componentDidUpdate(prevProps) {
+      if(this.props.collection !== prevProps.collection) {
+        this.fetchCollections();
+      }
+    } 
 
     render() {
         return (
