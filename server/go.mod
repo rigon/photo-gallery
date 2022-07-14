@@ -1,6 +1,6 @@
 module github.com/rigon/photo-gallery
 
-go 1.14
+go 1.16
 
 require (
 	github.com/3d0c/gmf v0.0.0-20220124083110-7fb722c9a48e
