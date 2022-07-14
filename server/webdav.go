@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -21,6 +22,7 @@ type collectionsNodeFS struct {
 }
 
 func (cs webDavCollections) find(name string) (*Collection, webdav.Dir, string, error) {
+	fmt.Println(name)
 	for _, c := range cs {
 		var prefix string = ""
 		if name == c.Name {
@@ -68,7 +70,7 @@ func (cs webDavCollections) Mkdir(ctx context.Context, name string, perm os.File
 }
 func (cs webDavCollections) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
 	// Open root folder (i.e. list of collections)
-	if name == "" {
+	if name == "" || name == "/" {
 		return collectionsNodeFS{cs: cs}, nil
 	}
 
@@ -122,7 +124,7 @@ func (cs webDavCollections) Rename(ctx context.Context, oldName, newName string)
 }
 func (cs webDavCollections) Stat(ctx context.Context, name string) (os.FileInfo, error) {
 	// Stat for root folder (i.e. list of collections)
-	if name == "" {
+	if name == "" || name == "/" {
 		return collectionsNodeFS{cs: cs}, nil
 	}
 	_, dir, name, err := cs.find(name)
