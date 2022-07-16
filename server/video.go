@@ -139,7 +139,9 @@ func GetVideoFrame(srcFileName string) (image.Image, error) {
 
 	for i := 0; i < inputCtx.StreamsCnt(); i++ {
 		st, _ := inputCtx.GetStream(i)
-		st.CodecCtx().Free()
+		if st.CodecCtx() != nil {
+			st.CodecCtx().Free()
+		}
 		st.Free()
 	}
 

@@ -193,8 +193,20 @@ func main() {
 	}
 	log.Println("Collections:", app.Collections)
 
-	router := mux.NewRouter()
+	// Cache thumbnails in background
+	if cacheThumbnails {
+		log.Println("Generating thumbnails in background...")
+		go func() {
+			for _, c := range app.Collections {
+				albums, _ := ListAlbums(*c)
+				for _, album := range albums {
+					album.GenerateThumbnails(*c)
+				}
+			}
+		}()
+	}
 
+	router := mux.NewRouter()
 	// API
 	router.HandleFunc("/collections", collections)
 	router.HandleFunc("/collection/{collection}/albums", albums)
@@ -221,6 +233,7 @@ func main() {
 			},
 		}
 		router.PathPrefix("/webdav").Handler(wd)
+		log.Println("WebDAV will be available at http://localhost:3080/webdav")
 	}
 
 	// Frontend
