@@ -244,6 +244,14 @@ func main() {
 	router.PathPrefix("/").Handler(spa)
 
 	// Start server
+	go func() {
+		albums, _ := ListAlbums(config)
+		for _, album := range albums {
+			album.GetPhotos(config)
+			album.GenerateThumbnails(config)
+		}
+	}()
+
 	srv := &http.Server{
 		Handler: router,
 		Addr:    "0.0.0.0:3080",
