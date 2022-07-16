@@ -12,7 +12,7 @@ type Work struct {
 }
 
 var (
-	NT = 4 //runtime.NumCPU()
+	NT = 2 //runtime.NumCPU()
 	ch = make(chan *Work, NT)
 	wg sync.WaitGroup
 )
