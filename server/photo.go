@@ -26,7 +26,7 @@ func (photo Photo) HashName(album Album) string {
 	return encoded
 }
 
-func (photo Photo) GetThumbnail(w io.Writer, config AppConfig, album Album) error {
+func (photo Photo) GetThumbnail(w io.Writer, config Collection, album Album) error {
 	// TODO: Brute-force, find a clever way to process thumbnails
 	for _, file := range photo.Files {
 		outputPath := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")

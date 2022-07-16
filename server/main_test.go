@@ -6,7 +6,7 @@ import (
 )
 
 func TestCreateThumbnails(t *testing.T) {
-	config = AppConfig{
+	config := Collection{
 		PhotosPath: "tests/collection/",
 		ThumbsPath: "tests/thumbs/"}
 

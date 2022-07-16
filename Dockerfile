@@ -1,5 +1,5 @@
 # Server
-FROM golang:1.14-alpine3.13 AS server
+FROM golang:1.16-alpine3.15 AS server
 RUN apk update && apk add musl-dev gcc g++ ffmpeg-libs ffmpeg-dev
 WORKDIR /app
 COPY server/go.mod server/go.sum ./
@@ -18,7 +18,7 @@ COPY src/ src/
 RUN npm run build
 
 # Deploy
-FROM alpine:3.13
+FROM alpine:3.15
 WORKDIR /app/server
 EXPOSE 3080
 VOLUME "/photos" "/thumbs"

@@ -13,6 +13,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
+import CollectionList from './CollectionList';
 import AlbumList from './AlbumList';
 
 const drawerWidth = "300px";
@@ -60,7 +61,10 @@ function ResponsiveDrawer(props) {
   const classes = useStyles();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  let { album } = useParams();
+  let { collection, album } = useParams();
+  
+  if(collection === undefined)
+    collection = 0
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -79,7 +83,8 @@ function ResponsiveDrawer(props) {
         </Box>
       </Toolbar>
       <Divider />
-      <AlbumList onClick={handleDrawerClose} selected={album} />
+      <CollectionList selected={collection} />
+      <AlbumList onClick={handleDrawerClose} collection={collection} selected={album} />
     </div>
   );
 

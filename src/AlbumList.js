@@ -13,19 +13,29 @@ class AlbumList extends Component {
         };
     }
 
-    componentDidMount() {
-        fetch('/albums')
+    fetchCollections() {
+        fetch(`/collection/${this.props.collection}/albums`)
             .then((response) => response.json())
             .then(albumsList => {
                 this.setState({ albums: albumsList });
             });
     }
+    
+    componentDidMount() {
+        this.fetchCollections()
+    }
+    
+    componentDidUpdate(prevProps) {
+      if(this.props.collection !== prevProps.collection) {
+        this.fetchCollections();
+      }
+    } 
 
     render() {
         return (
             <List>
             { this.state.albums.map((album, index) => (
-                <ListItem button key={album.name} component={Link} to={`/${album.name}`} onClick={this.props.onClick} selected={album.name === this.props.selected}>
+                <ListItem button key={album.name} component={Link} to={`/${this.props.collection}/${album.name}`} onClick={this.props.onClick} selected={album.name === this.props.selected}>
                     <ListItemText>
                         <Typography noWrap>{album.name}</Typography>
                     </ListItemText>

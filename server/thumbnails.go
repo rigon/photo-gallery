@@ -4,7 +4,7 @@ import (
 	"log"
 )
 
-func CreateThumbnails(config AppConfig) {
+func CreateThumbnails(config Collection) {
 	albums, err := ListAlbums(config)
 	if err != nil {
 		log.Fatal(err)
