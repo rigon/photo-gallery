@@ -25,4 +25,5 @@ VOLUME "/photos" "/thumbs"
 RUN apk update && apk add ffmpeg-libs
 COPY --from=frontend /app/build /app/build/
 COPY --from=server /app/photo-gallery /app/server/photo-gallery
-ENTRYPOINT ["./photo-gallery", "-c", "name=Photos,path=/photos,thumbs=/thumbs"]
+ENTRYPOINT ["./photo-gallery"]
+CMD ["-c", "name=Photos,path=/photos,thumbs=/thumbs"]
