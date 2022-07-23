@@ -53,20 +53,16 @@ func (photo Photo) GetThumbnail(w io.Writer, config Collection, album Album) err
 }
 
 func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
-	fmt.Println("GetImage")
-
 	file := photo.Files[fileNumber]
 
 	// If the file requires transcoding
 	if file.Type == "image" && file.Ext == ".heic" {
-		fmt.Println("DecodeImage")
 		// Decode original image
 		img, exif, err := DecodeImage(file.Path)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("EncodeImage")
 		// Encode thumbnail
 		err = EncodeImage(w, img, exif)
 		if err != nil {
