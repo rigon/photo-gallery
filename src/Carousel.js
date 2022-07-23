@@ -10,6 +10,8 @@ import PauseIcon from '@material-ui/icons/PauseRounded';
 import FullscreenIcon from '@material-ui/icons/FullscreenRounded';
 import FullscreenExitIcon from '@material-ui/icons/FullscreenExitRounded';
 import CloseIcon from '@material-ui/icons/Close';
+import ZoomInIcon from '@material-ui/icons/ZoomInRounded';
+import ZoomOutIcon from '@material-ui/icons/ZoomOutRounded';
 // Components styles
 import 'react-image-gallery/styles/css/image-gallery.css';
 // Custom components
@@ -79,6 +81,8 @@ class Carousel extends Component {
             <IconButton onClick={this.togglePlay} aria-label="play" color='inherit'>
                 {this.state.play ? <PauseIcon /> : <PlayIcon />}
             </IconButton>
+            <IconButton aria-label="zoom in" color='inherit'><ZoomInIcon /></IconButton>
+            <IconButton aria-label="zoom out" color='inherit'><ZoomOutIcon /></IconButton>
             <IconButton onClick={this.toggleFullscreen} aria-label="fullscreen" color='inherit'>
                 {this.state.fullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
             </IconButton>
