@@ -6,6 +6,7 @@ import (
 	"log"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -94,6 +95,11 @@ func (album *Album) GetPhotos(config Collection) error {
 		photo.DetermineType()
 		album.Photos = append(album.Photos, photo)
 	}
+
+	// Sort photos by name (ascending)
+	sort.Slice(album.Photos, func(i, j int) bool {
+		return album.Photos[i].Title < album.Photos[j].Title
+	})
 
 	return nil
 }
