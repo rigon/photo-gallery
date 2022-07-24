@@ -143,7 +143,7 @@ func thumb(w http.ResponseWriter, req *http.Request) {
 		log.Fatal(err)
 	}
 
-	photo.GetThumbnail(w, *collection, *collection.loadedAlbum)
+	AddWorkPhoto(w, *collection, *collection.loadedAlbum, *photo)
 }
 
 func main() {

@@ -116,5 +116,5 @@ func (album *Album) FindPhoto(photoName string) (*Photo, error) {
 
 func (album Album) GenerateThumbnails(config Collection) {
 	album.GetPhotos(config)
-	AddWork(config, album, album.Photos...)
+	AddWorkPhotos(config, album, album.Photos...)
 }
