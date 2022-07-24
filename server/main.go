@@ -34,7 +34,7 @@ type App struct {
 
 var app App
 
-func getCollection(collection string) Collection {
+func getCollection(collection string) *Collection {
 	i, err := strconv.Atoi(collection)
 	if err != nil {
 		log.Println("invalid collection", err)
@@ -44,7 +44,7 @@ func getCollection(collection string) Collection {
 		log.Println("invalid collection")
 	}
 
-	return *app.Collections[i]
+	return app.Collections[i]
 }
 
 func collections(w http.ResponseWriter, req *http.Request) {
@@ -62,7 +62,7 @@ func albums(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	collection := getCollection(vars["collection"])
 
-	albums, err := ListAlbums(collection)
+	albums, err := ListAlbums(*collection)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func album(w http.ResponseWriter, req *http.Request) {
 	collection := getCollection(vars["collection"])
 	albumName := vars["album"]
 
-	album, err := GetAlbum(collection, albumName)
+	album, err := GetAlbum(*collection, albumName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 
 	// Check if cached album is the one we want
 	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != albumName {
-		collection.loadedAlbum, err = GetAlbum(collection, albumName)
+		collection.loadedAlbum, err = GetAlbum(*collection, albumName)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -128,11 +128,11 @@ func thumb(w http.ResponseWriter, req *http.Request) {
 	collection := getCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
-	log.Printf("Thumb [%s] %s\n", albumName, photoName)
+	//log.Printf("Thumb [%s] %s\n", albumName, photoName)
 
 	// Check if cached album is the one we want
 	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != albumName {
-		collection.loadedAlbum, err = GetAlbum(collection, albumName)
+		collection.loadedAlbum, err = GetAlbum(*collection, albumName)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -143,7 +143,7 @@ func thumb(w http.ResponseWriter, req *http.Request) {
 		log.Fatal(err)
 	}
 
-	photo.GetThumbnail(w, collection, *collection.loadedAlbum)
+	photo.GetThumbnail(w, *collection, *collection.loadedAlbum)
 }
 
 func main() {
