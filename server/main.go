@@ -213,7 +213,7 @@ func main() {
 	router.HandleFunc("/collection/{collection}/album/{album}", album)
 	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
 	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
-	router.HandleFunc("/collection/{collection}/api/health", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	})
