@@ -19,6 +19,7 @@ type Collection struct {
 	Name            string
 	PhotosPath      string
 	ThumbsPath      string
+	Hide            bool
 	ReadOnly        bool
 	RenameOnReplace bool
 	loadedAlbum     *Album
@@ -48,10 +49,12 @@ func getCollection(collection string) *Collection {
 }
 
 func collections(w http.ResponseWriter, req *http.Request) {
-	collections := make([]string, len(app.Collections))
+	collections := make([]string, 0)
 
-	for i, c := range app.Collections {
-		collections[i] = c.Name
+	for _, c := range app.Collections {
+		if !c.Hide {
+			collections = append(collections, c.Name)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -151,7 +154,15 @@ func main() {
 
 	var cacheThumbnails, webdavDisabled bool
 	var collectionArgs []string
-	pflag.StringArrayVarP(&collectionArgs, "collection", "c", collectionArgs, "Specify a new collection. Example name=Default,path=/photos,thumbs=/thumbs")
+	pflag.StringArrayVarP(&collectionArgs, "collection", "c", collectionArgs, `Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
+List of possible options:
+  index          Position in the collection list
+  name           Name of the collection
+  path           Path to load the albums from
+  thumbs         Path to store the tumbnails
+  hide=false     Hide the collection from the list (does not affect webdav)
+  rename=true    Rename files instead of overwriting them
+  readonly=false`)
 	pflag.BoolVarP(&cacheThumbnails, "cache-thumbnails", "b", false, "Generate thumbnails in background when the application starts")
 	pflag.BoolVar(&webdavDisabled, "disable-webdav", false, "Disable WebDAV")
 	pflag.Parse()
@@ -159,6 +170,7 @@ func main() {
 	for i, c := range collectionArgs {
 		collection := new(Collection)
 		collection.Index = i
+		collection.Hide = false
 		collection.ReadOnly = false
 		collection.RenameOnReplace = true
 
@@ -184,6 +196,21 @@ func main() {
 				collection.PhotosPath = kv[1]
 			case "thumbs":
 				collection.ThumbsPath = kv[1]
+			case "rename":
+				collection.RenameOnReplace, err = strconv.ParseBool(kv[1])
+				if err != nil {
+					log.Println(err)
+				}
+			case "readonly":
+				collection.ReadOnly, err = strconv.ParseBool(kv[1])
+				if err != nil {
+					log.Println(err)
+				}
+			case "hide":
+				collection.Hide, err = strconv.ParseBool(kv[1])
+				if err != nil {
+					log.Println(err)
+				}
 			default:
 				log.Printf("%s option is not valid\n", kv[0])
 			}
