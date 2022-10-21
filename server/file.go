@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http"
-	"os"
 	"path"
 	"strings"
 )
@@ -14,37 +12,52 @@ type File struct {
 	Ext  string `json:"-"`
 }
 
+// func (file *File) DetermineType() error {
+// 	f, err := os.Open(file.Path)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer f.Close()
+
+// 	// Only the first 512 bytes are used to sniff the content type.
+// 	buffer := make([]byte, 512)
+// 	_, err = f.Read(buffer)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	// Use the net/http package's handy DectectContentType function. Always returns a valid
+// 	// content-type by returning "application/octet-stream" if no others seemed to match.
+// 	filetype := http.DetectContentType(buffer)
+// 	file.Ext = strings.ToLower(path.Ext(file.Path))
+
+// 	switch {
+// 	case strings.HasPrefix(filetype, "image/"):
+// 		file.Type = "image"
+// 	case strings.HasPrefix(filetype, "video/"):
+// 		file.Type = "video"
+// 	default:
+// 		switch file.Ext {
+// 		case ".heic":
+// 			file.Type = "image"
+// 		case ".mov":
+// 			file.Type = "video"
+// 		}
+// 	}
+
+// 	return nil
+// }
+
 func (file *File) DetermineType() error {
-	f, err := os.Open(file.Path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	// Only the first 512 bytes are used to sniff the content type.
-	buffer := make([]byte, 512)
-	_, err = f.Read(buffer)
-	if err != nil {
-		return err
-	}
-
-	// Use the net/http package's handy DectectContentType function. Always returns a valid
-	// content-type by returning "application/octet-stream" if no others seemed to match.
-	filetype := http.DetectContentType(buffer)
 	file.Ext = strings.ToLower(path.Ext(file.Path))
 
-	switch {
-	case strings.HasPrefix(filetype, "image/"):
+	switch file.Ext {
+	case ".heic", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".tif":
 		file.Type = "image"
-	case strings.HasPrefix(filetype, "video/"):
+	case ".mov", ".mp4", ".mpeg", ".avi":
 		file.Type = "video"
 	default:
-		switch file.Ext {
-		case ".heic":
-			file.Type = "image"
-		case ".mov":
-			file.Type = "video"
-		}
+		file.Type = "image"
 	}
 
 	return nil
