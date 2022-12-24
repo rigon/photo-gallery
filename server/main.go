@@ -14,56 +14,20 @@ import (
 	"golang.org/x/net/webdav"
 )
 
-type Collection struct {
-	Index           int
-	Name            string
-	PhotosPath      string
-	ThumbsPath      string
-	Hide            bool
-	ReadOnly        bool
-	RenameOnReplace bool
-	loadedAlbum     *Album
-}
-
-func (c Collection) String() string {
-	return fmt.Sprintf("%s (%s)", c.Name, c.PhotosPath)
-}
-
 type App struct {
-	Collections []*Collection
+	Collections map[string]*Collection
 }
 
 var app App
 
-func getCollection(collection string) *Collection {
-	i, err := strconv.Atoi(collection)
-	if err != nil {
-		log.Println("invalid collection", err)
-	}
-
-	if i < 0 || i >= len(app.Collections) {
-		log.Println("invalid collection")
-	}
-
-	return app.Collections[i]
-}
-
 func collections(w http.ResponseWriter, req *http.Request) {
-	collections := make([]string, 0)
-
-	for _, c := range app.Collections {
-		if !c.Hide {
-			collections = append(collections, c.Name)
-		}
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(collections)
+	json.NewEncoder(w).Encode(GetCollections(app.Collections))
 }
 
 func albums(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 
 	albums, err := ListAlbums(*collection)
 	if err != nil {
@@ -76,7 +40,7 @@ func albums(w http.ResponseWriter, req *http.Request) {
 
 func album(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 	albumName := vars["album"]
 
 	album, err := GetAlbum(*collection, albumName)
@@ -93,7 +57,7 @@ func album(w http.ResponseWriter, req *http.Request) {
 
 func photo(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	fileNumber, err := strconv.Atoi(vars["file"])
@@ -128,7 +92,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 func thumb(w http.ResponseWriter, req *http.Request) {
 	var err error
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	//log.Printf("Thumb [%s] %s\n", albumName, photoName)
@@ -167,6 +131,7 @@ List of possible options:
 	pflag.BoolVar(&webdavDisabled, "disable-webdav", false, "Disable WebDAV")
 	pflag.Parse()
 
+	app.Collections = make(map[string]*Collection)
 	for i, c := range collectionArgs {
 		collection := new(Collection)
 		collection.Index = i
@@ -216,7 +181,7 @@ List of possible options:
 			}
 		}
 
-		app.Collections = append(app.Collections, collection)
+		app.Collections[collection.Name] = collection
 	}
 	log.Println("Collections:", app.Collections)
 

@@ -30,8 +30,8 @@ class CollectionList extends Component {
             <FormControl variant="filled" fullWidth>
                 <InputLabel id="collection-label">Collection</InputLabel>
                 <Select labelId="collection-label" value={this.props.selected}>
-                    { this.state.collections.map((collection, index) => (
-                        <MenuItem key={collection} value={index} component={Link} to={`/${index}`}>{collection}</MenuItem>
+                    { this.state.collections.map((collection) => (
+                        <MenuItem key={collection} value={collection} component={Link} to={`/${collection}`}>{collection}</MenuItem>
                     ))}
                 </Select>
             </FormControl>
