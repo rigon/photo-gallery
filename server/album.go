@@ -93,16 +93,25 @@ func (album *Album) GetPhotos(config Collection) error {
 				break
 			}
 			// Decompose slice
-			collection, album, filename := split[0], split[1], strings.ToLower(split[2])
+			collectionName, albumName, photoName := split[0], split[1], strings.ToLower(split[2])
+
+			collection := GetCollection(collectionName)
+			album, _ := GetAlbum(*collection, albumName)
 
 			// Create a new photo
 			photo := new(Photo)
-			photo.Title = filename
-			photo.Thumb = path.Join("/collection", collection, "album", album, "photo", filename, "thumb")
+			photo.Title = photoName
+			photo.Thumb = path.Join("/collection", collectionName, "album", albumName, "photo", photoName, "thumb")
 			photo.Height = 1
 			photo.Width = 1 // + rand.Intn(2)
-			photo.Files = make([]File, 0)
-			photos[filename] = photo
+			//photo.Files = make([]File, 0)
+			for _, p := range album.Photos {
+				if p.Title == photoName {
+					photo.Files = p.Files
+					break
+				}
+			}
+			photos[photoName] = photo
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Println(err)
@@ -131,7 +140,7 @@ func (album *Album) GetPhotos(config Collection) error {
 				}
 				photoFile := File{
 					Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
-					Url:  path.Join("/collection", strconv.Itoa(config.Index), "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
+					Url:  path.Join("/collection", config.Name, "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
 				photoFile.DetermineType()
 
 				photo.Files = append(photo.Files, photoFile)
