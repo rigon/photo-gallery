@@ -15,6 +15,8 @@ import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import CollectionList from './CollectionList';
 import AlbumList from './AlbumList';
+import NewAlbum from './NewAlbum';
+import FavoriteMenu from './FavoriteMenu';
 
 const drawerWidth = "300px";
 
@@ -107,6 +109,9 @@ function ResponsiveDrawer(props) {
           <Typography variant="h6" noWrap>
             { album }
           </Typography>
+          <Box sx={{ flexGrow: 1 }} />
+          <NewAlbum />
+          <FavoriteMenu />
         </Toolbar>
       </AppBar>
       <nav className={classes.drawer} aria-label="mailbox folders">
