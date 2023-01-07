@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // layouts
 import Layout from './Layout';
@@ -9,13 +9,19 @@ function Home() {
 }
 
 function App() {
+  const [zoom, setZoom] = useState(150);
+
+  const changeZoom = (multiplier) => {
+    setZoom(zoom * multiplier);
+  }
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        <Route path="/" element={<Layout changeZoom={changeZoom} />}>
           <Route index element={<Home />} />
           <Route path="/:collection" element={<Home />} />
-          <Route path="/:collection/:album" element={<Gallery />} />
+          <Route path="/:collection/:album" element={<Gallery zoom={zoom} />} />
         </Route>
       </Routes>
     </Router>

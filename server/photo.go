@@ -12,11 +12,11 @@ import (
 )
 
 type Photo struct {
-	Thumb  string `json:"thumbnail"`
+	Thumb  string `json:"src"`
 	Title  string `json:"title"`
 	Type   string `json:"type"`
-	Width  int    `default:"1" json:"width"`
-	Height int    `default:"1" json:"height"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 	Files  []File `json:"files"`
 }
 

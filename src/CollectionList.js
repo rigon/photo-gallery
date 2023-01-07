@@ -1,42 +1,30 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
-import FormControl from '@material-ui/core/FormControl';
-import InputLabel from '@material-ui/core/InputLabel';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 
-class CollectionList extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            collections: []
-        };
-    }
-    
-    handleChange = (event) => {
-      //setAge(event.target.value);
-    };
+export default function CollectionList() {
+    const { collection } = useParams();
+    const [collections, setCollections] = useState([]);
 
-    componentDidMount() {
+    useEffect(() => {
         fetch('/collections')
             .then((response) => response.json())
-            .then(collectionsList => {
-                this.setState({ collections: collectionsList });
+            .then(collections => {
+                setCollections(collections);
             });
-    }
+    }, []);
 
-    render() {
-        return (
-            <FormControl variant="filled" fullWidth>
-                <InputLabel id="collection-label">Collection</InputLabel>
-                <Select labelId="collection-label" value={this.props.selected}>
-                    { this.state.collections.map((collection) => (
-                        <MenuItem key={collection} value={collection} component={Link} to={`/${collection}`}>{collection}</MenuItem>
-                    ))}
-                </Select>
-            </FormControl>
-        );
-    }
+    return (
+        <FormControl variant="filled" fullWidth>
+            <InputLabel id="collection-label">Collection</InputLabel>
+            <Select labelId="collection-label" defaultValue={collection}>
+                { collections.map((c) => (
+                    <MenuItem key={c} value={c} component={Link} to={`/${c}`}>{c}</MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    );
 }
-
-export default CollectionList;

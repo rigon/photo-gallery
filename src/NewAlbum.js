@@ -1,32 +1,20 @@
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { makeStyles } from '@material-ui/core/styles';
-import AddPhotoAlternateIcon from '@material-ui/icons/AddPhotoAlternate';
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import IconButton from '@material-ui/core/IconButton';
-import InputLabel from '@material-ui/core/InputLabel';
-import FormControl from '@material-ui/core/FormControl';
-import MenuItem from '@material-ui/core/MenuItem';
-import Select from '@material-ui/core/Select';
-import TextField from '@material-ui/core/TextField';
-
-const useStyles = makeStyles((theme) => ({
-    formControl: {
-        marginRight: theme.spacing(2),
-        minWidth: 120,
-    },
-    selectEmpty: {
-        marginTop: theme.spacing(2),
-    },
-}));
+import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import FormControl from '@mui/material/FormControl';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
 
 export default function NewAlbum() {
-    const classes = useStyles();
     const { collection } = useParams();
     const [open, setOpen] = React.useState(false);
     const [collections, setCollections] = React.useState([]);
@@ -50,7 +38,7 @@ export default function NewAlbum() {
     return (
         <div>
             <IconButton onClick={handleClickOpen} aria-label="create album" color="inherit">
-                <AddPhotoAlternateIcon />
+                <AddAlbumIcon />
             </IconButton>
 
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
@@ -59,7 +47,7 @@ export default function NewAlbum() {
                     <DialogContentText>
                         Please select the collection and type for the new album:
                     </DialogContentText>
-                    <FormControl variant="filled" className={classes.formControl}>
+                    <FormControl variant="filled">
                         <InputLabel id="new-album-collection-label">Collection</InputLabel>
                         <Select
                             labelId="new-album-collection-label"
@@ -71,7 +59,7 @@ export default function NewAlbum() {
                             ))}
                         </Select>
                     </FormControl>
-                    <FormControl variant="filled" className={classes.formControl}>
+                    <FormControl variant="filled">
                         <InputLabel id="new-album-type-label">Type</InputLabel>
                         <Select
                             labelId="new-album-type-label"
