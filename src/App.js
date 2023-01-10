@@ -9,7 +9,7 @@ function Home() {
 }
 
 function App() {
-  const [zoom, setZoom] = useState(150);
+  const [zoom, setZoom] = useState(180);
 
   const changeZoom = (multiplier) => {
     setZoom(zoom * multiplier);

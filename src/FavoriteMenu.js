@@ -3,7 +3,7 @@ import Button from '@mui/material/Button';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import StarIcon from '@mui/icons-material/Star';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import Tooltip from '@mui/material/Tooltip';
 
 const options = [
@@ -39,7 +39,7 @@ export default function FavoriteMenu() {
                 <Button
                     color="inherit"
                     onClick={handleClickListItem}
-                    startIcon={<StarIcon />}
+                    startIcon={<FavoriteIcon />}
                     endIcon={<ExpandMoreIcon />}>
                     {options[selectedIndex]}
                 </Button>
