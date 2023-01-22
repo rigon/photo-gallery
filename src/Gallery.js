@@ -106,16 +106,18 @@ function Gallery({zoom}) {
                 renderPhoto={RenderPhoto}
             />
             <Lightbox
-                slides={photos.map(({ src, width, height, favorite }) => ({
-                    src,
-                    width: 20000,
-                    height: 20000,
+                slides={photos.map(({ src, type, width, height, favorite, files }) => ({
+                    type,
                     favorite: favorite,
                     srcSet: [{
-                        src: src,
-                        width: 200,
-                        height: 200,
-                    }],
+                        src,
+                        width: 500,
+                        height: 500,
+                    }, ...files.map(({type, url}) => ({
+                        src: url,
+                        width: 20000,
+                        height: 20000,
+                    }))],
                 }))}
                 open={index >= 0}
                 index={index}

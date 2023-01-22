@@ -104,6 +104,6 @@ func (photo *Photo) DetermineType() {
 	if isVideo {
 		photo.Type = "video"
 	} else {
-		photo.Type = "photo"
+		photo.Type = "image"
 	}
 }
