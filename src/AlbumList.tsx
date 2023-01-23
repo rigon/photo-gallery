@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import PropTypes from "prop-types";
+import { FC, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 
-function AlbumList({onClick}) {
+import { AlbumType } from "./types";
+
+interface AlbumListProps {
+    /** Callback when a link is clicked */
+    onClick: () => void
+}
+
+const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     const { collection, album } = useParams();
-    const [albums, setAlbums] = useState([]);
+    const [albums, setAlbums] = useState<AlbumType[]>([]);
 
     useEffect(() => {
         fetch(`/collection/${collection}/albums`)
@@ -19,9 +25,9 @@ function AlbumList({onClick}) {
     }, [collection]);
 
     return (
-        <List>
+        <List onClick={onClick}>
         { albums.map((a, index) => (
-            <ListItemButton key={a.name} component={Link} to={`/${collection}/${a.name}`} selected={a.name === album} onClick={onClick}>
+            <ListItemButton key={a.name} component={Link} to={`/${collection}/${a.name}`} selected={a.name === album}>
                 <ListItemText>
                     <Typography noWrap>{a.name}</Typography>
                 </ListItemText>
@@ -30,9 +36,5 @@ function AlbumList({onClick}) {
         </List>
     );
 }
-
-AlbumList.propTypes = {
-    onClick: PropTypes.func
-};
 
 export default AlbumList;

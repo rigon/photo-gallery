@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { FC, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import PropTypes from "prop-types";
 
 import Box from "@mui/material/Box";
 import CloseIcon from '@mui/icons-material/Close';
@@ -10,7 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Snackbar from '@mui/material/Snackbar';
 
-import PhotoAlbum from "react-photo-album";
+import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
@@ -22,13 +21,18 @@ import Video from "yet-another-react-lightbox/plugins/video";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
-import Favorite from "./lightbox-plugins/Favorite";
 import BoxBar from "./BoxBar";
+import Favorite from "./lightbox-plugins/Favorite";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
+import { PhotoType } from "./types";
 
-function Gallery({zoom}) {
+interface GalleryProps {
+    zoom: number;
+}
+
+const Gallery: FC<GalleryProps> = ({zoom}) => {
     const {collection, album} = useParams();
-    const [photos, setPhotos] = useState([]);
+    const [photos, setPhotos] = useState<PhotoType[]>([]);
     const [index, setIndex] = useState(-1);
     const [showSnackbar, setShowSnackbar] = useState(false);
 
@@ -39,8 +43,8 @@ function Gallery({zoom}) {
         setShowSnackbar(false);
     };
 
-    const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }) => {
-        const [mouseOver, setMouseOver] = useState(false);
+    const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoType>) => {
+        const [mouseOver, setMouseOver] = useState<boolean>(false);
 
         const mouseEnter = () => {
             setMouseOver(true);
@@ -48,10 +52,10 @@ function Gallery({zoom}) {
         const mouseLeave = () => {
             setMouseOver(false);
         }
-        const openLightbox = (event) => {
+        const openLightbox = (event: any) => {
             setIndex(layout.index);
         }
-        const saveFavorite = (event) => {
+        const saveFavorite = (event: { stopPropagation: () => void; }) => {
             event.stopPropagation();
             openSnackbar();
         }
@@ -108,6 +112,7 @@ function Gallery({zoom}) {
             <Lightbox
                 slides={photos.map(({ src, type, width, height, favorite, files }) => ({
                     type,
+                    src,
                     favorite: favorite,
                     srcSet: [{
                         src,
@@ -155,10 +160,6 @@ function Gallery({zoom}) {
                     </IconButton>)} />
         </>
     );
-}
-
-Gallery.propTypes = {
-    zoom: PropTypes.number,
 }
 
 export default Gallery;

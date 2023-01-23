@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC, SetStateAction, useState } from 'react';
 import Button from '@mui/material/Button';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Menu from '@mui/material/Menu';
@@ -16,15 +16,15 @@ const options = [
     'Favorites 7',
 ];
 
-export default function FavoriteMenu() {
-    const [anchorEl, setAnchorEl] = React.useState(null);
-    const [selectedIndex, setSelectedIndex] = React.useState(0);
+const FavoriteMenu: FC = () => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
-    const handleClickListItem = (event) => {
+    const handleClickListItem = (event: any) => {
         setAnchorEl(event.currentTarget);
     };
 
-    const handleMenuItemClick = (event, index) => {
+    const handleMenuItemClick = (event: React.MouseEvent<HTMLElement>, index: SetStateAction<number>) => {
         setSelectedIndex(index);
         setAnchorEl(null);
     };
@@ -63,3 +63,5 @@ export default function FavoriteMenu() {
         </div>
     );
 }
+
+export default FavoriteMenu;

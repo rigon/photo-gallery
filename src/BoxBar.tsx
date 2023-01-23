@@ -1,10 +1,25 @@
-import React from "react";
-import PropTypes from "prop-types";
-
+import React, { FC } from "react";
 import Box from "@mui/material/Box";
 
-function BoxBar(props) {
+interface BoxBarProps {
+    /** Align vertically to the top */
+    top?: boolean;
+    /** Align vertically to the middle */
+    middle?: boolean;
+    /** Align vertically to the bottom */
+    bottom?: boolean;
+    /** Align horizontally to the left */
+    left?: boolean;
+    /** Align horizontally to the center */
+    center?: boolean;
+    /** Align horizontally to the right */
+    right?: boolean;
+    
+    children?: React.ReactNode;
+    sx?: any;
+}
 
+const BoxBar: FC<BoxBarProps> = (props) => {
     let inset, transform, textAlign;
     // Vertical align
     if(props.top === true)
@@ -38,21 +53,6 @@ function BoxBar(props) {
             {props.children}
         </Box>
     );
-}
-
-BoxBar.propTypes = {
-    /** Align vertically to the top */
-    top: PropTypes.bool,
-    /** Align vertically to the middle */
-    middle: PropTypes.bool,
-    /** Align vertically to the bottom */
-    bottom: PropTypes.bool,
-    /** Align horizontally to the left */
-    left: PropTypes.bool,
-    /** Align horizontally to the center */
-    center: PropTypes.bool,
-    /** Align horizontally to the right */
-    right: PropTypes.bool,
 }
 
 export default BoxBar;
