@@ -1,6 +1,5 @@
-import * as React from 'react';
+import { FC, useState } from 'react';
 import { useParams, Outlet } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -20,8 +19,12 @@ import FavoriteMenu from './FavoriteMenu';
 
 const drawerWidth = 300;
 
-function Layout({changeZoom}) {
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+interface LayoutProps {
+  changeZoom: (zoom: number) => void;
+}
+
+const Layout: FC<LayoutProps> = ({changeZoom}) => {
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   
   const {album} = useParams();
 
@@ -130,10 +133,5 @@ function Layout({changeZoom}) {
     </Box>
   );
 }
-
-
-Layout.propTypes = {
-  changeZoom: PropTypes.func,
-};
 
 export default Layout;
