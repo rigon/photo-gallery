@@ -11,23 +11,33 @@ const CollectionList: FC = () => {
     const navigate = useNavigate();
     const { collection } = useParams();
     const [selected, setSelected] = useState<string>("");
+    const [changeUrl, setChangeUrl] = useState<boolean>(false);
     const [collections, setCollections] = useState<CollectionType[]>([]);
 
+    // Navigate to the selected collection
+    if(changeUrl) {
+        navigate(`/${selected}`);
+        setChangeUrl(false);
+    }
+    
     // Fetch list of collections
     useEffect(() => {
         fetch('/collections')
             .then((response) => response.json())
             .then(collections => {
                 setCollections(collections);
-                setSelected(collection || collections[0] || "");
+                
+                const newCollection = collection || collections[0] || "";
+                if(newCollection !== collection) {
+                    setSelected(newCollection);
+                    setChangeUrl(true);
+                }
             });
     }, [collection]);
     
-    // Navigate to the selected collection
-    useEffect(() => navigate(`/${selected}`), [selected, navigate]);
-    
     const handleChange = (event: SelectChangeEvent) => {
         setSelected(event.target.value as string);
+        setChangeUrl(true);
     };
 
     return (
