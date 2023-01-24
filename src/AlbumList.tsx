@@ -17,11 +17,14 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     const [albums, setAlbums] = useState<AlbumType[]>([]);
 
     useEffect(() => {
-        fetch(`/collection/${collection}/albums`)
-            .then((response) => response.json())
-            .then(albums => {
-                setAlbums(albums);
-            });
+        // Check if collection is valid
+        if(collection !== undefined && collection.length > 0) {
+            fetch(`/collection/${collection}/albums`)
+                .then((response) => response.json())
+                .then(albums => {
+                    setAlbums(albums);
+                });
+        }
     }, [collection]);
 
     return (
