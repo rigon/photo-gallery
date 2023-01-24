@@ -11,24 +11,20 @@ const CollectionList: FC = () => {
     const navigate = useNavigate();
     const { collection } = useParams();
     const [selected, setSelected] = useState<string>("");
-    const [isReady, setReady] = useState<boolean>(false);
     const [collections, setCollections] = useState<CollectionType[]>([]);
 
+    // Fetch list of collections
     useEffect(() => {
         fetch('/collections')
             .then((response) => response.json())
             .then(collections => {
                 setCollections(collections);
                 setSelected(collection || collections[0] || "");
-                setReady(true);
             });
     }, [collection]);
     
     // Navigate to the selected collection
-    useEffect(() => {
-        if(isReady)
-            navigate(`/${selected}`);
-    }, [navigate, selected, isReady]);
+    useEffect(() => navigate(`/${selected}`), [selected]);
     
     const handleChange = (event: SelectChangeEvent) => {
         setSelected(event.target.value as string);
