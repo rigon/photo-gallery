@@ -24,7 +24,7 @@ const CollectionList: FC = () => {
     }, [collection]);
     
     // Navigate to the selected collection
-    useEffect(() => navigate(`/${selected}`), [selected]);
+    useEffect(() => navigate(`/${selected}`), [selected, navigate]);
     
     const handleChange = (event: SelectChangeEvent) => {
         setSelected(event.target.value as string);
