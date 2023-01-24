@@ -28,10 +28,9 @@ const CollectionList: FC = () => {
                 setCollections(collections);
                 
                 const newCollection = collection || collections[0] || "";
-                if(newCollection !== collection) {
-                    setSelected(newCollection);
+                setSelected(newCollection);
+                if(newCollection !== collection)
                     setChangeUrl(true);
-                }
             });
     }, [collection]);
     
