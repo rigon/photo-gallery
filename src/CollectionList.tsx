@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -11,32 +11,30 @@ const CollectionList: FC = () => {
     const navigate = useNavigate();
     const { collection } = useParams();
     const [selected, setSelected] = useState<string>("");
-    const [changeUrl, setChangeUrl] = useState<boolean>(false);
     const [collections, setCollections] = useState<CollectionType[]>([]);
-
-    // Navigate to the selected collection
-    if(changeUrl) {
-        navigate(`/${selected}`);
-        setChangeUrl(false);
-    }
+    
+    const changeUrl = useCallback((url: string) => {
+        setSelected(url);
+        navigate(`/${url}`);
+    }, [navigate]);
     
     // Fetch list of collections
     useEffect(() => {
         fetch('/collections')
             .then((response) => response.json())
             .then(collections => {
-                setCollections(collections);
-                
                 const newCollection = collection || collections[0] || "";
-                setSelected(newCollection);
                 if(newCollection !== collection)
-                    setChangeUrl(true);
+                    changeUrl(newCollection);
+                
+                setCollections(collections);
+                setSelected(newCollection);
             });
-    }, [collection]);
+    }, [collection, changeUrl]);
     
+    /** Navigate to the selected collection */
     const handleChange = (event: SelectChangeEvent) => {
-        setSelected(event.target.value as string);
-        setChangeUrl(true);
+        changeUrl(event.target.value as string);
     };
 
     return (
