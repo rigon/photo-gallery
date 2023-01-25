@@ -11,19 +11,9 @@ import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Snackbar from '@mui/material/Snackbar';
 
 import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
-import Lightbox from "yet-another-react-lightbox";
-import "yet-another-react-lightbox/styles.css";
-
-// import optional lightbox plugins
-import Fullscreen from "yet-another-react-lightbox/plugins/fullscreen";
-import Slideshow from "yet-another-react-lightbox/plugins/slideshow";
-import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
-import Video from "yet-another-react-lightbox/plugins/video";
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import "yet-another-react-lightbox/plugins/thumbnails.css";
 
 import BoxBar from "./BoxBar";
-import Favorite from "./lightbox-plugins/Favorite";
+import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoType } from "./types";
 
@@ -105,53 +95,15 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
         );
     }
     
-    const gallery = (<>
-        <PhotoAlbum
+    const gallery = (
+        <>
+            <PhotoAlbum
                 photos={photos}
                 layout="rows"
                 targetRowHeight={zoom}
                 spacing={1}
-                renderPhoto={RenderPhoto}
-            />
-        <Lightbox
-            slides={photos.map(({ src, type, width, height, favorite, files }) => ({
-                type,
-                src,
-                favorite: favorite,
-                srcSet: [{
-                    src,
-                    width: 500,
-                    height: 500,
-                }, ...files.map(({type, url}) => ({
-                    src: url,
-                    width: 20000,
-                    height: 20000,
-                }))],
-            }))}
-            open={index >= 0}
-            index={index}
-            animation={{ swipe: 150 }}
-            close={() => setIndex(-1)}
-            // enable optional lightbox plugins
-            plugins={[Fullscreen, Slideshow, Favorite, Thumbnails, Video, Zoom]}
-            carousel={{
-                finite: true,
-                preload: 3,
-                padding: 0,
-                spacing: 0,
-                imageFit: "contain"
-            }}
-            thumbnails={{
-                position: "bottom",
-                width: 80,
-                height: 80,
-                borderRadius: 0,
-                padding: 0,
-                gap: 2
-            }}
-            favorite={{
-                onChange: openSnackbar
-            }} />
+                renderPhoto={RenderPhoto} />
+            <Lightbox photos={photos} open={index >= 0} selected={index} onFavorite={openSnackbar} />
         </>);
     
     const loading = (
