@@ -6,6 +6,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import NotFavoriteIcon from '@mui/icons-material/FavoriteBorder';
 import IconButton from '@mui/material/IconButton';
+import LinearProgress from '@mui/material/LinearProgress';
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Snackbar from '@mui/material/Snackbar';
 
@@ -32,10 +33,25 @@ interface GalleryProps {
 
 const Gallery: FC<GalleryProps> = ({zoom}) => {
     const {collection, album} = useParams();
+    const [isLoading, setLoading] = useState<boolean>(true);
     const [photos, setPhotos] = useState<PhotoType[]>([]);
     const [index, setIndex] = useState(-1);
     const [showSnackbar, setShowSnackbar] = useState(false);
 
+    useEffect(() => {
+        setLoading(true);
+        // Clear gallery when a new album is selected
+        setPhotos([]);
+
+        fetch(`/collection/${collection}/album/${album}`)
+            .then((response) => response.json())
+            .then(album => {
+                setPhotos(album.photos);
+                setLoading(false);
+            });
+    }, [collection, album]);
+    
+    
     const openSnackbar = () => {
         setShowSnackbar(true);
     };
@@ -88,66 +104,64 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
             </Box>
         );
     }
-
-    useEffect(() => {
-        // Clear gallery when a new album is selected
-        setPhotos([]);
-
-        fetch(`/collection/${collection}/album/${album}`)
-            .then((response) => response.json())
-            .then(album => {
-                setPhotos(album.photos);
-            });
-    }, [collection, album]);
-
-    return (
-        <>
-            <PhotoAlbum
+    
+    const gallery = (<>
+        <PhotoAlbum
                 photos={photos}
                 layout="rows"
                 targetRowHeight={zoom}
                 spacing={1}
                 renderPhoto={RenderPhoto}
             />
-            <Lightbox
-                slides={photos.map(({ src, type, width, height, favorite, files }) => ({
-                    type,
+        <Lightbox
+            slides={photos.map(({ src, type, width, height, favorite, files }) => ({
+                type,
+                src,
+                favorite: favorite,
+                srcSet: [{
                     src,
-                    favorite: favorite,
-                    srcSet: [{
-                        src,
-                        width: 500,
-                        height: 500,
-                    }, ...files.map(({type, url}) => ({
-                        src: url,
-                        width: 20000,
-                        height: 20000,
-                    }))],
-                }))}
-                open={index >= 0}
-                index={index}
-                animation={{ swipe: 150 }}
-                close={() => setIndex(-1)}
-                // enable optional lightbox plugins
-                plugins={[Fullscreen, Slideshow, Favorite, Thumbnails, Video, Zoom]}
-                carousel={{
-                    finite: true,
-                    preload: 3,
-                    padding: 0,
-                    spacing: 0,
-                    imageFit: "contain"
-                }}
-                thumbnails={{
-                    position: "bottom",
-                    width: 80,
-                    height: 80,
-                    borderRadius: 0,
-                    padding: 0,
-                    gap: 2
-                  }}
-                  favorite={{
-                    onChange: openSnackbar
-                  }} />
+                    width: 500,
+                    height: 500,
+                }, ...files.map(({type, url}) => ({
+                    src: url,
+                    width: 20000,
+                    height: 20000,
+                }))],
+            }))}
+            open={index >= 0}
+            index={index}
+            animation={{ swipe: 150 }}
+            close={() => setIndex(-1)}
+            // enable optional lightbox plugins
+            plugins={[Fullscreen, Slideshow, Favorite, Thumbnails, Video, Zoom]}
+            carousel={{
+                finite: true,
+                preload: 3,
+                padding: 0,
+                spacing: 0,
+                imageFit: "contain"
+            }}
+            thumbnails={{
+                position: "bottom",
+                width: 80,
+                height: 80,
+                borderRadius: 0,
+                padding: 0,
+                gap: 2
+            }}
+            favorite={{
+                onChange: openSnackbar
+            }} />
+        </>);
+    
+    const loading = (
+        <Box sx={{ width: '100%' }}>
+            <LinearProgress />
+        </Box>);
+    
+    return (
+        <>
+            {isLoading ? loading : gallery}
             <Snackbar
                 open={showSnackbar}
                 autoHideDuration={3000}
