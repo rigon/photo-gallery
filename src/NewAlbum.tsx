@@ -30,15 +30,16 @@ const NewAlbum: FC = () => {
     };
 
     useEffect(() => {
-        fetch('/collections')
-            .then((response) => response.json())
-            .then(collectionsList => {
-                setCollections(collectionsList);
-            });
-    }, [])
+        if(open)
+            fetch('/collections')
+                .then((response) => response.json())
+                .then(collectionsList => {
+                    setCollections(collectionsList);
+                });
+    }, [open])
 
     return (
-        <div>
+        <>
             <IconButton onClick={handleClickOpen} aria-label="create album" color="inherit">
                 <AddAlbumIcon />
             </IconButton>
@@ -93,7 +94,7 @@ const NewAlbum: FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </div>
+        </>
     );
 }
 
