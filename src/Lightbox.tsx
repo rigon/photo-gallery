@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC } from "react";
 
 import * as YARL from "yet-another-react-lightbox";
 import { Slide } from "yet-another-react-lightbox/types";
@@ -17,35 +17,37 @@ import { PhotoType } from "./types";
 
 interface LightboxProps {
     photos: PhotoType[];
-    open?: boolean;
-    selected?: number;
+    selected: number;
+    onClose?: () => void;
     onFavorite?: (isFavorite: boolean, slide: Slide, index: number) => void;
 }
 
-const Lightbox: FC<LightboxProps> = ({photos, open, selected, onFavorite}) => {
-    const [isOpen, setOpen] = useState(open);
-
+const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) => {
     return (
         <YARL.Lightbox
             slides={photos.map(({ src, type, width, height, favorite, files }) => ({
                 type,
                 src,
                 favorite: favorite,
-                sources: [{ src: "", type: ""}],
-                srcSet: [{
-                    src,
-                    width: 500,
-                    height: 500,
-                }, ...files.map(({type, url}) => ({
+                sources: files.map(({ type, url }) => ({
                     src: url,
-                    width: 20000,
-                    height: 20000,
-                }))],
+                    type: "",
+                })),
+                srcSet: [{
+                        src,
+                        width: 500,
+                        height: 500,
+                    }, ...files.map(({ type, url }) => ({
+                        src: url,
+                        width: 20000,
+                        height: 20000,
+                    }))
+                ]
             }))}
-            open={isOpen}
+            open={selected >= 0}
             index={selected}
             animation={{ swipe: 150 }}
-            close={() => setOpen(false)}
+            close={onClose}
             // enable optional lightbox plugins
             plugins={[Fullscreen, Slideshow, Favorite, Thumbnails, Video, Zoom]}
             carousel={{

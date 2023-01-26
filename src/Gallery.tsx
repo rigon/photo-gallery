@@ -48,6 +48,9 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
     const closeSnackbar = () => {
         setShowSnackbar(false);
     };
+    const closeLightbox = () => {
+        setIndex(-1);
+    }
 
     const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoType>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
@@ -103,7 +106,11 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
                 targetRowHeight={zoom}
                 spacing={1}
                 renderPhoto={RenderPhoto} />
-            <Lightbox photos={photos} open={index >= 0} selected={index} onFavorite={openSnackbar} />
+            <Lightbox
+                photos={photos}
+                selected={index}
+                onClose={closeLightbox}
+                onFavorite={openSnackbar} />
         </>);
     
     const loading = (
