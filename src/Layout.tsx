@@ -1,5 +1,7 @@
 import { FC, useState } from 'react';
 import { useParams, Outlet } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -24,7 +26,9 @@ interface LayoutProps {
 }
 
 const Layout: FC<LayoutProps> = ({changeZoom}) => {
-  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const [mobileOpen, setMobileOpen] = useState<boolean>(isSmallScreen);
   
   const {album} = useParams();
 
