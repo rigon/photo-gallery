@@ -65,6 +65,9 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
                 padding: 0,
                 gap: 2
             }}
+            video={{
+                autoPlay: true,
+            }}
             favorite={{
                 onChange: onFavorite
             }} />
