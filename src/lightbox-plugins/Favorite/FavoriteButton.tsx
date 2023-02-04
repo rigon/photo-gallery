@@ -46,7 +46,7 @@ export const FavoriteButton: React.FC = () => {
 
     const toggleFavorite = React.useCallback(() => {
         setFavorite(() => !isFavorite);
-        onChange(!isFavorite, slides[currentIndex], currentIndex);
+        onChange(currentIndex, !isFavorite, slides[currentIndex]);
     }, [onChange, currentIndex, slides, isFavorite]);
 
 

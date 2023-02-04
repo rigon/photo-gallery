@@ -1,4 +1,5 @@
 import { FC } from "react";
+import { useTheme } from '@mui/material/styles';
 
 import * as YARL from "yet-another-react-lightbox";
 import { Slide } from "yet-another-react-lightbox/types";
@@ -19,15 +20,20 @@ interface LightboxProps {
     photos: PhotoType[];
     selected: number;
     onClose?: () => void;
-    onFavorite?: (isFavorite: boolean, slide: Slide, index: number) => void;
+    onFavorite?: (index: number, isFavorite: boolean, slide: Slide) => void;
 }
 
 const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) => {
+    const theme = useTheme();
+
     return (
         <YARL.Lightbox
             slides={photos.map(({ src, type, width, height, favorite, files }) => ({
                 type,
                 src,
+                ...(type === "video" ? {
+                    width: 1920,
+                    height: 1080} : {}),
                 favorite: favorite,
                 sources: files.map(({ type, url }) => ({
                     src: url,
@@ -48,6 +54,8 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
             index={selected}
             animation={{ swipe: 150 }}
             close={onClose}
+            // Fix lightbox over snackbar
+            styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
             // enable optional lightbox plugins
             plugins={[Fullscreen, Slideshow, Favorite, Thumbnails, Video, Zoom]}
             carousel={{

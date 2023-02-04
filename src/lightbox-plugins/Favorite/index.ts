@@ -13,7 +13,7 @@ declare module "yet-another-react-lightbox/types" {
         /** Slideshow plugin settings */
         favorite?: {
             /** Event fired when the state is changed */
-            onChange?: (isFavorite: boolean, slide: Slide, index: number) => void;
+            onChange?: (index: number, isFavorite: boolean, slide: Slide) => void;
         };
     }
 

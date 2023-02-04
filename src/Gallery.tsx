@@ -2,13 +2,11 @@ import { FC, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import Box from "@mui/material/Box";
-import CloseIcon from '@mui/icons-material/Close';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import NotFavoriteIcon from '@mui/icons-material/FavoriteBorder';
 import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
-import Snackbar from '@mui/material/Snackbar';
 
 import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
 
@@ -16,6 +14,7 @@ import BoxBar from "./BoxBar";
 import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoType } from "./types";
+import useNotification from "./Notitifaction";
 
 interface GalleryProps {
     zoom: number;
@@ -26,7 +25,7 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
     const [isLoading, setLoading] = useState<boolean>(true);
     const [photos, setPhotos] = useState<PhotoType[]>([]);
     const [index, setIndex] = useState(-1);
-    const [showSnackbar, setShowSnackbar] = useState(false);
+    const sendNotification = useNotification();
 
     useEffect(() => {
         setLoading(true);
@@ -40,14 +39,17 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
                 setLoading(false);
             });
     }, [collection, album]);
-    
-    
-    const openSnackbar = () => {
-        setShowSnackbar(true);
-    };
-    const closeSnackbar = () => {
-        setShowSnackbar(false);
-    };
+
+    const toggleFavorite = (index: number) => {
+        const nextPhotos = photos.map((photo, i) => {
+            if(index === i)
+                photo.favorite = !photo.favorite;
+            return photo;
+        });
+        // Re-render with the new array
+        setPhotos(nextPhotos);
+        sendNotification(`Favorite not yet implemented: ${index}, ${photos[index].favorite}`);
+    }
     const closeLightbox = () => {
         setIndex(-1);
     }
@@ -66,7 +68,7 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
         }
         const saveFavorite = (event: { stopPropagation: () => void; }) => {
             event.stopPropagation();
-            openSnackbar();
+            toggleFavorite(layout.index);
         }
 
         return (
@@ -89,7 +91,7 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
                     }
                     {(photo.favorite || mouseOver) && (
                         <BoxBar bottom right>
-                            <IconButton onClick={saveFavorite} style={{color: "white"}}>
+                            <IconButton color="inherit" onClick={saveFavorite}>
                                 {photo.favorite? <FavoriteIcon/> : <NotFavoriteIcon/>}
                             </IconButton>
                         </BoxBar>
@@ -110,7 +112,7 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
                 photos={photos}
                 selected={index}
                 onClose={closeLightbox}
-                onFavorite={openSnackbar} />
+                onFavorite={toggleFavorite} />
         </>);
     
     const loading = (
@@ -118,21 +120,7 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
             <LinearProgress />
         </Box>);
     
-    return (
-        <>
-            {isLoading ? loading : gallery}
-            <Snackbar
-                open={showSnackbar}
-                autoHideDuration={3000}
-                onClose={closeSnackbar}
-                message="Favorite not yet implemented"
-                style={{zIndex: 19999}}
-                action={(
-                    <IconButton size="small" aria-label="close" color="inherit" onClick={closeSnackbar}>
-                        <CloseIcon fontSize="small" />
-                    </IconButton>)} />
-        </>
-    );
+    return isLoading ? loading : gallery;
 }
 
 export default Gallery;
