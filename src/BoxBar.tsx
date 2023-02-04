@@ -47,8 +47,7 @@ const BoxBar: FC<BoxBarProps> = (props) => {
             inset,
             transform,
             textAlign,
-            ...props.sx,
-            color: "white",
+            ...props.sx
         }}>
             {props.children}
         </Box>
