@@ -51,14 +51,24 @@ const darkTheme: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
-      main: '#4CC2FF',
+      main: '#4cc2ff',
     },
     secondary: {
-      main: '#1976D2',
+      main: '#1976d2',
     },
     background: {
       default: '#202020',
       paper: '#272727',
+    },
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#314049',
+          backgroundImage: 'none',
+        },
+      },
     },
   },
 };
