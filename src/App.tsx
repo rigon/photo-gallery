@@ -35,7 +35,7 @@ function Router() {
 
 const baseTheme: ThemeOptions = {
   typography: {
-    fontFamily: 'PT Sans',
+    fontFamily: 'PT Sans, sans-serif',
   },
 };
 
@@ -43,6 +43,12 @@ const lightTheme: ThemeOptions = {
   ...baseTheme,
   palette: {
     mode: 'light',
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#1e87e5',
+    },
   },
 };
 
@@ -54,7 +60,7 @@ const darkTheme: ThemeOptions = {
       main: '#4cc2ff',
     },
     secondary: {
-      main: '#1976d2',
+      main: '#3f525e',
     },
     background: {
       default: '#202020',

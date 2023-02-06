@@ -47,7 +47,7 @@ const Layout: FC<LayoutProps> = ({changeZoom}) => {
 
   const drawer = (
     <div>
-      <Toolbar>
+      <Toolbar sx={{ color: "secondary.contrastText", backgroundColor: "secondary.main" }}>
         <Box mx="auto">
           <Typography variant="h5" fontWeight="fontWeightBold" noWrap>
             Photo Gallery
