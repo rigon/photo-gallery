@@ -32,7 +32,7 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
         // Clear gallery when a new album is selected
         setPhotos([]);
 
-        fetch(`/collection/${collection}/album/${album}`)
+        fetch(`/api/collection/${collection}/album/${album}`)
             .then((response) => response.json())
             .then(album => {
                 setPhotos(album.photos);

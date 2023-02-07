@@ -20,7 +20,7 @@ const CollectionList: FC = () => {
     
     // Fetch list of collections
     useEffect(() => {
-        fetch('/collections')
+        fetch('/api/collections')
             .then((response) => response.json())
             .then(collections => {
                 const newCollection = collection || collections[0] || "";

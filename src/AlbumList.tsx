@@ -23,7 +23,7 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
         setLoading(true);
         // Check if collection is valid
         if(collection !== undefined && collection.length > 0) {
-            fetch(`/collection/${collection}/albums`)
+            fetch(`/api/collection/${collection}/albums`)
                 .then((response) => response.json())
                 .then(albums => {
                     setAlbums(albums);

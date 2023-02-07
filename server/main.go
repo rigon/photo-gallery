@@ -200,11 +200,11 @@ List of possible options:
 
 	router := mux.NewRouter()
 	// API
-	router.HandleFunc("/collections", collections)
-	router.HandleFunc("/collection/{collection}/albums", albums)
-	router.HandleFunc("/collection/{collection}/album/{album}", album)
-	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
-	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
+	router.HandleFunc("/api/collections", collections)
+	router.HandleFunc("/api/collection/{collection}/albums", albums)
+	router.HandleFunc("/api/collection/{collection}/album/{album}", album)
+	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
+	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})

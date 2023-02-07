@@ -39,7 +39,7 @@ const NewAlbum: FC = () => {
 
     useEffect(() => {
         if(open)
-            fetch('/collections')
+            fetch('/api/collections')
                 .then((response) => response.json())
                 .then(collectionsList => {
                     setCollections(collectionsList);

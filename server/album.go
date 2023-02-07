@@ -102,7 +102,7 @@ func (album *Album) GetPhotos(config Collection) error {
 			// Create a new photo
 			photo := new(Photo)
 			photo.Title = photoName
-			photo.Thumb = path.Join("/collection", collectionName, "album", albumName, "photo", photoName, "thumb")
+			photo.Thumb = path.Join("/api/collection", collectionName, "album", albumName, "photo", photoName, "thumb")
 			photo.Height = 1
 			photo.Width = 1 // + rand.Intn(2)
 			//photo.Files = make([]File, 0)
@@ -134,7 +134,7 @@ func (album *Album) GetPhotos(config Collection) error {
 				if !photoExists {
 					photo = new(Photo)
 					photo.Title = fileName
-					photo.Thumb = path.Join("/collection", config.Name, "album", album.Name, "photo", fileName, "thumb")
+					photo.Thumb = path.Join("/api/collection", config.Name, "album", album.Name, "photo", fileName, "thumb")
 					photo.Height = 1
 					photo.Width = 1 // + rand.Intn(2)
 					photo.Favorite = rand.Intn(2) == 1
@@ -142,7 +142,7 @@ func (album *Album) GetPhotos(config Collection) error {
 				}
 				photoFile := File{
 					Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
-					Url:  path.Join("/collection", config.Name, "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
+					Url:  path.Join("/api/collection", config.Name, "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
 				photoFile.DetermineType()
 
 				photo.Files = append(photo.Files, photoFile)
