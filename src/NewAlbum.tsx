@@ -27,7 +27,7 @@ import { useGetCollectionsQuery } from "./services/api";
 const NewAlbum: FC = () => {
     const { collection } = useParams();
     const [open, setOpen] = useState<boolean>(false);
-    const { data: collections = [] } = useGetCollectionsQuery("");
+    const { data: collections = [] } = useGetCollectionsQuery();
 
     const handleClickOpen = () => {
         setOpen(true);
