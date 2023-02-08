@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import Box from "@mui/material/Box";
@@ -16,29 +16,19 @@ import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoType } from "./types";
 import useNotification from "./Notitifaction";
 
+import { useGetAlbumQuery } from "./services/api";
+
 interface GalleryProps {
     zoom: number;
 }
 
 const Gallery: FC<GalleryProps> = ({zoom}) => {
-    const {collection, album} = useParams();
-    const [isLoading, setLoading] = useState<boolean>(true);
-    const [photos, setPhotos] = useState<PhotoType[]>([]);
-    const [index, setIndex] = useState(-1);
+    const { collection, album } = useParams();
+    const { data, isLoading } = useGetAlbumQuery({collection, album});
+    const [ index, setIndex ] = useState(-1);
     const sendNotification = useNotification();
 
-    useEffect(() => {
-        setLoading(true);
-        // Clear gallery when a new album is selected
-        setPhotos([]);
-
-        fetch(`/api/collection/${collection}/album/${album}`)
-            .then((response) => response.json())
-            .then(album => {
-                setPhotos(album.photos);
-                setLoading(false);
-            });
-    }, [collection, album]);
+    const photos = data?.photos || [];
 
     const toggleFavorite = (index: number) => {
         const nextPhotos = photos.map((photo, i) => {
@@ -47,7 +37,7 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
             return photo;
         });
         // Re-render with the new array
-        setPhotos(nextPhotos);
+        //setPhotos(nextPhotos);
         sendNotification(`Favorite not yet implemented: ${index}, ${photos[index].favorite}`);
     }
     const closeLightbox = () => {

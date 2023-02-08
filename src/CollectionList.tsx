@@ -10,9 +10,9 @@ import { useGetCollectionsQuery } from "./services/api";
 const CollectionList: FC = () => {
     const navigate = useNavigate();
     const { collection } = useParams();
-    const { data = [], isLoading } = useGetCollectionsQuery("");
+    const { data: collections = [], isLoading } = useGetCollectionsQuery();
 
-    const selected = isLoading ? "" : collection || data[0] || "";
+    const selected = isLoading ? "" : collection || collections[0] || "";
 
     // Select collection if none is selected
     useEffect(() => {
@@ -29,9 +29,9 @@ const CollectionList: FC = () => {
         <FormControl variant="filled" fullWidth>
             <InputLabel id="collection-label">Collection</InputLabel>
             <Select labelId="collection-label" value={selected} onChange={handleChange}>
-                { isLoading || data.length < 1 ?
+                { isLoading || collections.length < 1 ?
                     <MenuItem disabled><em>{ isLoading ? "Loading..." : "Nothing to show" }</em></MenuItem> :
-                    data.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)
+                    collections.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)
                 }
             </Select>
         </FormControl>

@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
 import Box from '@mui/material/Box';
@@ -22,12 +22,12 @@ import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 
-import { CollectionType } from './types';
+import { useGetCollectionsQuery } from "./services/api";
 
 const NewAlbum: FC = () => {
     const { collection } = useParams();
     const [open, setOpen] = useState<boolean>(false);
-    const [collections, setCollections] = useState<CollectionType[]>([]);
+    const { data: collections = [] } = useGetCollectionsQuery("");
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -36,15 +36,6 @@ const NewAlbum: FC = () => {
     const handleClose = () => {
         setOpen(false);
     };
-
-    useEffect(() => {
-        if(open)
-            fetch('/api/collections')
-                .then((response) => response.json())
-                .then(collectionsList => {
-                    setCollections(collectionsList);
-                });
-    }, [open])
 
     return (
         <>
