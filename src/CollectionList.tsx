@@ -1,4 +1,4 @@
-import { FC, useEffect, useMemo, useCallback } from 'react';
+import { FC, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -18,7 +18,7 @@ const CollectionList: FC = () => {
     useEffect(() => {
         if(!isLoading && selected !== collection && selected.length > 0)
             navigate(selected);
-    }, [isLoading, selected, collection]);
+    }, [collection, isLoading, navigate, selected]);
     
     /** Navigate to the selected collection */
     const handleChange = (event: SelectChangeEvent) => {
