@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { SnackbarProvider } from 'notistack'
+import { SnackbarProvider } from 'notistack';
 import { ThemeOptions } from '@mui/material/styles';
 import "@fontsource/pt-sans";
 
