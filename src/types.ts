@@ -1,6 +1,11 @@
 
 export type CollectionType = string;
 
+export interface PseudoAlbumType {
+    collection: CollectionType;
+    album: AlbumType;
+}
+
 export interface AlbumType {
     /** Name of the album */
     name: string;

@@ -1,9 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CollectionType, AlbumType,  } from "../types";
+import { CollectionType, PseudoAlbumType, AlbumType } from "../types";
 
 interface QueryAlbums {
   collection?: string;
 }
+
 interface QueryAlbum {
   collection?: string;
   album?: string;
@@ -15,6 +16,9 @@ export const api = createApi({
   endpoints: (builder) => ({
     getCollections: builder.query<CollectionType[], void>({
       query: () => "collections",
+    }),
+    getPseudoAlbums: builder.query<PseudoAlbumType[], void>({
+      query: () => "pseudo",
     }),
     getAlbums: builder.query<AlbumType[], QueryAlbums>({
       query: ({collection}) => `collection/${collection}/albums`,
@@ -28,6 +32,7 @@ export const api = createApi({
 // Export hooks for usage in functional components
 export const {
   useGetCollectionsQuery,
+  useGetPseudoAlbumsQuery,
   useGetAlbumsQuery,
-  useGetAlbumQuery
+  useGetAlbumQuery,
 } = api;
