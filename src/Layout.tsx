@@ -10,6 +10,7 @@ import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import Toolbar from '@mui/material/Toolbar';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
@@ -87,12 +88,16 @@ const Layout: FC<LayoutProps> = ({changeZoom}) => {
           <NewAlbum />
           <FavoriteMenu />
           
-          <IconButton onClick={increaseZoom} aria-label="zoom in" color="inherit">
-              <ZoomInIcon />
-          </IconButton>
-          <IconButton onClick={decreaseZoom} aria-label="zoom out" color="inherit">
-              <ZoomOutIcon />
-          </IconButton>
+          <Tooltip title="Increase Zoom" enterDelay={300}>
+            <IconButton onClick={increaseZoom} aria-label="zoom in" color="inherit">
+                <ZoomInIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Decrease Zoom" enterDelay={300}>
+            <IconButton onClick={decreaseZoom} aria-label="zoom out" color="inherit">
+                <ZoomOutIcon />
+            </IconButton>
+          </Tooltip>
         </Toolbar>
       </AppBar>
       <Box

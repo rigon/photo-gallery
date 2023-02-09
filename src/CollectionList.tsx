@@ -25,14 +25,15 @@ const CollectionList: FC = () => {
         navigate(event.target.value as string);
     };
 
+    const noItems = isLoading || collections.length < 1;
+    const info = <MenuItem disabled><em>{isLoading ? "Loading..." : "Nothing to show"}</em></MenuItem>;
+    const items = collections.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>);
+
     return (
         <FormControl variant="filled" fullWidth>
             <InputLabel id="collection-label">Collection</InputLabel>
             <Select labelId="collection-label" value={selected} onChange={handleChange}>
-                { isLoading || collections.length < 1 ?
-                    <MenuItem disabled><em>{ isLoading ? "Loading..." : "Nothing to show" }</em></MenuItem> :
-                    collections.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)
-                }
+                { noItems ? info : items }
             </Select>
         </FormControl>
     );

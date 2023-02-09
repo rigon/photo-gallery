@@ -21,6 +21,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 
 import { useGetCollectionsQuery } from "./services/api";
 
@@ -39,9 +40,11 @@ const NewAlbum: FC = () => {
 
     return (
         <>
-            <IconButton onClick={handleClickOpen} aria-label="create album" color="inherit">
-                <AddAlbumIcon />
-            </IconButton>
+            <Tooltip title="Create new album" enterDelay={300}>
+                <IconButton onClick={handleClickOpen} aria-label="create album" color="inherit">
+                    <AddAlbumIcon />
+                </IconButton>
+            </Tooltip>
 
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title">
