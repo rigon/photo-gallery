@@ -71,8 +71,8 @@ const FavoriteMenu: FC = () => {
             <Menu
                 id="lock-menu"
                 anchorEl={anchorEl}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right', }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'center' }}
                 keepMounted
                 open={Boolean(anchorEl)}
                 onClose={handleCloseMenu}>
