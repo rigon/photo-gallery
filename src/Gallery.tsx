@@ -14,9 +14,8 @@ import BoxBar from "./BoxBar";
 import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoType } from "./types";
-import useNotification from "./Notitifaction";
-
-import { useGetAlbumQuery } from "./services/api";
+import useNotification from "./Notification";
+import { useGetAlbumQuery, useSaveFavoriteMutation } from "./services/api";
 
 interface GalleryProps {
     zoom: number;
@@ -26,19 +25,26 @@ const Gallery: FC<GalleryProps> = ({zoom}) => {
     const { collection, album } = useParams();
     const { data, isLoading } = useGetAlbumQuery({collection, album});
     const [ index, setIndex ] = useState(-1);
+    const [ saveFavorite ] = useSaveFavoriteMutation();
     const sendNotification = useNotification();
 
     const photos = data?.photos || [];
 
     const toggleFavorite = (index: number) => {
-        const nextPhotos = photos.map((photo, i) => {
-            if(index === i)
-                photo.favorite = !photo.favorite;
-            return photo;
+        const saveToAlbum = "Favorite 1";
+        const favorite = !(photos[index].favorite);
+        saveFavorite({
+            collection: collection || "",
+            album: album || "",
+            photo: photos[index].title,
+            photoIndex: index,
+            saveToCollection: "",
+            saveToAlbum: saveToAlbum,
+            favorite
         });
-        // Re-render with the new array
-        //setPhotos(nextPhotos);
-        sendNotification(`Favorite not yet implemented: ${index}, ${photos[index].favorite}`);
+        sendNotification(favorite ?
+            `Photo added as favorite to ${saveToAlbum}` :
+            `Photo removed as favorite from ${saveToAlbum}`);
     }
     const closeLightbox = () => {
         setIndex(-1);
