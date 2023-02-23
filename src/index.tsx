@@ -1,8 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
-// css
-import './index.css';
 // local imports
 import App from './App';
 import { setupStore } from './store'

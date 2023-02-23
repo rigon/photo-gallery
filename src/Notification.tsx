@@ -22,7 +22,7 @@ const useNotification = () => {
         };
     }, [closeSnackbar]);
 
-    return (message: string, options?: OptionsWithExtraProps<VariantType>) => 
+    return (message: string, options?: OptionsWithExtraProps<VariantType>) =>
         enqueueSnackbar(message, { ...defaultOptions, ...options });
 };
 
