@@ -1,5 +1,6 @@
 import { FC, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useSelector } from 'react-redux';
 
 import Box from "@mui/material/Box";
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -16,17 +17,15 @@ import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoType } from "./types";
 import useNotification from "./Notification";
 import { useGetAlbumQuery, useSaveFavoriteMutation } from "./services/api";
+import { selectZoom } from "./services/app";
 
-interface GalleryProps {
-    zoom: number;
-}
-
-const Gallery: FC<GalleryProps> = ({zoom}) => {
+const Gallery: FC = () => {
     const { collection, album } = useParams();
     const { data, isLoading } = useGetAlbumQuery({collection, album});
     const [ index, setIndex ] = useState(-1);
     const [ saveFavorite ] = useSaveFavoriteMutation();
     const sendNotification = useNotification();
+    const zoom = useSelector(selectZoom);
 
     const photos = data?.photos || [];
 

@@ -1,5 +1,6 @@
 import { FC, useState } from 'react';
 import { useParams, Outlet } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import AppBar from '@mui/material/AppBar';
@@ -19,15 +20,14 @@ import CollectionList from './CollectionList';
 import AlbumList from './AlbumList';
 import NewAlbum from './NewAlbum';
 import FavoriteMenu from './FavoriteMenu';
+import ThemeMenu from './ThemeMenu';
+import { increaseZoom, decreaseZoom } from "./services/app";
 
 const drawerWidth = 300;
 
-interface LayoutProps {
-  changeZoom: (zoom: number) => void;
-}
-
-const Layout: FC<LayoutProps> = ({changeZoom}) => {
+const Layout: FC = () => {
   const theme = useTheme();
+  const dispatch = useDispatch();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [mobileOpen, setMobileOpen] = useState<boolean>(isSmallScreen);
   
@@ -39,12 +39,6 @@ const Layout: FC<LayoutProps> = ({changeZoom}) => {
   const handleDrawerClose = () => {
     setMobileOpen(false);
   };
-  const increaseZoom = () => {
-    changeZoom(1.5);
-  }
-  const decreaseZoom = () => {
-    changeZoom(0.5);
-  }
 
   const drawer = (
     <div>
@@ -87,14 +81,15 @@ const Layout: FC<LayoutProps> = ({changeZoom}) => {
           <Box sx={{ flexGrow: 1 }} />
           <NewAlbum />
           <FavoriteMenu />
-          
+          <ThemeMenu />
+
           <Tooltip title="Increase Zoom" enterDelay={300}>
-            <IconButton onClick={increaseZoom} aria-label="zoom in" color="inherit">
+            <IconButton onClick={() => dispatch(increaseZoom())} aria-label="zoom in" color="inherit">
                 <ZoomInIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Decrease Zoom" enterDelay={300}>
-            <IconButton onClick={decreaseZoom} aria-label="zoom out" color="inherit">
+            <IconButton onClick={() => dispatch(decreaseZoom())} aria-label="zoom out" color="inherit">
                 <ZoomOutIcon />
             </IconButton>
           </Tooltip>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { SnackbarProvider } from 'notistack';
@@ -9,24 +10,20 @@ import "@fontsource/pt-sans";
 // layouts
 import Layout from './Layout';
 import Gallery from './Gallery';
+import { selectTheme } from "./services/app";
 
 function Home() {
   return (<p>Select an album from the list on the left.</p>);
 }
 
 function Router() {
-  const [zoom, setZoom] = useState(180);
-  const changeZoom = (multiplier: number) => {
-    setZoom(zoom * multiplier);
-  }
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout changeZoom={changeZoom} />}>
+        <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="/:collection" element={<Home />} />
-          <Route path="/:collection/:album" element={<Gallery zoom={zoom} />} />
+          <Route path="/:collection/:album" element={<Gallery />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -80,8 +77,12 @@ const darkTheme: ThemeOptions = {
 };
 
 function App() {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const theme = React.useMemo(() => createTheme(prefersDarkMode ? darkTheme : lightTheme), [prefersDarkMode]);
+  const themeSetting = useSelector(selectTheme);
+  let darkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  if(themeSetting === "light") darkMode = false;
+  if(themeSetting === "dark") darkMode = true;
+
+  const theme = React.useMemo(() => createTheme(darkMode ? darkTheme : lightTheme), [darkMode]);
 
   return (
     <ThemeProvider theme={theme}>
