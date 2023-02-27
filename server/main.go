@@ -209,6 +209,10 @@ List of possible options:
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	})
+	// Create a catch-all route for /api/*
+	router.PathPrefix("/api/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	})
 
 	// WebDAV
 	if !webdavDisabled {
