@@ -1,22 +1,28 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { CollectionType, PseudoAlbumType, AlbumType, PhotoType } from "../types";
+import { changeFavorite } from "./app";
 
-interface QueryAlbums {
+export interface QueryAlbums {
     collection?: string;
 }
 
-interface QueryAlbum {
+export interface QueryAlbum {
     collection?: string;
     album?: string;
 }
 
-interface QuerySaveFavorite {
+export interface QueryAddAlbum {
+    collection: CollectionType;
+    name: AlbumType["name"];
+    type: "regular" | "pseudo";
+}
+
+export interface QuerySaveFavorite {
     collection: CollectionType;
     album: AlbumType["name"];
     photo: PhotoType["title"];
     photoIndex: number;
-    saveToCollection: CollectionType;
-    saveToAlbum: AlbumType["name"];
+    saveTo: PseudoAlbumType;
     favorite: boolean;
 }
 
@@ -28,7 +34,10 @@ export const api = createApi({
             query: () => "collections",
         }),
         getPseudoAlbums: builder.query<PseudoAlbumType[], void>({
-            query: () => "pseudo",
+            query: () => "pseudos",
+            async onCacheEntryAdded(arg, { dispatch, cacheDataLoaded }) {
+                dispatch(changeFavorite((await cacheDataLoaded).data[0]));
+            },
         }),
         getAlbums: builder.query<AlbumType[], QueryAlbums>({
             query: ({ collection }) => `collection/${collection}/albums`,
@@ -36,9 +45,16 @@ export const api = createApi({
         getAlbum: builder.query<AlbumType, QueryAlbum>({
             query: ({ collection, album }) => `collection/${collection}/album/${album}`,
         }),
-        saveFavorite: builder.mutation<void, QuerySaveFavorite>({
-            query: ({ collection, album, photo, photoIndex, ...saveTo }) => ({
-                url: `/collection/${collection}/album/${album}/photo/${photo}/saveFavorite`,
+        addAlbum: builder.mutation<void, QueryAddAlbum>({
+            query: ({ collection, ...body }) => ({
+                url: `/collection/${collection}/album`,
+                method: 'PUT',
+                body,
+            }),
+        }),
+        savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
+            query: ({ collection, album, photo, saveTo }) => ({
+                url: `/collection/${collection}/album/${album}/photo/${photo}/saveToPseudo`,
                 method: 'PUT',
                 body: saveTo,
             }),
@@ -61,5 +77,6 @@ export const {
     useGetPseudoAlbumsQuery,
     useGetAlbumsQuery,
     useGetAlbumQuery,
-    useSaveFavoriteMutation,
+    useAddAlbumMutation,
+    useSavePhotoToPseudoMutation,
 } = api;

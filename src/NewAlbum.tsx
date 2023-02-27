@@ -23,12 +23,27 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 
-import { useGetCollectionsQuery } from "./services/api";
+import { useGetCollectionsQuery, useAddAlbumMutation, QueryAddAlbum } from "./services/api";
+import useNotification from './Notification';
+
+const defaults: QueryAddAlbum = {
+    collection: "",
+    type: "pseudo",
+    name: ""
+};
 
 const NewAlbum: FC = () => {
-    const { collection } = useParams();
-    const [open, setOpen] = useState<boolean>(false);
+    const { collection = "" } = useParams();
+    const [ open, setOpen ] = useState<boolean>(false);
+    const [ formData, updateFormData ] = useState<QueryAddAlbum>({...defaults, collection});
+    const [ errorName, setErrorName ] = useState<boolean>(false);
     const { data: collections = [] } = useGetCollectionsQuery();
+    const [ addAlbum ] = useAddAlbumMutation();
+    const { successNotification, errorNotification } = useNotification();
+
+    const handleChange = (e: { target: { name: string; value: string; }; }) => {
+      updateFormData({ ...formData, [e.target.name]: e.target.value.trim() });
+    };
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -36,6 +51,25 @@ const NewAlbum: FC = () => {
 
     const handleClose = () => {
         setOpen(false);
+    };
+
+    const handleSave = async () => {
+        // Form validation
+        if(!formData.name) {
+            setErrorName(true);
+            return;
+        }
+        setErrorName(false);
+        
+        try {
+            await addAlbum(formData);
+            successNotification(`Album created with name ${formData.name}.`);
+            setOpen(false);
+        }
+        catch(e) {
+            errorNotification(`Could not save album named ${formData.name}!`);
+            console.log(e);
+        }
     };
 
     return (
@@ -49,7 +83,7 @@ const NewAlbum: FC = () => {
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title">
                     <Box display="flex" alignItems="center">
-                        <Box flexGrow={1} >Create a new album</Box>
+                        <Box flexGrow={1}>Create a new album</Box>
                         <Box>
                             <IconButton size="small" onClick={handleClose}>
                                 <CloseIcon />
@@ -70,7 +104,9 @@ const NewAlbum: FC = () => {
                                 <Select
                                     labelId="new-album-collection-label"
                                     id="new-album-collection-select"
-                                    defaultValue={collection}
+                                    name="collection"
+                                    defaultValue={formData.collection}
+                                    onChange={handleChange}
                                 >
                                     { collections.map((collection) => (
                                         <MenuItem key={collection} value={collection}>{collection}</MenuItem>
@@ -84,8 +120,9 @@ const NewAlbum: FC = () => {
                                 <RadioGroup
                                     row
                                     aria-labelledby="new-album-type-label"
-                                    name="new-album-type"
-                                    value="pseudo"
+                                    name="type"
+                                    defaultValue={formData.type}
+                                    onChange={handleChange}
                                 >
                                     <FormControlLabel value="regular" control={<Radio />} label="Regular" disabled />
                                     <FormControlLabel value="pseudo" control={<Radio />} label="Pseudo" />
@@ -99,10 +136,13 @@ const NewAlbum: FC = () => {
                                 </DialogContentText>
                                 <TextField
                                     autoFocus
-                                    id="name"
                                     label="Album name"
                                     type="text"
+                                    name="name"
                                     fullWidth
+                                    error={errorName}
+                                    defaultValue={formData.name}
+                                    onChange={handleChange}
                                 />
                             </Stack>
                         </Grid>
@@ -112,7 +152,7 @@ const NewAlbum: FC = () => {
                     <Button onClick={handleClose} color="primary">
                         Cancel
                     </Button>
-                    <Button onClick={handleClose} color="primary">
+                    <Button onClick={handleSave} color="primary">
                         Create
                     </Button>
                 </DialogActions>
