@@ -35,7 +35,7 @@ const defaults: QueryAddAlbum = {
 const NewAlbum: FC = () => {
     const { collection = "" } = useParams();
     const [ open, setOpen ] = useState<boolean>(false);
-    const [ formData, updateFormData ] = useState<QueryAddAlbum>({...defaults, collection});
+    const [ formData, updateFormData ] = useState<QueryAddAlbum>(defaults);
     const [ errorName, setErrorName ] = useState<boolean>(false);
     const { data: collections = [] } = useGetCollectionsQuery();
     const [ addAlbum ] = useAddAlbumMutation();
@@ -46,10 +46,13 @@ const NewAlbum: FC = () => {
     };
 
     const handleClickOpen = () => {
+        // Clear form data when openning
+        updateFormData({...defaults, collection});
         setOpen(true);
     };
 
     const handleClose = () => {
+        console.log(formData);
         setOpen(false);
     };
 
@@ -62,12 +65,12 @@ const NewAlbum: FC = () => {
         setErrorName(false);
         
         try {
-            await addAlbum(formData);
+            await addAlbum(formData).unwrap();
             successNotification(`Album created with name ${formData.name}.`);
             setOpen(false);
         }
         catch(e) {
-            errorNotification(`Could not save album named ${formData.name}!`);
+            errorNotification(`Could not create album named ${formData.name}!`);
             console.log(e);
         }
     };
@@ -105,7 +108,7 @@ const NewAlbum: FC = () => {
                                     labelId="new-album-collection-label"
                                     id="new-album-collection-select"
                                     name="collection"
-                                    defaultValue={formData.collection}
+                                    value={formData.collection}
                                     onChange={handleChange}
                                 >
                                     { collections.map((collection) => (
@@ -121,7 +124,7 @@ const NewAlbum: FC = () => {
                                     row
                                     aria-labelledby="new-album-type-label"
                                     name="type"
-                                    defaultValue={formData.type}
+                                    value={formData.type}
                                     onChange={handleChange}
                                 >
                                     <FormControlLabel value="regular" control={<Radio />} label="Regular" disabled />
@@ -141,7 +144,7 @@ const NewAlbum: FC = () => {
                                     name="name"
                                     fullWidth
                                     error={errorName}
-                                    defaultValue={formData.name}
+                                    value={formData.name}
                                     onChange={handleChange}
                                 />
                             </Stack>
