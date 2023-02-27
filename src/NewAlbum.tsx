@@ -52,7 +52,6 @@ const NewAlbum: FC = () => {
     };
 
     const handleClose = () => {
-        console.log(formData);
         setOpen(false);
     };
 
