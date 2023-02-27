@@ -3,7 +3,7 @@ export type CollectionType = string;
 
 export interface PseudoAlbumType {
     collection: CollectionType;
-    album: AlbumType;
+    album: AlbumType["name"];
 }
 
 export interface AlbumType {

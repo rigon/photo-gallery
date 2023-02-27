@@ -1,11 +1,13 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../store';
+import { PseudoAlbumType } from '../types';
 
 // Define a type for the slice state
 interface AppState {
     theme: "system" | "light" | "dark";
     zoom: number;
+    favorite?: PseudoAlbumType;
 }
 
 // Define the initial state using that type
@@ -28,8 +30,8 @@ export const appSettingsSlice = createSlice({
         changeTheme: (state, action: PayloadAction<AppState['theme']>) => {
             state.theme = action.payload;
         },
-        toggleTheme: (state) => {
-            state.theme = (state.theme == "light" ? "dark" : "light");
+        changeFavorite: (state, action: PayloadAction<PseudoAlbumType>) => {
+            state.favorite = action.payload;
         },
     },
 });
@@ -44,11 +46,12 @@ export const {
     increaseZoom,
     decreaseZoom,
     changeTheme,
-    toggleTheme,
+    changeFavorite,
 } = appSettingsSlice.actions;
 
 // Other code such as selectors can use the imported `RootState` type
 export const selectTheme = (state: RootState) => state.app.theme;
 export const selectZoom = (state: RootState) => state.app.zoom;
+export const selectFavorite = (state: RootState) => state.app.favorite;
 
 export default appSettingsSlice.reducer;

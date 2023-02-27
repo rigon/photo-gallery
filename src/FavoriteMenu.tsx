@@ -1,5 +1,6 @@
-import { FC, SetStateAction, useState } from 'react';
+import { FC, useState } from 'react';
 import { styled } from '@mui/material/styles';
+import { useSelector, useDispatch } from 'react-redux';
 import Button from '@mui/material/Button';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -9,17 +10,8 @@ import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 
 import { useGetPseudoAlbumsQuery } from './services/api';
-import { PseudoAlbumType } from './types';
+import { changeFavorite, selectFavorite } from './services/app';
 
-const options: PseudoAlbumType[] = [
-    { collection: "Photos", album: { name: "Favorite 1 ", photos: []}},
-    { collection: "Photos", album: { name: "Favorite 2 ", photos: []}},
-    { collection: "Photos", album: { name: "Favorite 3 ", photos: []}},
-    { collection: "Photos", album: { name: "Favorite 4 ", photos: []}},
-    { collection: "Photos", album: { name: "Favorite 5 ", photos: []}},
-    { collection: "Photos", album: { name: "Favorite 6 ", photos: []}},
-    { collection: "Photos", album: { name: "Favorite 7 ", photos: []}},
-];
 const StyledButton = styled(Button)({
     textTransform: "none",
     borderRadius: "1000px",
@@ -27,16 +19,17 @@ const StyledButton = styled(Button)({
 });
 
 const FavoriteMenu: FC = () => {
-    const { data = options, isLoading } = useGetPseudoAlbumsQuery();
+    const dispatch = useDispatch();
+    const favoriteSelected = useSelector(selectFavorite);
+    const { data = [], isLoading } = useGetPseudoAlbumsQuery();
     const [anchorEl, setAnchorEl] = useState(null);
-    const [selectedIndex, setSelectedIndex] = useState<number>(0);
     
     const handleClickListItem = (event: any) => {
         setAnchorEl(event.currentTarget);
     };
 
-    const handleMenuItemClick = (event: React.MouseEvent<HTMLElement>, index: SetStateAction<number>) => {
-        setSelectedIndex(index);
+    const handleMenuItemClick = (event: React.MouseEvent<HTMLElement>, index: number) => {
+        dispatch(changeFavorite(data[index]))
         setAnchorEl(null);
     };
 
@@ -48,11 +41,11 @@ const FavoriteMenu: FC = () => {
     const info = <MenuItem disabled><em>{isLoading ? "Loading..." : "Nothing to show"}</em></MenuItem>;
     const items = data.map((item, index) => (
         <MenuItem
-            key={item.collection + "-" + item.album.name}
-            value={item.album.name}
-            selected={index === selectedIndex}
+            key={`favorite-${item.collection}-${item.album}`}
+            value={item.album}
+            selected={favoriteSelected?.collection === item.collection && favoriteSelected?.album === item.album}
             onClick={(event) => handleMenuItemClick(event, index)}>
-                <ListItemText primary={item.album.name} secondary={item.collection} />
+                <ListItemText primary={item.album} secondary={item.collection} />
         </MenuItem>
     ));
 
@@ -64,7 +57,7 @@ const FavoriteMenu: FC = () => {
                     onClick={handleClickListItem}
                     startIcon={<FavoriteIcon />}
                     endIcon={<ExpandMoreIcon />}>
-                        { data[selectedIndex]?.album.name || <em>Nothing</em> }
+                        { favoriteSelected?.album || <em>Nothing</em> }
                 </StyledButton>
             </Tooltip>
 

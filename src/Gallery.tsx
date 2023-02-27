@@ -16,34 +16,42 @@ import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoType } from "./types";
 import useNotification from "./Notification";
-import { useGetAlbumQuery, useSaveFavoriteMutation } from "./services/api";
-import { selectZoom } from "./services/app";
+import { useGetAlbumQuery, useSavePhotoToPseudoMutation } from "./services/api";
+import { selectZoom, selectFavorite } from "./services/app";
 
 const Gallery: FC = () => {
     const { collection, album } = useParams();
     const { data, isLoading } = useGetAlbumQuery({collection, album});
     const [ index, setIndex ] = useState(-1);
-    const [ saveFavorite ] = useSaveFavoriteMutation();
-    const sendNotification = useNotification();
+    const [ saveFavorite ] = useSavePhotoToPseudoMutation();
+    const { infoNotification, errorNotification } = useNotification();
     const zoom = useSelector(selectZoom);
+    const favorite = useSelector(selectFavorite);
 
     const photos = data?.photos || [];
 
     const toggleFavorite = (index: number) => {
-        const saveToAlbum = "Favorite 1";
-        const favorite = !(photos[index].favorite);
+        if(favorite === undefined) {
+            errorNotification("No favorite album is selected. Select first from the top menu.");
+            return;
+        }
+        if(collection === undefined || album === undefined || index >= photos.length) {
+            errorNotification("Select a collection and an album first from the left menu.");
+            return;
+        }
+
+        const isFavorite = !(photos[index].favorite);
         saveFavorite({
-            collection: collection || "",
-            album: album || "",
+            collection: collection,
+            album: album,
             photo: photos[index].title,
             photoIndex: index,
-            saveToCollection: "",
-            saveToAlbum: saveToAlbum,
-            favorite
+            saveTo: favorite,
+            favorite: isFavorite,
         });
-        sendNotification(favorite ?
-            `Photo added as favorite to ${saveToAlbum}` :
-            `Photo removed as favorite from ${saveToAlbum}`);
+        infoNotification(isFavorite ?
+            `Photo added as favorite to ${favorite.album}` :
+            `Photo removed as favorite from ${favorite.album}`);
     }
     const closeLightbox = () => {
         setIndex(-1);

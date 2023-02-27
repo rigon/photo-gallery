@@ -4,7 +4,7 @@ import { useSnackbar, SnackbarKey, VariantType, OptionsWithExtraProps } from 'no
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 
-const useNotification = () => { 
+const useNotification = () => {
     const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
     const defaultOptions = useMemo((): OptionsWithExtraProps<VariantType> => {
@@ -16,14 +16,26 @@ const useNotification = () => {
             </Fragment>
         );
         return {
-            variant: 'info',
             autoHideDuration: 3000,
             action,
         };
     }, [closeSnackbar]);
 
-    return (message: string, options?: OptionsWithExtraProps<VariantType>) =>
-        enqueueSnackbar(message, { ...defaultOptions, ...options });
+    const renderFunction = (type: VariantType) =>
+        (message: string, options?: OptionsWithExtraProps<VariantType>) =>
+            enqueueSnackbar(message, {
+                ...defaultOptions,
+                ...options,
+                variant: type
+            });
+
+    return {
+        defaultNotification: renderFunction('default'),
+        infoNotification: renderFunction('info'),
+        errorNotification: renderFunction('error'),
+        successNotification: renderFunction('success'),
+        warningNotification: renderFunction('warning'),
+    }
 };
 
 export default useNotification;
