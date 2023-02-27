@@ -42,7 +42,7 @@ const NewAlbum: FC = () => {
     const { successNotification, errorNotification } = useNotification();
 
     const handleChange = (e: { target: { name: string; value: string; }; }) => {
-      updateFormData({ ...formData, [e.target.name]: e.target.value.trim() });
+      updateFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleClickOpen = () => {
@@ -56,20 +56,25 @@ const NewAlbum: FC = () => {
     };
 
     const handleSave = async () => {
+        const trimmedFormData = {
+            ...formData,
+            name: formData.name.trim()
+        }
+        
         // Form validation
-        if(!formData.name) {
+        if(!trimmedFormData.name) {
             setErrorName(true);
             return;
         }
         setErrorName(false);
         
         try {
-            await addAlbum(formData).unwrap();
-            successNotification(`Album created with name ${formData.name}`);
+            await addAlbum(trimmedFormData).unwrap();
+            successNotification(`Album created with name ${trimmedFormData.name}`);
             setOpen(false);
         }
         catch(error) {
-            errorNotification(`Could not create album named ${formData.name}!`);
+            errorNotification(`Could not create album named ${trimmedFormData.name}!`);
             console.log(error);
         }
     };
@@ -126,7 +131,7 @@ const NewAlbum: FC = () => {
                                     value={formData.type}
                                     onChange={handleChange}
                                 >
-                                    <FormControlLabel value="regular" control={<Radio />} label="Regular" disabled />
+                                    <FormControlLabel value="regular" control={<Radio />} label="Regular" />
                                     <FormControlLabel value="pseudo" control={<Radio />} label="Pseudo" />
                                 </RadioGroup>
                             </FormControl>
@@ -143,7 +148,7 @@ const NewAlbum: FC = () => {
                                     name="name"
                                     fullWidth
                                     error={errorName}
-                                    value={formData.name}
+                                    defaultValue={formData.name}
                                     onChange={handleChange}
                                 />
                             </Stack>

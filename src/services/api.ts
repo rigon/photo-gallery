@@ -28,19 +28,21 @@ export interface QuerySaveFavorite {
 
 export const api = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-    tagTypes: [],
+    tagTypes: ['Album', 'Pseudo'],
     endpoints: (builder) => ({
         getCollections: builder.query<CollectionType[], void>({
             query: () => "collections",
         }),
         getPseudoAlbums: builder.query<PseudoAlbumType[], void>({
             query: () => "pseudos",
+            providesTags: ['Pseudo'],
             async onCacheEntryAdded(arg, { dispatch, cacheDataLoaded }) {
                 dispatch(changeFavorite((await cacheDataLoaded).data[0]));
             },
         }),
         getAlbums: builder.query<AlbumType[], QueryAlbums>({
             query: ({ collection }) => `collection/${collection}/albums`,
+            providesTags: ['Album'],
         }),
         getAlbum: builder.query<AlbumType, QueryAlbum>({
             query: ({ collection, album }) => `collection/${collection}/album/${album}`,
@@ -51,6 +53,7 @@ export const api = createApi({
                 method: 'PUT',
                 body,
             }),
+            invalidatesTags: [ 'Pseudo', 'Album'],
         }),
         savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
             query: ({ collection, album, photo, saveTo }) => ({
