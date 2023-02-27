@@ -20,6 +20,11 @@ type App struct {
 
 var app App
 
+func pseudos(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(GetPseudoAlbums(app.Collections))
+}
+
 func collections(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(GetCollections(app.Collections))
@@ -200,6 +205,7 @@ List of possible options:
 
 	router := mux.NewRouter()
 	// API
+	router.HandleFunc("/api/pseudos", pseudos)
 	router.HandleFunc("/api/collections", collections)
 	router.HandleFunc("/api/collection/{collection}/albums", albums)
 	router.HandleFunc("/api/collection/{collection}/album/{album}", album)

@@ -66,12 +66,12 @@ const NewAlbum: FC = () => {
         
         try {
             await addAlbum(formData).unwrap();
-            successNotification(`Album created with name ${formData.name}.`);
+            successNotification(`Album created with name ${formData.name}`);
             setOpen(false);
         }
-        catch(e) {
+        catch(error) {
             errorNotification(`Could not create album named ${formData.name}!`);
-            console.log(e);
+            console.log(error);
         }
     };
 

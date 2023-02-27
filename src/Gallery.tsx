@@ -30,7 +30,7 @@ const Gallery: FC = () => {
 
     const photos = data?.photos || [];
 
-    const toggleFavorite = (index: number) => {
+    const toggleFavorite = async (index: number) => {
         if(favorite === undefined) {
             errorNotification("No favorite album is selected. Select first from the top menu.");
             return;
@@ -41,17 +41,23 @@ const Gallery: FC = () => {
         }
 
         const isFavorite = !(photos[index].favorite);
-        saveFavorite({
-            collection: collection,
-            album: album,
-            photo: photos[index].title,
-            photoIndex: index,
-            saveTo: favorite,
-            favorite: isFavorite,
-        });
-        infoNotification(isFavorite ?
-            `Photo added as favorite to ${favorite.album}` :
-            `Photo removed as favorite from ${favorite.album}`);
+        try {
+            await saveFavorite({
+                collection: collection,
+                album: album,
+                photo: photos[index].title,
+                photoIndex: index,
+                saveTo: favorite,
+                favorite: isFavorite,
+            }).unwrap();
+            infoNotification(isFavorite ?
+                `Photo added as favorite to ${favorite.album}` :
+                `Photo removed as favorite from ${favorite.album}`);
+        }
+        catch(error) {
+            errorNotification(`Could not set the photo as favorite in ${favorite.album}!`);
+            console.log(error);
+        }
     }
     const closeLightbox = () => {
         setIndex(-1);
