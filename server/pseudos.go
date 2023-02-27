@@ -6,15 +6,16 @@ type PseudoAlbum struct {
 }
 
 func GetPseudoAlbums(collections map[string]*Collection) []PseudoAlbum {
-	pseudos := make([]PseudoAlbum, 7)
+	pseudos := make([]PseudoAlbum, 0)
 
-	pseudos[0] = PseudoAlbum{Collection: "Photos", Name: "Favorite 1"}
-	pseudos[1] = PseudoAlbum{Collection: "Photos", Name: "Favorite 2"}
-	pseudos[2] = PseudoAlbum{Collection: "Photos", Name: "Favorite 3"}
-	pseudos[3] = PseudoAlbum{Collection: "Photos", Name: "Favorite 4"}
-	pseudos[4] = PseudoAlbum{Collection: "Photos", Name: "Favorite 5"}
-	pseudos[5] = PseudoAlbum{Collection: "Photos", Name: "Favorite 6"}
-	pseudos[6] = PseudoAlbum{Collection: "Photos", Name: "Favorite 7"}
+	for name, collection := range collections {
+		albums, _ := ListAlbums(*collection)
+		for _, album := range albums {
+			if album.IsPseudo {
+				pseudos = append(pseudos, PseudoAlbum{Collection: name, Name: album.Name})
+			}
+		}
+	}
 
 	return pseudos
 }
