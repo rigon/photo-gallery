@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path"
 )
 
 type Collection struct {
@@ -14,6 +17,11 @@ type Collection struct {
 	ReadOnly        bool
 	RenameOnReplace bool
 	loadedAlbum     *Album
+}
+
+type AddAlbumQuery struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 func (c Collection) String() string {
@@ -38,4 +46,33 @@ func GetCollection(collection string) *Collection {
 		log.Println("invalid collection")
 	}
 	return val
+}
+
+func (c Collection) AddAlbum(info AddAlbumQuery) error {
+	name := info.Name
+	if info.Type == "pseudo" {
+		name += PSEUDO_ALBUM_EXT
+	}
+	p := path.Join(c.PhotosPath, name)
+
+	// File or folder already exists, cannot overwrite
+	if _, err := os.Stat(p); !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	switch info.Type {
+	case "regular":
+		// Create folder
+		os.Mkdir(p, os.ModeDir)
+	case "pseudo":
+		file, err := os.Create(p)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// Just touching the file
+		file.Close()
+	default:
+		return errors.New("Invalid album type " + info.Type)
+	}
+	return nil
 }

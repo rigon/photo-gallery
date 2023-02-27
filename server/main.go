@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -20,14 +21,14 @@ type App struct {
 
 var app App
 
-func pseudos(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(GetPseudoAlbums(app.Collections))
-}
-
 func collections(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(GetCollections(app.Collections))
+}
+
+func pseudos(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(GetPseudoAlbums(app.Collections))
 }
 
 func albums(w http.ResponseWriter, req *http.Request) {
@@ -50,7 +51,7 @@ func album(w http.ResponseWriter, req *http.Request) {
 
 	album, err := GetAlbum(*collection, albumName)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	// Cache selected album
@@ -58,6 +59,17 @@ func album(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(album)
+}
+func addAlbum(w http.ResponseWriter, req *http.Request) {
+	var album AddAlbumQuery
+
+	vars := mux.Vars(req)
+	collection := GetCollection(vars["collection"])
+	// Decode body
+	reqBody, _ := ioutil.ReadAll(req.Body)
+	json.Unmarshal(reqBody, &album)
+	// Add album
+	collection.AddAlbum(album)
 }
 
 func photo(w http.ResponseWriter, req *http.Request) {
@@ -208,6 +220,7 @@ List of possible options:
 	router.HandleFunc("/api/pseudos", pseudos)
 	router.HandleFunc("/api/collections", collections)
 	router.HandleFunc("/api/collection/{collection}/albums", albums)
+	router.HandleFunc("/api/collection/{collection}/album", addAlbum).Methods("PUT")
 	router.HandleFunc("/api/collection/{collection}/album/{album}", album)
 	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
 	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
