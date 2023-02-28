@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
@@ -136,8 +135,8 @@ func (album *Album) GetPhotos(config Collection) error {
 					photo.Title = fileName
 					photo.Thumb = path.Join("/api/collection", config.Name, "album", album.Name, "photo", fileName, "thumb")
 					photo.Height = 1
-					photo.Width = 1 // + rand.Intn(2)
-					photo.Favorite = rand.Intn(2) == 1
+					photo.Width = 1        // + rand.Intn(2)
+					photo.Favorite = false //rand.Intn(2) == 1
 					photos[fileName] = photo
 				}
 				photoFile := File{

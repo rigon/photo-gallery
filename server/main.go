@@ -60,9 +60,9 @@ func album(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(album)
 }
+
 func addAlbum(w http.ResponseWriter, req *http.Request) {
 	var album AddAlbumQuery
-
 	vars := mux.Vars(req)
 	collection := GetCollection(vars["collection"])
 	// Decode body
@@ -128,6 +128,31 @@ func thumb(w http.ResponseWriter, req *http.Request) {
 	}
 
 	AddWorkPhoto(w, *collection, *collection.loadedAlbum, *photo)
+}
+
+func saveToPseudo(w http.ResponseWriter, req *http.Request) {
+	var saveTo PseudoAlbum
+	var err error
+	vars := mux.Vars(req)
+	fromCollection := vars["collection"]
+	fromAlbum := vars["album"]
+	fromPhoto := vars["photo"]
+	// Decode body
+	reqBody, _ := ioutil.ReadAll(req.Body)
+	json.Unmarshal(reqBody, &saveTo)
+
+	collection := GetCollection(saveTo.Collection)
+
+	// Check if cached album is the one we want
+	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != saveTo.Name {
+		collection.loadedAlbum, err = GetAlbum(*collection, saveTo.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Add photo to pseudo album
+	collection.loadedAlbum.savePhotoToPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
 }
 
 func main() {
@@ -223,6 +248,7 @@ List of possible options:
 	router.HandleFunc("/api/collection/{collection}/album", addAlbum).Methods("PUT")
 	router.HandleFunc("/api/collection/{collection}/album/{album}", album)
 	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
+	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/saveToPseudo", saveToPseudo).Methods("PUT")
 	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
