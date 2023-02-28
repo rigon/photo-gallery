@@ -28,7 +28,7 @@ export interface QuerySaveFavorite {
 
 export const api = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-    tagTypes: ['Album', 'Pseudo'],
+    tagTypes: ['Album', 'Albums', 'Pseudo'],
     endpoints: (builder) => ({
         getCollections: builder.query<CollectionType[], void>({
             query: () => "collections",
@@ -42,10 +42,11 @@ export const api = createApi({
         }),
         getAlbums: builder.query<AlbumType[], QueryAlbums>({
             query: ({ collection }) => `collection/${collection}/albums`,
-            providesTags: ['Album'],
+            providesTags: ['Albums'],
         }),
         getAlbum: builder.query<AlbumType, QueryAlbum>({
             query: ({ collection, album }) => `collection/${collection}/album/${album}`,
+            providesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}-${arg.album}` }],
         }),
         addAlbum: builder.mutation<void, QueryAddAlbum>({
             query: ({ collection, ...body }) => ({
@@ -53,7 +54,7 @@ export const api = createApi({
                 method: 'PUT',
                 body,
             }),
-            invalidatesTags: [ 'Pseudo', 'Album'],
+            invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
         savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
             query: ({ collection, album, photo, saveTo }) => ({
@@ -61,6 +62,7 @@ export const api = createApi({
                 method: 'PUT',
                 body: saveTo,
             }),
+            invalidatesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.saveTo.collection}-${arg.saveTo.album}` }],
             async onQueryStarted({ collection, album, photoIndex, favorite }, { dispatch, queryFulfilled }) {
                 const patchResult = dispatch(
                     api.util.updateQueryData('getAlbum', {collection, album}, draft => {
