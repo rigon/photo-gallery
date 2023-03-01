@@ -21,7 +21,7 @@ import { selectZoom, selectFavorite } from "./services/app";
 
 const Gallery: FC = () => {
     const { collection, album } = useParams();
-    const { data, isLoading } = useGetAlbumQuery({collection, album});
+    const { data, isFetching } = useGetAlbumQuery({collection, album});
     const [ index, setIndex ] = useState(-1);
     const [ saveFavorite ] = useSavePhotoToPseudoMutation();
     const { infoNotification, errorNotification } = useNotification();
@@ -129,7 +129,7 @@ const Gallery: FC = () => {
             <LinearProgress />
         </Box>);
     
-    return isLoading ? loading : gallery;
+    return isFetching ? loading : gallery;
 }
 
 export default Gallery;

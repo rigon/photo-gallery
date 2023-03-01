@@ -21,7 +21,7 @@ const StyledButton = styled(Button)({
 const FavoriteMenu: FC = () => {
     const dispatch = useDispatch();
     const favoriteSelected = useSelector(selectFavorite);
-    const { data = [], isLoading } = useGetPseudoAlbumsQuery();
+    const { data = [], isFetching } = useGetPseudoAlbumsQuery();
     const [anchorEl, setAnchorEl] = useState(null);
     
     const handleClickListItem = (event: any) => {
@@ -37,8 +37,8 @@ const FavoriteMenu: FC = () => {
         setAnchorEl(null);
     };
 
-    const noItems = isLoading || data.length < 1;
-    const info = <MenuItem disabled><em>{isLoading ? "Loading..." : "Nothing to show"}</em></MenuItem>;
+    const noItems = isFetching || data.length < 1;
+    const info = <MenuItem disabled><em>{isFetching ? "Loading..." : "Nothing to show"}</em></MenuItem>;
     const items = data.map((item, index) => (
         <MenuItem
             key={`favorite-${item.collection}-${item.album}`}
