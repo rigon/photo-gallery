@@ -10,23 +10,23 @@ import { useGetCollectionsQuery } from "./services/api";
 const CollectionList: FC = () => {
     const navigate = useNavigate();
     const { collection } = useParams();
-    const { data: collections = [], isLoading } = useGetCollectionsQuery();
+    const { data: collections = [], isFetching } = useGetCollectionsQuery();
 
-    const selected = isLoading ? "" : collection || collections[0] || "";
+    const selected = isFetching ? "" : collection || collections[0] || "";
 
     // Select collection if none is selected
     useEffect(() => {
-        if(!isLoading && selected !== collection && selected.length > 0)
+        if(!isFetching && selected !== collection && selected.length > 0)
             navigate(selected);
-    }, [collection, isLoading, navigate, selected]);
+    }, [collection, isFetching, navigate, selected]);
     
     /** Navigate to the selected collection */
     const handleChange = (event: SelectChangeEvent) => {
         navigate(event.target.value as string);
     };
 
-    const noItems = isLoading || collections.length < 1;
-    const info = <MenuItem disabled><em>{isLoading ? "Loading..." : "Nothing to show"}</em></MenuItem>;
+    const noItems = isFetching || collections.length < 1;
+    const info = <MenuItem disabled><em>{isFetching ? "Loading..." : "Nothing to show"}</em></MenuItem>;
     const items = collections.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>);
 
     return (

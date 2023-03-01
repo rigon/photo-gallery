@@ -16,7 +16,7 @@ interface AlbumListProps {
 
 const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     const { collection, album } = useParams();
-    const { data: albums = [], isLoading = true } = useGetAlbumsQuery({collection});
+    const { data: albums = [], isFetching } = useGetAlbumsQuery({collection}, {skip: collection === undefined});
     
     const list = (
         <List onClick={onClick}>
@@ -34,7 +34,7 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
             <LinearProgress />
         </Box>);
 
-    return (isLoading ? loading : list);
+    return (isFetching ? loading : list);
 }
 
 export default AlbumList;
