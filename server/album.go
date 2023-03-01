@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"sort"
@@ -11,11 +14,14 @@ import (
 	"strings"
 )
 
+const PSEUDO_ALBUM_EXT = ".PG-ALBUM"
+
 type Album struct {
-	Name   string   `json:"name"`
-	Count  int      `json:"count"`
-	Date   string   `json:"title"`
-	Photos []*Photo `json:"photos"`
+	Name     string   `json:"name"`
+	Count    int      `json:"count"`
+	Date     string   `json:"title"`
+	Photos   []*Photo `json:"photos"`
+	IsPseudo bool     `json:"pseudo"`
 }
 
 func ListAlbums(config Collection) (albums []*Album, err error) {
@@ -27,9 +33,18 @@ func ListAlbums(config Collection) (albums []*Album, err error) {
 	}
 
 	for _, file := range files {
-		if file.IsDir() {
+		filename := file.Name()
+		if file.IsDir() && !strings.HasPrefix(filename, ".") {
+			// Albums (do not show hidden folders)
 			album := new(Album)
-			album.Name = file.Name()
+			album.Name = filename
+			album.IsPseudo = false
+			albums = append(albums, album)
+		} else if file.Mode().IsRegular() && strings.HasSuffix(strings.ToUpper(filename), PSEUDO_ALBUM_EXT) {
+			// Pseudo Albums
+			album := new(Album)
+			album.Name = filename[:len(filename)-len(PSEUDO_ALBUM_EXT)]
+			album.IsPseudo = true
 			albums = append(albums, album)
 		}
 	}
@@ -59,34 +74,78 @@ func GetAlbum(config Collection, albumName string) (album *Album, err error) {
 }
 
 func (album *Album) GetPhotos(config Collection) error {
-	// Read album (or folder) contents
-	files, err := ioutil.ReadDir(filepath.Join(config.PhotosPath, album.Name))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Iterate over folder items
 	photos := make(map[string]*Photo)
-	for _, file := range files {
-		if !file.IsDir() {
-			fileExt := path.Ext(file.Name())
-			fileName := strings.ToLower(strings.TrimSuffix(file.Name(), fileExt))
 
-			photo, photoExists := photos[fileName]
-			if !photoExists {
-				photo = new(Photo)
-				photo.Title = fileName
-				photo.Thumb = path.Join("/collection", strconv.Itoa(config.Index), "album", album.Name, "photo", fileName, "thumb")
-				photo.Height = 1
-				photo.Width = 1 // + rand.Intn(2)
-				photos[fileName] = photo
+	if album.IsPseudo {
+		filename := filepath.Join(config.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
+		file, err := os.Open(filename)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			split := strings.Split(line, ":")
+			if len(split) != 3 {
+				log.Println("The following line is not formated correctly:", line)
+				break
 			}
-			photoFile := File{
-				Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
-				Url:  path.Join("/collection", strconv.Itoa(config.Index), "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
-			photoFile.DetermineType()
+			// Decompose slice
+			collectionName, albumName, photoName := split[0], split[1], strings.ToLower(split[2])
 
-			photo.Files = append(photo.Files, photoFile)
+			collection := GetCollection(collectionName)
+			album, _ := GetAlbum(*collection, albumName)
+
+			// Create a new photo
+			photo := new(Photo)
+			photo.Title = photoName
+			photo.Thumb = path.Join("/api/collection", collectionName, "album", albumName, "photo", photoName, "thumb")
+			photo.Height = 1
+			photo.Width = 1 // + rand.Intn(2)
+			//photo.Files = make([]File, 0)
+			for _, p := range album.Photos {
+				if p.Title == photoName {
+					photo.Files = p.Files
+					break
+				}
+			}
+			photos[photoName] = photo
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Println(err)
+		}
+	} else {
+		// Read album (or folder) contents
+		files, err := ioutil.ReadDir(filepath.Join(config.PhotosPath, album.Name))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Iterate over folder items
+		for _, file := range files {
+			if !file.IsDir() {
+				fileExt := path.Ext(file.Name())
+				fileName := strings.ToLower(strings.TrimSuffix(file.Name(), fileExt))
+
+				photo, photoExists := photos[fileName]
+				if !photoExists {
+					photo = new(Photo)
+					photo.Title = fileName
+					photo.Thumb = path.Join("/api/collection", config.Name, "album", album.Name, "photo", fileName, "thumb")
+					photo.Height = 1
+					photo.Width = 1        // + rand.Intn(2)
+					photo.Favorite = false //rand.Intn(2) == 1
+					photos[fileName] = photo
+				}
+				photoFile := File{
+					Path: filepath.Join(config.PhotosPath, album.Name, file.Name()),
+					Url:  path.Join("/api/collection", config.Name, "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
+				photoFile.DetermineType()
+
+				photo.Files = append(photo.Files, photoFile)
+			}
 		}
 	}
 

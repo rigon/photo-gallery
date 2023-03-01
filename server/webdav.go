@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/webdav"
 )
 
-type webDavCollections []*Collection
+type webDavCollections map[string]*Collection
 
 type collectionsNodeFS struct {
 	cs webDavCollections // Used by root folder
@@ -43,8 +43,10 @@ func (cs webDavCollections) find(name string) (*Collection, webdav.Dir, string, 
 
 func (c collectionsNodeFS) Readdir(count int) ([]fs.FileInfo, error) {
 	children := make([]fs.FileInfo, len(c.cs))
-	for i, c := range c.cs {
+	i := 0
+	for _, c := range c.cs {
 		children[i] = collectionsNodeFS{c: *c}
+		i++
 	}
 	return children, nil
 }
@@ -134,6 +136,6 @@ func (cs webDavCollections) Stat(ctx context.Context, name string) (os.FileInfo,
 	return dir.Stat(ctx, name)
 }
 
-func CreateWebDavFS(collections []*Collection) webdav.FileSystem {
+func CreateWebDavFS(collections map[string]*Collection) webdav.FileSystem {
 	return webDavCollections(collections)
 }

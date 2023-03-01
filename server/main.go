@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,56 +15,25 @@ import (
 	"golang.org/x/net/webdav"
 )
 
-type Collection struct {
-	Index           int
-	Name            string
-	PhotosPath      string
-	ThumbsPath      string
-	Hide            bool
-	ReadOnly        bool
-	RenameOnReplace bool
-	loadedAlbum     *Album
-}
-
-func (c Collection) String() string {
-	return fmt.Sprintf("%s (%s)", c.Name, c.PhotosPath)
-}
-
 type App struct {
-	Collections []*Collection
+	Collections map[string]*Collection
 }
 
 var app App
 
-func getCollection(collection string) *Collection {
-	i, err := strconv.Atoi(collection)
-	if err != nil {
-		log.Println("invalid collection", err)
-	}
-
-	if i < 0 || i >= len(app.Collections) {
-		log.Println("invalid collection")
-	}
-
-	return app.Collections[i]
+func collections(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(GetCollections(app.Collections))
 }
 
-func collections(w http.ResponseWriter, req *http.Request) {
-	collections := make([]string, 0)
-
-	for _, c := range app.Collections {
-		if !c.Hide {
-			collections = append(collections, c.Name)
-		}
-	}
-
+func pseudos(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(collections)
+	json.NewEncoder(w).Encode(GetPseudoAlbums(app.Collections))
 }
 
 func albums(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 
 	albums, err := ListAlbums(*collection)
 	if err != nil {
@@ -76,12 +46,12 @@ func albums(w http.ResponseWriter, req *http.Request) {
 
 func album(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 	albumName := vars["album"]
 
 	album, err := GetAlbum(*collection, albumName)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	// Cache selected album
@@ -91,9 +61,20 @@ func album(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(album)
 }
 
+func addAlbum(w http.ResponseWriter, req *http.Request) {
+	var album AddAlbumQuery
+	vars := mux.Vars(req)
+	collection := GetCollection(vars["collection"])
+	// Decode body
+	reqBody, _ := ioutil.ReadAll(req.Body)
+	json.Unmarshal(reqBody, &album)
+	// Add album
+	collection.AddAlbum(album)
+}
+
 func photo(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	fileNumber, err := strconv.Atoi(vars["file"])
@@ -128,7 +109,7 @@ func photo(w http.ResponseWriter, req *http.Request) {
 func thumb(w http.ResponseWriter, req *http.Request) {
 	var err error
 	vars := mux.Vars(req)
-	collection := getCollection(vars["collection"])
+	collection := GetCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
 	//log.Printf("Thumb [%s] %s\n", albumName, photoName)
@@ -149,6 +130,31 @@ func thumb(w http.ResponseWriter, req *http.Request) {
 	AddWorkPhoto(w, *collection, *collection.loadedAlbum, *photo)
 }
 
+func saveToPseudo(w http.ResponseWriter, req *http.Request) {
+	var saveTo PseudoAlbum
+	var err error
+	vars := mux.Vars(req)
+	fromCollection := vars["collection"]
+	fromAlbum := vars["album"]
+	fromPhoto := vars["photo"]
+	// Decode body
+	reqBody, _ := ioutil.ReadAll(req.Body)
+	json.Unmarshal(reqBody, &saveTo)
+
+	collection := GetCollection(saveTo.Collection)
+
+	// Check if cached album is the one we want
+	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != saveTo.Name {
+		collection.loadedAlbum, err = GetAlbum(*collection, saveTo.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Add photo to pseudo album
+	collection.loadedAlbum.savePhotoToPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+}
+
 func main() {
 	//rand.Seed(time.Now().UnixNano())
 
@@ -167,6 +173,7 @@ List of possible options:
 	pflag.BoolVar(&webdavDisabled, "disable-webdav", false, "Disable WebDAV")
 	pflag.Parse()
 
+	app.Collections = make(map[string]*Collection)
 	for i, c := range collectionArgs {
 		collection := new(Collection)
 		collection.Index = i
@@ -216,7 +223,7 @@ List of possible options:
 			}
 		}
 
-		app.Collections = append(app.Collections, collection)
+		app.Collections[collection.Name] = collection
 	}
 	log.Println("Collections:", app.Collections)
 
@@ -235,14 +242,21 @@ List of possible options:
 
 	router := mux.NewRouter()
 	// API
-	router.HandleFunc("/collections", collections)
-	router.HandleFunc("/collection/{collection}/albums", albums)
-	router.HandleFunc("/collection/{collection}/album/{album}", album)
-	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
-	router.HandleFunc("/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
+	router.HandleFunc("/api/pseudos", pseudos)
+	router.HandleFunc("/api/collections", collections)
+	router.HandleFunc("/api/collection/{collection}/albums", albums)
+	router.HandleFunc("/api/collection/{collection}/album", addAlbum).Methods("PUT")
+	router.HandleFunc("/api/collection/{collection}/album/{album}", album)
+	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
+	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/saveToPseudo", saveToPseudo).Methods("PUT")
+	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+	})
+	// Create a catch-all route for /api/*
+	router.PathPrefix("/api/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
 	})
 
 	// WebDAV

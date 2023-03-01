@@ -12,12 +12,13 @@ import (
 )
 
 type Photo struct {
-	Thumb  string `json:"thumbnail"`
-	Title  string `json:"title"`
-	Type   string `json:"type"`
-	Width  int    `default:"1" json:"width"`
-	Height int    `default:"1" json:"height"`
-	Files  []File `json:"files"`
+	Thumb    string `json:"src"`
+	Title    string `json:"title"`
+	Type     string `json:"type"`
+	Favorite bool   `json:"favorite"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+	Files    []File `json:"files"`
 }
 
 func (photo Photo) HashName(album Album) string {
@@ -103,6 +104,6 @@ func (photo *Photo) DetermineType() {
 	if isVideo {
 		photo.Type = "video"
 	} else {
-		photo.Type = "photo"
+		photo.Type = "image"
 	}
 }
