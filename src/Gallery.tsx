@@ -80,9 +80,10 @@ const Gallery: FC = () => {
             toggleFavorite(layout.index);
         }
 
+        console.log(wrapperStyle);
         return (
             <Box
-                sx={{ position: "relative", color: "white", backgroundColor: "action.hover", cursor: "pointer", ...wrapperStyle }}
+                sx={{ ...wrapperStyle, position: "relative", color: "white", backgroundColor: "action.hover", cursor: "pointer" }}
                 onMouseEnter={mouseEnter}
                 onMouseLeave={mouseLeave}
                 onClick={openLightbox}
