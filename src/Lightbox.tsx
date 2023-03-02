@@ -52,7 +52,7 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
             }))}
             open={selected >= 0}
             index={selected}
-            animation={{ swipe: 150 }}
+            animation={{ swipe: 0 }}
             close={onClose}
             // Fix lightbox over snackbar
             styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
