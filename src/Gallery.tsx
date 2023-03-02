@@ -79,8 +79,7 @@ const Gallery: FC = () => {
             event.stopPropagation();
             toggleFavorite(layout.index);
         }
-
-        console.log(wrapperStyle);
+        
         return (
             <Box
                 sx={{ ...wrapperStyle, position: "relative", color: "white", backgroundColor: "action.hover", cursor: "pointer" }}
