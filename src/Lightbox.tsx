@@ -26,30 +26,35 @@ interface LightboxProps {
 const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) => {
     const theme = useTheme();
 
+    const slides = photos.map(({ src, type, width, height, favorite, files }) => ({
+        type,
+        favorite,
+        ...(type === "video" ? {
+            // Properties for video
+            poster: src,
+            width: 1920,
+            height: 1080,
+            sources: files.map(({ type, url }) => ({
+                src: url,
+                type: "",
+            }))} : {
+            // Properties for image
+            src,
+            srcSet: [{
+                src,
+                width: 500,
+                height: 500,
+            }, ...files.map(({ type, url }) => ({
+                src: url,
+                width: 20000,
+                height: 20000,
+            }))]
+        }),
+    } as Slide));
+
     return (
         <YARL.Lightbox
-            slides={photos.map(({ src, type, width, height, favorite, files }) => ({
-                type,
-                src,
-                ...(type === "video" ? {
-                    width: 1920,
-                    height: 1080} : {}),
-                favorite: favorite,
-                sources: files.map(({ type, url }) => ({
-                    src: url,
-                    type: "",
-                })),
-                srcSet: [{
-                        src,
-                        width: 500,
-                        height: 500,
-                    }, ...files.map(({ type, url }) => ({
-                        src: url,
-                        width: 20000,
-                        height: 20000,
-                    }))
-                ]
-            }))}
+            slides={slides}
             open={selected >= 0}
             index={selected}
             animation={{ swipe: 0 }}
