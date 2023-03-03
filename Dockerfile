@@ -1,24 +1,25 @@
 # Server
-FROM golang:1.16-alpine3.15 AS server
+# FROM --platform=$BUILDPLATFORM 
+FROM --platform=$TARGETPLATFORM golang:1.16-alpine3.15 AS server
 RUN apk update && apk add musl-dev gcc g++ ffmpeg-libs ffmpeg-dev
 WORKDIR /app
 COPY server/go.mod server/go.sum ./
 RUN go mod download -x
 COPY server/ ./
-RUN CGO_ENABLED=1 GOOS=linux go build -v -installsuffix cgo -o photo-gallery
+ARG TARGETOS TARGETARCH
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH CGO_ENABLED=1 go build -v -installsuffix cgo -o photo-gallery
 # For static compilation (not working): -ldflags '-extldflags "-static"'
 
 # Fronted
-FROM node:alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:alpine AS frontend
 WORKDIR /app
-COPY package.json .
+COPY package*.json ./
 RUN npm install
-COPY public/ public/
-COPY src/ src/
+COPY . .
 RUN npm run build
 
 # Deploy
-FROM alpine:3.15
+FROM --platform=$TARGETPLATFORM alpine:3.15
 WORKDIR /app/server
 EXPOSE 3080
 VOLUME "/photos" "/thumbs"
