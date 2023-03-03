@@ -1,5 +1,7 @@
 # Server
-# FROM --platform=$BUILDPLATFORM 
+## FROM --platform=$BUILDPLATFORM
+## See more for cross-compile:
+## https://dh1tw.de/2019/12/cross-compiling-golang-cgo-projects/
 FROM --platform=$TARGETPLATFORM golang:1.16-alpine3.15 AS server
 RUN apk update && apk add musl-dev gcc g++ ffmpeg-libs ffmpeg-dev
 WORKDIR /app
