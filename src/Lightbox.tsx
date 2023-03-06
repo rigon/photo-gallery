@@ -13,7 +13,8 @@ import Video from "yet-another-react-lightbox/plugins/video";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
-import Favorite from "./lightbox-plugins/Favorite";
+import Favorite from "./yarl-plugins/Favorite";
+import LivePhoto from "./yarl-plugins/LivePhoto";
 import { PhotoType } from "./types";
 
 interface LightboxProps {
@@ -62,7 +63,7 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
             // Fix lightbox over snackbar
             styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
             // enable optional lightbox plugins
-            plugins={[Fullscreen, Slideshow, Favorite, Thumbnails, Video, Zoom]}
+            plugins={[Fullscreen, Slideshow, Favorite, LivePhoto, Thumbnails, Video, Zoom]}
             carousel={{
                 finite: true,
                 preload: 3,
@@ -85,7 +86,6 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
                 onChange: onFavorite
             }} />
     );
-
 }
 
 export default Lightbox;
