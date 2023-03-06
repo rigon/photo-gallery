@@ -22,7 +22,7 @@ type VideoSlideProps = {
 };
 
 /** Video slide */
-export const LivePhotoSlide: React.FC<VideoSlideProps> = ({ slide, offset }) => {
+export const VideoSlide: React.FC<VideoSlideProps> = ({ slide, offset }) => {
     const { publish } = useEvents();
     const { setContainerRef, containerRect } = useContainerRect();
     const videoRef = React.useRef<HTMLVideoElement | null>(null);

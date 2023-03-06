@@ -43,7 +43,7 @@ export interface SlideLivePhoto extends GenericSlide {
 declare module "yet-another-react-lightbox/types" {
     // noinspection JSUnusedGlobalSymbols
     interface SlideTypes {
-        /** video slide type */
+        /** live photo slide type */
         SlideLivePhoto: SlideLivePhoto;
     }
 
