@@ -1,7 +1,8 @@
 import * as React from "react";
-import { ImageSlide } from "yet-another-react-lightbox/core";
+import { ACTIVE_SLIDE_COMPLETE, ACTIVE_SLIDE_LOADING, ACTIVE_SLIDE_PLAYING, ImageSlide } from "yet-another-react-lightbox/core";
 import { ContainerRect } from "yet-another-react-lightbox/types";
 import { SlideLivePhoto } from "./index";
+import { VideoSlide } from "./VideoSlide";
 
 type LivePhotoSlideProps = {
     /** slide */
@@ -12,17 +13,35 @@ type LivePhotoSlideProps = {
     rect: ContainerRect
 };
 
+export type PublishState =
+    typeof ACTIVE_SLIDE_COMPLETE |
+    typeof ACTIVE_SLIDE_LOADING |
+    typeof ACTIVE_SLIDE_PLAYING;
+
 export const LivePhotoSlide: React.FC<LivePhotoSlideProps> = ({ slide, offset, rect }) => {
-    return (
-        <>
-            <ImageSlide
-                slide={slide.image}
-                offset={offset}
-                rect={rect}
-            />
-            {/* <VideoSlide
-                slide={slide.video}
-                offset={offset}
-            /> */}
-        </>);
+    const [isImage, setIsImage] = React.useState<boolean>(false);
+
+    const videoEnded = (state: PublishState) => {
+        switch(state) {
+            case ACTIVE_SLIDE_LOADING:
+                break;
+            case ACTIVE_SLIDE_PLAYING:
+                break;
+            case ACTIVE_SLIDE_COMPLETE:
+                setIsImage(true);
+                break;
+        }
+    }
+
+    return isImage ?
+        <ImageSlide
+            slide={slide.image}
+            offset={offset}
+            rect={rect}
+        /> :
+        <VideoSlide
+            slide={slide.video}
+            offset={offset}
+            publish={videoEnded}
+        />;
 }

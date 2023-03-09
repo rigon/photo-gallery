@@ -10,20 +10,20 @@ import {
     useContainerRect,
     useController,
     useEventCallback,
-    useEvents,
 } from "yet-another-react-lightbox/core";
 import { SlideVideo } from "yet-another-react-lightbox/plugins/video";
 import { LightboxProps } from "yet-another-react-lightbox/types";
 import { defaultVideoProps } from "./LivePhoto";
+import { PublishState } from "./LivePhotoSlide";
 
 type VideoSlideProps = {
     slide: SlideVideo;
     offset: number;
+    publish: (state: PublishState ) => void;
 };
 
 /** Video slide */
-export const VideoSlide: React.FC<VideoSlideProps> = ({ slide, offset }) => {
-    const { publish } = useEvents();
+export const VideoSlide: React.FC<VideoSlideProps> = ({ slide, offset, publish }) => {
     const { setContainerRef, containerRect } = useContainerRect();
     const videoRef = React.useRef<HTMLVideoElement | null>(null);
 

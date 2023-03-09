@@ -34,6 +34,7 @@ interface LightboxProps {
     onFavorite?: (index: number, isFavorite: boolean, slide: Slide) => void;
 }
 
+const thumbnailImageClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_image`);
 const thumbnailIconClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_${ELEMENT_ICON}`);
 
 const renderThumbnail: Render["thumbnail"] = ({ slide }) => {
@@ -48,8 +49,10 @@ const renderThumbnail: Render["thumbnail"] = ({ slide }) => {
 
     return (
         <>
-            <img alt={alt} src={src} style={{ minHeight: "100%", minWidth: "100%"}} />
-            { slide.type === "video" && <PlayIcon fontSize="large" className={thumbnailIconClass} /> }
+            <img alt={alt} src={src} className={thumbnailImageClass} />
+            { slide.type === "video" &&
+                <PlayIcon fontSize="large" className={thumbnailIconClass} />
+            }
         </>);
 };
 
@@ -85,7 +88,8 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
                 borderRadius: 4,
                 border: 0,
                 padding: 0,
-                gap: 3
+                gap: 3,
+                vignette: true,
             }}
             video={{
                 autoPlay: true,
