@@ -16,9 +16,10 @@ export const LivePhoto: Plugin = ({ augment }) => {
                 if (slide.type === "live") {
                     return (
                         <LivePhotoSlide
-                            key={`${slide.sources.map((source) => source.src).join(" ")}`}
+                            //key={`${slide.sources.map((source) => source.src).join(" ")}`}
                             slide={slide}
                             offset={offset}
+                            rect={rect}
                         />
                     );
                 }

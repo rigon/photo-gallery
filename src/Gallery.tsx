@@ -88,7 +88,7 @@ const Gallery: FC = () => {
                 onClick={openLightbox}
                 onDoubleClick={saveFavorite}>
                     {renderDefaultPhoto({ wrapped: true })}
-                    {photo.files.length > 1 && (
+                    {photo.type === "live" && (
                         <BoxBar top left>
                             <LivePhotoIcon fontSize="small" />
                         </BoxBar>

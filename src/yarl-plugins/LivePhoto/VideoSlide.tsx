@@ -12,12 +12,12 @@ import {
     useEventCallback,
     useEvents,
 } from "yet-another-react-lightbox/core";
+import { SlideVideo } from "yet-another-react-lightbox/plugins/video";
 import { LightboxProps } from "yet-another-react-lightbox/types";
-import { SlideLivePhoto } from "./index";
 import { defaultVideoProps } from "./LivePhoto";
 
 type VideoSlideProps = {
-    slide: SlideLivePhoto;
+    slide: SlideVideo;
     offset: number;
 };
 
