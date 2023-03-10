@@ -31,7 +31,7 @@
     "react-redux": "^8.0.5",
     "react-router-dom": "^6.8.2",
     "typescript": "^4.9.5",
-    "yet-another-react-lightbox": "^2.4.3"
+    "yet-another-react-lightbox": "^2.5.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",
@@ -39,6 +39,7 @@
     "@vitejs/plugin-react": "^3.1.0",
     "eslint": "^8.35.0",
     "eslint-config-react-app": "^7.0.1",
+    "sass": "^1.58.3",
     "typescript": "^4.9.5",
     "vite": "^4.1.4",
     "vite-plugin-eslint": "^1.8.1"

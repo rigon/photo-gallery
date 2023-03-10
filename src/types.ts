@@ -13,9 +13,9 @@ export interface AlbumType {
 }
 
 export interface PhotoType {
-    src: string;
+    src: string;    // thumbnail
     title: string;
-    type: "image" | "video";
+    type: "image" | "video" | "live";
     favorite: boolean;
     width: number;
     height: number;
