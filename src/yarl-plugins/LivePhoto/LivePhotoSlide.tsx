@@ -1,5 +1,10 @@
 import * as React from "react";
-import { ACTIVE_SLIDE_COMPLETE, ACTIVE_SLIDE_LOADING, ACTIVE_SLIDE_PLAYING, ImageSlide } from "yet-another-react-lightbox/core";
+import {
+    ACTIVE_SLIDE_COMPLETE,
+    ACTIVE_SLIDE_LOADING,
+    ACTIVE_SLIDE_PLAYING,
+    ImageSlide,
+} from "yet-another-react-lightbox/core";
 import { ContainerRect } from "yet-another-react-lightbox/types";
 import { SlideLivePhoto } from "./index";
 import { VideoSlide } from "./VideoSlide";
@@ -21,6 +26,12 @@ export type PublishState =
 export const LivePhotoSlide: React.FC<LivePhotoSlideProps> = ({ slide, offset, rect }) => {
     const [isImage, setIsImage] = React.useState<boolean>(false);
 
+    // Reset live photo when is not selected
+    React.useEffect(() => {
+        if(offset !== 0)
+            setIsImage(false);
+    }, [offset, setIsImage]);
+    
     const videoEnded = (state: PublishState) => {
         switch(state) {
             case ACTIVE_SLIDE_LOADING:
