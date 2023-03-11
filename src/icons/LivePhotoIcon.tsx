@@ -6,7 +6,7 @@ import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
  * @param {*} props 
  * @returns 
  */
-export default function HomeIcon(props: SvgIconProps) {
+export default function LivePhotoIcon(props: SvgIconProps) {
     return (
         <SvgIcon {...props} viewBox="0 0 24 24">
             <path d="M12.9805 21.9525C12.6579 21.9839 12.3308 22 12 22C11.6692 22 11.3421 21.9839 11.0194 21.9525L11.2132 19.9619C11.4715 19.9871 11.7339 20 12 20C12.2661 20 12.5285 19.9871 12.7868 19.9619L12.9805 21.9525Z" />
