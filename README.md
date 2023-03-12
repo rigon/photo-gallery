@@ -1,64 +1,132 @@
+Photo Gallery
+=============
 
-# Encoding videos in Raspberry PI 4
+Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can view your stored photos easily.
 
-    ffmpeg -i input.mp4 -c:v h264_v4l2m2m -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,fps=30" -b:v 25M /tmp/test.mp4
 
-# Build docker multi-arch
+## Motivation
 
-    docker buildx build --push -t rigon/photo-gallery --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/s390x .
+many projects despite being open source, they its own way of storing the data, making it hard to change the app if you want to use another one.
+support for iphone live photos and support for HEIC and H265
+easy and quick to navigate between albums
+lightweight, so it could run on small device as a Raspberry PI
 
-# Port forwarding on Terminus under iOS
+## Goals
+
+**Built around the file system:** photos are loaded from albums. Data is preserved as-is in the filesystem. Changes you make later are saved as transparently as possible, like as choosing your favorites. No requirement to be tied to a database.
+
+**Performant:** no need for initial and regular scans. Thumbnails are used to see a large amount of photos at a time and are automatically generated on-the-fly.
+
+**Made for photography:** for everyone that enjoys taking photos and revisiting precious memories captured through them.
+
+**Ease of use:** navigation through albums as easy as possible, with 
+
+
+So, few concepts to keep in mind about how things are organized:
+- **Albums** are folders in the filesystem and the images inside are the photos of the album
+- **Collection** is a set of albums, in other words, is the location where your collection is stored
+- **Pseudo Album** is special type of album, is file stored in the filesystem which contains links for the photos. This way you can organize your favorites without duplicating them
+
+## Features
+
+Main features:
+
+- [X] Multiple collections
+- [X] Easy navigation between albums
+- [X] Light, Dark and System-defined themes
+- [X] iPhone Live Photos
+- [X] Automatic transcoding on-the-fly for required formats
+  - [X] for images
+  - [ ] for videos
+- [X] Image files supported:
+  - [X] JPEG, GIF, PNG, BMP, TIFF, VP8, VP8L, WEBP, HEIF/HEIC
+  - [ ] RAW (DNG, Apple ProRaw)
+- [X] Video files supported:
+  - [X] Containers: MP4, MOV, AVI
+  - [X] Codecs: H264, H265
+- [X] Thumbnails generation (on-the-fly or in background)
+- [X] Pseudo albums:
+  - [X] Create
+  - [X] Save favorite photos
+- [ ] Authentication
+- [ ] Metadata extraction (EXIF)
+- [ ] Photos timeline with virtual scroll
+- [ ] Show locations in a map
+- [ ] Face recognition and aggregation by person
+
+
+## Usage
+
+Server help:
+
+    Usage of ./photo-gallery:
+      -b, --cache-thumbnails         Generate thumbnails in background when the application starts
+      -c, --collection stringArray   Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
+                                     List of possible options:
+                                        index          Position in the collection list
+                                        name           Name of the collection
+                                        path           Path to load the albums from
+                                        thumbs         Path to store the tumbnails
+                                        hide=false     Hide the collection from the list (does not affect webdav)
+                                        rename=true    Rename files instead of overwriting them
+                                        readonly=false
+           --disable-webdav           Disable WebDAV
+
+### Port forwarding on Terminus under iOS
 
 - https://support.termius.com/hc/en-us/articles/900006226306-I-can-t-use-the-iOS-app-in-the-background
 - https://support.termius.com/hc/en-us/articles/4402044543897#location
 
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Development
 
-## Available Scripts
+### Build docker multi-arch
+
+    docker buildx build --push -t rigon/photo-gallery --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/s390x .
+
+
+### Available Scripts
 
 In the project directory, you can run:
 
-### `npm start`
+- `npm start` or `npm run dev`
+  
+  Runs the app in the development mode.\
+  Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+  The page will reload when you make changes.
+  You may also see any lint errors in the console.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- `npm run server`
+  
+  Builds and runs the server.\
+  Open [http://localhost:3080](http://localhost:3080) to view it in your browser.
 
-### `npm test`
+  The web version served is the production build obtained with `npm run build`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- `npm test`
 
-### `npm run build`
+  Launches the test runner in the interactive watch mode.\
+  See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- `npm run build`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+  Builds the app for production to the `build` folder.\
+  It correctly bundles React in production mode and optimizes the build for the best performance.
+  
+  The build is minified and the filenames include the hashes.\
+  Your app is ready to be deployed!
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  See the section about [deployment](https://vitejs.dev/guide/static-deploy.html) for more information.
 
-### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Contribute
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Contributions to this project are very welcome, by reporting issues or just by sharing your support. That means the world to me!
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Please help me maintaining this project, only with your support I can take the time to make it even better. Look here for more info https://www.rigon.tk/#contribute
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
+<!--
 ### Code Splitting
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
@@ -81,4 +149,4 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 
 ### `npm run build` fails to minify
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify) -->
