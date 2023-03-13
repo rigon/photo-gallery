@@ -2,7 +2,7 @@ import { FC, useState, useMemo, useEffect, CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from 'react-redux';
 
-import { styled } from "@mui/material/styles";
+import { SxProps, Theme, styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
@@ -116,6 +116,19 @@ const Gallery: FC = () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
     }
     
+    const [selecting, setSelecting] = useState<boolean>(false);
+    const [selection, setSelection] = useState<boolean[]>([]);
+    const [selectionFirstMove, setSelectionFirstMove] = useState<boolean>(true);
+    const [selectionSelect, setSelectionSelect] = useState<boolean>(true);
+    const [selectionStart, setSelectionStart] = useState<number>(0);
+    const cancelSelection = () => {
+        console.log("cancelSelection");
+        setSelection([]);
+        setSelecting(false);
+        setSelectionFirstMove(true);
+    }
+    useEffect(() => cancelSelection(), [photos]);
+
     const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<Photo>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
         const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
@@ -124,12 +137,16 @@ const Gallery: FC = () => {
 
         const mouseEnter = () => {
             setMouseOver(true);
+            print("onMouseEnter");
         }
         const mouseLeave = () => {
             setMouseOver(false);
+            print("onMouseLeave");
         }
         const openLightbox = () => {
             setLightboxIndex(layout.index);
+            //cancelSelection();
+            print("onClick");
         }
         const saveFavorite = (event: { stopPropagation: () => void; }) => {
             event.stopPropagation();
@@ -183,14 +200,75 @@ const Gallery: FC = () => {
                 </BoxBar>
             }
         </>);
+        // Selection
+
+        const startSelection = () => {
+            console.log("startSelection");
+            setSelecting(true);
+            setSelectionStart(layout.index);
+            setSelectionSelect(!selection[layout.index]);
+        }
+        const stopSelection = () => {
+            console.log("stopSelection");
+            console.log(selection);
+            setSelecting(false);
+        }
+        const select = () => {
+            if(!selecting)
+                return;
+            if(selectionFirstMove) {
+                setSelectionFirstMove(false)
+                return;
+            }
+            
+            console.log("select");
+            
+            let newSelection = selection.slice();   // Copy the array
+            const min = Math.min(selectionStart, layout.index);
+            const max = Math.max(selectionStart, layout.index);
+            for(let i = min; i<=max; i++)
+                newSelection[i] = selectionSelect;
+            
+            setSelection(newSelection);
+        }
+        const print = (arg: string) => {
+            console.log(arg, photo.title);
+        }
+
+        const boxStyle: SxProps<Theme> = {
+            position: "relative",
+            color: "white",
+            backgroundColor: "action.hover",
+            cursor: "pointer",
+        };
+        const selectedStyle: SxProps<Theme> =
+            selection[layout.index] === true ? {
+                border: "5px solid dodgerblue",
+                boxSizing: "border-box",
+            } : {};
         
         return (
             <Box
-                sx={{ ...wrapperStyle, position: "relative", color: "white", backgroundColor: "action.hover", cursor: "pointer" }}
+                sx={{ ...wrapperStyle, ...boxStyle, ...selectedStyle }}
                 onMouseEnter={mouseEnter}
                 onMouseLeave={mouseLeave}
                 onClick={openLightbox}
-                onDoubleClick={saveFavorite}>
+                onDoubleClick={saveFavorite}
+                
+                // onTouchCancel={()=>print("onTouchCancel")}
+                onMouseDown={(e)=>{print("onMouseDown"); startSelection();}}
+                onMouseMove={()=>{print("onMouseMove"); select();}}
+                onMouseUp={(e)=>{print("onMouseUp"); stopSelection();}}
+                onTouchStartCapture={(e)=>{print("onTouchStart"); startSelection();}}
+                onTouchMove={(e)=>{print("onTouchMove"); select();}}
+                onTouchEnd={(e)=>{print("onTouchEnd"); stopSelection();}}
+                // onMouseOut={()=>print("onMouseOut")} 
+                // onMouseOver={()=>print("onMouseOver")}
+                // onMouseUp={()=>print("onMouseUp")}
+                // onDragStart={()=>false}
+                // onDragCapture={(e)=>e.preventDefault()}
+                // draggable={false}
+                >
                     {renderDefaultPhoto({ wrapped: true })}
                     {zoom >= 100 && icons}
             </Box>
@@ -198,7 +276,7 @@ const Gallery: FC = () => {
     }
     
     const gallery = (
-        <>
+        <div onTouchMove={e => e.preventDefault()}>
             { subalbums.length > 0 &&
                 <Paper elevation={4} square>
                     <Stack direction="row" p={1.5} spacing={1} useFlexGap flexWrap="wrap">
@@ -211,6 +289,7 @@ const Gallery: FC = () => {
                 layout="rows"
                 targetRowHeight={zoom}
                 spacing={1}
+                componentsProps={{imageProps: { draggable: false }}}
                 renderPhoto={RenderPhoto} />
             <Lightbox
                 photos={photos}
@@ -222,7 +301,7 @@ const Gallery: FC = () => {
                 photos={photos}
                 selected={infoPhotoIndex}
                 onClose={closeInfoPhoto} />
-        </>);
+        </div>);
     
     const loading = (
         <Box sx={{ width: '100%' }}>
