@@ -35,6 +35,7 @@ Main features:
 - [X] Easy navigation between albums
 - [X] Light, Dark and System-defined themes
 - [X] iPhone Live Photos
+- [X] Access through WebDAV
 - [X] Automatic transcoding on-the-fly for required formats
   - [X] for images
   - [ ] for videos
@@ -48,6 +49,11 @@ Main features:
 - [X] Pseudo albums:
   - [X] Create
   - [X] Save favorite photos
+- [ ] Multiple seleciton in the gallery:
+  - [ ] Move photos between albums
+  - [ ] Delete
+  - [ ] Save favorites in bulk
+- [ ] Upload photos
 - [ ] Authentication
 - [ ] Metadata extraction (EXIF)
 - [ ] Photos timeline with virtual scroll
