@@ -19,6 +19,7 @@ export function photoToSlideImage(photo: PhotoType, file: FileType): SlideImage 
         favorite,
         src: photo.src,
         alt: photo.title,
+        title: photo.title,
         width: width * MAX_ZOOM,
         height: height * MAX_ZOOM,
         srcSet: [
@@ -49,6 +50,7 @@ export function photoToSlideVideo(photo: PhotoType, files: FileType[]): SlideVid
         type: "video",
         favorite: photo.favorite,
         poster: photo.src,
+        title: photo.title,
         // width: photo.width,
         // height: photo.height,
         width: 1440,
@@ -69,6 +71,7 @@ export function photoToSlideLivePhoto(photo: PhotoType): SlideLivePhoto {
         type: "live",
         favorite: photo.favorite,
         src: photo.src,
+        title: photo.title,
         width: photo.width,
         height: photo.height,
         image: photoToSlideImage(photo, file_image as FileType),

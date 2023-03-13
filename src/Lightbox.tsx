@@ -12,15 +12,18 @@ import {
     PLUGIN_THUMBNAILS
 } from "yet-another-react-lightbox/core";
 // import optional lightbox plugins
+import Captions from "yet-another-react-lightbox/plugins/captions";
 import Fullscreen from "yet-another-react-lightbox/plugins/fullscreen";
 import Slideshow from "yet-another-react-lightbox/plugins/slideshow";
 import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Video from "yet-another-react-lightbox/plugins/video";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 // import additional lightbox plugins
 import Favorite from "./yarl-plugins/Favorite";
 import LivePhoto from "./yarl-plugins/LivePhoto";
+import "./yarl-plugins/captions.scss";
 import "./yarl-plugins/thumbnails.scss";
 
 import { PhotoType } from "./types";
@@ -70,7 +73,7 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
             // Fix lightbox over snackbar
             styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
             // enable optional lightbox plugins
-            plugins={[Fullscreen, Slideshow, Favorite, LivePhoto, Thumbnails, Video, Zoom]}
+            plugins={[Captions, Fullscreen, Slideshow, Favorite, LivePhoto, Thumbnails, Video, Zoom]}
             render={{
                 thumbnail: renderThumbnail
             }}
