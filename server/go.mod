@@ -7,11 +7,11 @@ require (
 	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gorilla/mux v1.8.0
-	github.com/minio/minio v0.0.0-20230314055019-50dbd2cacc27
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spf13/pflag v1.0.5
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/image v0.6.0
 	golang.org/x/net v0.8.0
 )
