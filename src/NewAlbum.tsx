@@ -116,7 +116,7 @@ const NewAlbum: FC = () => {
                                     onChange={handleChange}
                                 >
                                     { collections.map((collection) => (
-                                        <MenuItem key={collection} value={collection}>{collection}</MenuItem>
+                                        <MenuItem key={collection.name} value={collection.name}>{collection.name}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>

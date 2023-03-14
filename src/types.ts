@@ -1,8 +1,17 @@
 
-export type CollectionType = string;
+export interface CollectionType {
+    name: string;
+    storage: CollectionStorageType;
+}
+
+export interface CollectionStorageType {
+    size: string;
+    free: string;
+    percentage: number;
+}
 
 export interface PseudoAlbumType {
-    collection: CollectionType;
+    collection: CollectionType["name"];
     album: AlbumType["name"];
 }
 

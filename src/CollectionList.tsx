@@ -12,7 +12,7 @@ const CollectionList: FC = () => {
     const { collection } = useParams();
     const { data: collections = [], isFetching } = useGetCollectionsQuery();
 
-    const selected = isFetching ? "" : collection || collections[0] || "";
+    const selected = isFetching ? "" : collection || collections[0].name || "";
 
     // Select collection if none is selected
     useEffect(() => {
@@ -27,7 +27,7 @@ const CollectionList: FC = () => {
 
     const noItems = isFetching || collections.length < 1;
     const info = <MenuItem disabled><em>{isFetching ? "Loading..." : "Nothing to show"}</em></MenuItem>;
-    const items = collections.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>);
+    const items = collections.map((c) => <MenuItem key={c.name} value={c.name}>{c.name}</MenuItem>);
 
     return (
         <FormControl variant="filled" fullWidth>

@@ -12,13 +12,13 @@ export interface QueryAlbum {
 }
 
 export interface QueryAddAlbum {
-    collection: CollectionType;
+    collection: CollectionType["name"];
     name: AlbumType["name"];
     type: "regular" | "pseudo";
 }
 
 export interface QuerySaveFavorite {
-    collection: CollectionType;
+    collection: CollectionType["name"];
     album: AlbumType["name"];
     photo: PhotoType["title"];
     photoIndex: number;
