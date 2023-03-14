@@ -9,7 +9,9 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
+import Link from '@mui/material/Link';
 import MenuIcon from '@mui/icons-material/Menu';
+import Paper from '@mui/material/Paper';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -21,6 +23,8 @@ import AlbumList from './AlbumList';
 import NewAlbum from './NewAlbum';
 import FavoriteMenu from './FavoriteMenu';
 import ThemeMenu from './ThemeMenu';
+import Storage from './Storage';
+
 import { increaseZoom, decreaseZoom } from "./services/app";
 
 const drawerWidth = 300;
@@ -41,7 +45,7 @@ const Layout: FC = () => {
   };
 
   const drawer = (
-    <div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Toolbar sx={{ color: "secondary.contrastText", backgroundColor: "secondary.main" }}>
         <Box mx="auto">
           <Typography variant="h5" fontWeight="fontWeightBold" noWrap>
@@ -51,8 +55,23 @@ const Layout: FC = () => {
       </Toolbar>
       <Divider />
       <CollectionList />
-      <AlbumList onClick={handleDrawerClose} />
-    </div>
+      <Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
+        <AlbumList onClick={handleDrawerClose} />
+      </Box>
+      <Box sx={{ flex: 'none' }}>
+        {/* <Divider /> */}
+        <Storage />
+        <Paper elevation={24}>
+          <Typography variant="body2" style={{padding: "10px", textAlign: 'justify'}} >
+            <Link href="https://github.com/rigon/photo-gallery#contribute">
+                If you find this project useful, please consider supporting it.
+                Only with your help is possible to make this project better.
+            </Link>
+            <span style={{float: "right"}}>v{import.meta.env.PACKAGE_VERSION} </span>
+          </Typography>
+        </Paper>
+      </Box>
+    </Box>
   );
   
   return (
