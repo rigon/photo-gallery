@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "server": "cd server && go build && ./photo-gallery"
+    "build-server": "cd server && go build && ./photo-gallery",
+    "server": "nodemon --ext go --watch './server/' --signal SIGTERM --exec 'cd server && go build && ./photo-gallery'"
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",
@@ -39,6 +40,7 @@
     "@vitejs/plugin-react": "^3.1.0",
     "eslint": "^8.35.0",
     "eslint-config-react-app": "^7.0.1",
+    "nodemon": "^2.0.21",
     "sass": "^1.58.3",
     "typescript": "^4.9.5",
     "vite": "^4.1.4",
