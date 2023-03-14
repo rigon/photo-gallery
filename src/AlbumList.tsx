@@ -58,8 +58,8 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
                 }} />
         <List onClick={onClick}>
             { albums.map((a) => (
-                <ListItem disablePadding>
-                    <ListItemButton key={a.name} component={Link} to={`/${collection}/${a.name}`} selected={a.name === album}>
+                <ListItem key={a.name} disablePadding>
+                    <ListItemButton component={Link} to={`/${collection}/${a.name}`} selected={a.name === album}>
                         <ListItemText>
                             <Typography noWrap>{a.name}</Typography>
                         </ListItemText>
