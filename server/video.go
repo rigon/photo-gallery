@@ -8,6 +8,9 @@ import (
 	"github.com/3d0c/gmf"
 )
 
+// Encoding videos in Raspberry PI 4:
+//   ffmpeg -i input.mp4 -c:v h264_v4l2m2m -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,fps=30" -b:v 25M /tmp/test.mp4
+
 func GetVideoFrame(srcFileName string) (image.Image, error) {
 	var swsctx *gmf.SwsCtx
 
