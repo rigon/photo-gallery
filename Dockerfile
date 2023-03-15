@@ -21,7 +21,7 @@ COPY . .
 RUN npm run build
 
 # Deploy
-FROM --platform=$TARGETPLATFORM alpine:3.15
+FROM --platform=$TARGETPLATFORM alpine:3.16
 WORKDIR /app/server
 EXPOSE 3080
 VOLUME "/photos" "/thumbs"
