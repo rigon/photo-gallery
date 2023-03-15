@@ -1,33 +1,38 @@
 Photo Gallery
 =============
 
-Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can view your stored photos easily.
-
+Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can browse through your photos quick and easy.
 
 ## Motivation
 
-many projects despite being open source, they its own way of storing the data, making it hard to change the app if you want to use another one.
-support for iphone live photos and support for HEIC and H265
-easy and quick to navigate between albums
-lightweight, so it could run on small device as a Raspberry PI
+There are a lot of photo gallery projects out there. However they often have their own unique way of storing data so you don't really have control how it is organized, not just the photos themselves, but also like albums, favorites and other preferences alongside. All of this must be kept transparent and accessible.
+
+Another key feature of project is its ease of use, an app that was intuitive and quick to navigate between albums and thousands of photos. And projects that have a good array of features they could be improved upon in this regard.
+
+It was important as well supporting a wide range of data formats, including [iPhone Live Photos](https://support.apple.com/en-us/HT207310) (HEIC images and H.265 video). With so many different types of devices and formats, it can be a challenge to keep all of your photos organized in one place.
+
+Finally, an app that is lightweight and could run on small devices like a Raspberry Pi.
+
+To sum up, the reason for this project is to be open sourced, you owning your own data and supporting a wide range of data formats all with an easy navigation and a lightweight design.
+
 
 ## Goals
 
-**Built around the file system:** photos are loaded from albums. Data is preserved as-is in the filesystem. Changes you make later are saved as transparently as possible, like as choosing your favorites. No requirement to be tied to a database.
+**Built around the file system:** photos are loaded from albums. Data is preserved as-is in the filesystem. Changes you make later are saved as transparently as possible, like as choosing your favorites. No requirement to be tied to a database. If you decide for another solution you should own all your data.
 
 **Performant:** no need for initial and regular scans. Thumbnails are used to see a large amount of photos at a time and are automatically generated on-the-fly.
 
-**Made for photography:** for everyone that enjoys taking photos and revisiting precious memories captured through them.
+**Made for photography:** for everyone, amateur or professional, that enjoys taking photos and revisiting precious memories captured through them.
 
-**Ease of use:** navigation through albums as easy as possible, with 
+**Ease of use:** navigation through albums as easy as possible
 
 
-So, few concepts to keep in mind about how things are organized:
+## Features
+
+First, few concepts to keep in mind about how things are organized:
 - **Albums** are folders in the filesystem and the images inside are the photos of the album
 - **Collection** is a set of albums, in other words, is the location where your collection is stored
 - **Pseudo Album** is special type of album, is file stored in the filesystem which contains links for the photos. This way you can organize your favorites without duplicating them
-
-## Features
 
 Main features:
 
@@ -49,10 +54,16 @@ Main features:
 - [X] Pseudo albums:
   - [X] Create
   - [X] Save favorite photos
-- [ ] Multiple seleciton in the gallery:
+- [X] Show storage info
+- [ ] Organize photos:
+  - [ ] Upload
   - [ ] Move photos between albums
   - [ ] Delete
-  - [ ] Save favorites in bulk
+- [ ] Selection in bulk:
+  - [ ] Move
+  - [ ] Delete
+  - [ ] Save favorites
+- [ ] Image resizing according with screen
 - [ ] Upload photos
 - [ ] Authentication
 - [ ] Metadata extraction (EXIF)
@@ -60,6 +71,27 @@ Main features:
 - [ ] Show locations in a map
 - [ ] Face recognition and aggregation by person
 
+
+## Build and Run
+
+First, clone the project:
+
+    git clone https://github.com/rigon/photo-gallery.git
+    cd photo-gallery
+
+Then, build the web interface and the server:
+
+    npm install
+    npm run build
+    npm run build-server
+
+To start the server:
+
+    npm run server
+
+Once started, open [http://localhost:3080](http://localhost:3080) to view it in your browser.
+
+Optionally you can open [http://localhost:3080/webdav](http://localhost:3080/webdav) in the file explorer as well.
 
 ## Usage
 
@@ -72,11 +104,27 @@ Server help:
                                         index          Position in the collection list
                                         name           Name of the collection
                                         path           Path to load the albums from
-                                        thumbs         Path to store the tumbnails
+                                        thumbs         Path to store the thumbnails
                                         hide=false     Hide the collection from the list (does not affect webdav)
                                         rename=true    Rename files instead of overwriting them
                                         readonly=false
            --disable-webdav           Disable WebDAV
+
+### Docker
+
+This project is distributed docker ([Photo Gallery Docker Hub page](https://hub.docker.com/r/rigon/photo-gallery)).
+
+The following example illustrates a case where you have two folders mounted with volumes, one with the collection of photos that is read-only and a recent folder with your still unorganized photos that is writable.
+
+    docker run -d -p 3080:3080 --restart=always --name photo-gallery \
+    -v photo-gallery_data:/thumbs \
+    -v /media/data/photos/:/photos/:ro \
+    -v /media/data/recent/:/recent/:rw \
+    rigon/photo-gallery \
+    -c "name=Photos,path=/photos,thumbs=/thumbs" \
+    -c "name=Recent,path=/recent,thumbs=/thumbs"
+
+`photo-gallery_data` can be safely deleted, however cached data must be regenerated.
 
 ### Port forwarding on Terminus under iOS
 
@@ -103,12 +151,14 @@ In the project directory, you can run:
   The page will reload when you make changes.
   You may also see any lint errors in the console.
 
-- `npm run server`
+- `npm run server` and `npm run server-dev`
   
   Builds and runs the server.\
   Open [http://localhost:3080](http://localhost:3080) to view it in your browser.
 
   The web version served is the production build obtained with `npm run build`
+
+  `server-dev` is the same, but monitors for changes and reloads automatically
 
 - `npm test`
 

@@ -165,7 +165,7 @@ List of possible options:
   index          Position in the collection list
   name           Name of the collection
   path           Path to load the albums from
-  thumbs         Path to store the tumbnails
+  thumbs         Path to store the thumbnails
   hide=false     Hide the collection from the list (does not affect webdav)
   rename=true    Rename files instead of overwriting them
   readonly=false`)
