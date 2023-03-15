@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker buildx build --push -t rigon/photo-gallery --platform linux/amd64,linux/arm/v6,linux/arm64/v8 .
+      run: docker buildx create --use && docker buildx build --push -t rigon/photo-gallery --platform linux/amd64,linux/arm/v6,linux/arm64/v8 .
