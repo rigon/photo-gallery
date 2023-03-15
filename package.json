@@ -7,9 +7,10 @@
     "start": "vite",
     "dev": "vite",
     "build": "tsc && vite build",
+    "build-server": "cd server && CGO_ENABLED=1 go build -v -installsuffix cgo -o photo-gallery",
     "preview": "vite preview",
-    "build-server": "cd server && go build && ./photo-gallery",
-    "server": "nodemon --ext go --watch './server/' --signal SIGTERM --exec 'cd server && go build && ./photo-gallery'"
+    "server": "cd server && go build && ./photo-gallery",
+    "server-dev": "nodemon --ext go --watch './server/' --signal SIGTERM --exec 'cd server && go build && ./photo-gallery'"
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",
