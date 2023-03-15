@@ -152,7 +152,13 @@ func saveToPseudo(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Add photo to pseudo album
-	collection.loadedAlbum.savePhotoToPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+	if req.Method == "PUT" {
+		collection.loadedAlbum.SavePhotoToPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+	}
+	// Remove photo from pseudo album
+	if req.Method == "DELETE" {
+		collection.loadedAlbum.RemovePhotoFromPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+	}
 }
 
 func main() {
@@ -249,6 +255,7 @@ List of possible options:
 	router.HandleFunc("/api/collection/{collection}/album/{album}", album)
 	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
 	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/saveToPseudo", saveToPseudo).Methods("PUT")
+	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/saveToPseudo", saveToPseudo).Methods("DELETE")
 	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		// an example API handler

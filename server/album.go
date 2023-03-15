@@ -89,7 +89,7 @@ func (album *Album) GetPhotos(config Collection) error {
 			line := scanner.Text()
 			split := strings.Split(line, ":")
 			if len(split) != 3 {
-				log.Println("The following line is not formated correctly:", line)
+				log.Println("The following line is not formatted correctly:", line)
 				break
 			}
 			// Decompose slice

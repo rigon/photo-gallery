@@ -57,9 +57,9 @@ export const api = createApi({
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
         savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
-            query: ({ collection, album, photo, saveTo }) => ({
+            query: ({ collection, album, photo, favorite, saveTo }) => ({
                 url: `/collection/${collection}/album/${album}/photo/${photo}/saveToPseudo`,
-                method: 'PUT',
+                method: favorite ? 'PUT' : 'DELETE',
                 body: saveTo,
             }),
             invalidatesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.saveTo.collection}-${arg.saveTo.album}` }],
