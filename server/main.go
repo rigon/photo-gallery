@@ -74,6 +74,7 @@ func addAlbum(w http.ResponseWriter, req *http.Request) {
 
 func photo(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
+	query := req.URL.Query()
 	collection := GetCollection(vars["collection"])
 	albumName := vars["album"]
 	photoName := vars["photo"]
@@ -103,7 +104,14 @@ func photo(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//mime.TypeByExtension()
-	photo.GetImage(fileNumber, w)
+	if query.Has("width") && query.Has("height") {
+		// TODO: Resize responsive image
+		width, err := strconv.Atoi(query.Get("width"))
+		height, err := strconv.Atoi(query.Get("height"))
+		photo.GetResizedImage(fileNumber, width, height, w)
+	} else {
+		photo.GetImage(fileNumber, w)
+	}
 }
 
 func thumb(w http.ResponseWriter, req *http.Request) {
