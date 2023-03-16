@@ -1,17 +1,14 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/spf13/pflag"
 	"golang.org/x/net/webdav"
 )
 
@@ -164,77 +161,12 @@ func saveToPseudo(w http.ResponseWriter, req *http.Request) {
 func main() {
 	//rand.Seed(time.Now().UnixNano())
 
-	var cacheThumbnails, webdavDisabled bool
-	var collectionArgs []string
-	pflag.StringArrayVarP(&collectionArgs, "collection", "c", collectionArgs, `Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
-List of possible options:
-  index          Position in the collection list
-  name           Name of the collection
-  path           Path to load the albums from
-  thumbs         Path to store the thumbnails
-  hide=false     Hide the collection from the list (does not affect webdav)
-  rename=true    Rename files instead of overwriting them
-  readonly=false`)
-	pflag.BoolVarP(&cacheThumbnails, "cache-thumbnails", "b", false, "Generate thumbnails in background when the application starts")
-	pflag.BoolVar(&webdavDisabled, "disable-webdav", false, "Disable WebDAV")
-	pflag.Parse()
-
-	app.Collections = make(map[string]*Collection)
-	for i, c := range collectionArgs {
-		collection := new(Collection)
-		collection.Index = i
-		collection.Hide = false
-		collection.ReadOnly = false
-		collection.RenameOnReplace = true
-
-		reader := csv.NewReader(strings.NewReader(c))
-		ss, err := reader.Read()
-		if err != nil {
-			log.Println(err)
-		}
-		for _, pair := range ss {
-			kv := strings.SplitN(pair, "=", 2)
-			if len(kv) != 2 {
-				log.Printf("%s must be formatted as key=value\n", pair)
-			}
-			switch kv[0] {
-			case "index":
-				collection.Index, err = strconv.Atoi(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			case "name":
-				collection.Name = kv[1]
-			case "path":
-				collection.PhotosPath = kv[1]
-			case "thumbs":
-				collection.ThumbsPath = kv[1]
-			case "rename":
-				collection.RenameOnReplace, err = strconv.ParseBool(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			case "readonly":
-				collection.ReadOnly, err = strconv.ParseBool(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			case "hide":
-				collection.Hide, err = strconv.ParseBool(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			default:
-				log.Printf("%s option is not valid\n", kv[0])
-			}
-		}
-
-		app.Collections[collection.Name] = collection
-	}
-	log.Println("Collections:", app.Collections)
+	cmdArgs := ParseCmdArgs()
+	serverAddr := cmdArgs.host + ":" + strconv.Itoa(cmdArgs.port)
+	log.Println("Collections:", cmdArgs.collections)
 
 	// Cache thumbnails in background
-	if cacheThumbnails {
+	if cmdArgs.cacheThumbnails {
 		log.Println("Generating thumbnails in background...")
 		go func() {
 			for _, c := range app.Collections {
@@ -267,7 +199,7 @@ List of possible options:
 	})
 
 	// WebDAV
-	if !webdavDisabled {
+	if !cmdArgs.webdavDisabled {
 		wd := &webdav.Handler{
 			Prefix:     "/webdav",
 			FileSystem: CreateWebDavFS(app.Collections),
@@ -281,7 +213,7 @@ List of possible options:
 			},
 		}
 		router.PathPrefix("/webdav").Handler(wd)
-		log.Println("WebDAV will be available at http://localhost:3080/webdav")
+		log.Println("WebDAV will be available at " + serverAddr + "/webdav")
 	}
 
 	// Frontend
@@ -294,11 +226,11 @@ List of possible options:
 	// Start server
 	srv := &http.Server{
 		Handler: router,
-		Addr:    "0.0.0.0:3080",
+		Addr:    serverAddr,
 		// // Good practice: enforce timeouts for servers you create!
 		// WriteTimeout: 15 * time.Second,
 		// ReadTimeout:  15 * time.Second,
 	}
-	log.Println("Starting server: http://localhost:3080")
+	log.Println("Starting server: " + serverAddr)
 	log.Fatal(srv.ListenAndServe())
 }
