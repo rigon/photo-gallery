@@ -7,10 +7,14 @@ import (
 	"math"
 	"os"
 	"path"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/shirou/gopsutil/disk"
+	bolt "go.etcd.io/bbolt"
 )
+
+const DB_NAME_SUFFIX = "-cache.db"
 
 type Collection struct {
 	Index           int
@@ -20,6 +24,7 @@ type Collection struct {
 	Hide            bool
 	ReadOnly        bool
 	RenameOnReplace bool
+	Db              *bolt.DB
 	loadedAlbum     *Album
 }
 
@@ -64,6 +69,21 @@ func GetCollection(collection string) *Collection {
 		log.Println("invalid collection")
 	}
 	return val
+}
+
+func (c *Collection) OpenDB() error {
+	var err error
+	filename := path.Join(c.ThumbsPath, c.Name+DB_NAME_SUFFIX)
+	fmt.Println(filename)
+	c.Db, err = bolt.Open(filename, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return nil
+}
+
+func (c Collection) CloseDB() error {
+	return c.Db.Close()
 }
 
 func (c Collection) AddAlbum(info AddAlbumQuery) error {

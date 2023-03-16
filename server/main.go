@@ -165,6 +165,11 @@ func main() {
 	serverAddr := cmdArgs.host + ":" + strconv.Itoa(cmdArgs.port)
 	log.Println("Collections:", cmdArgs.collections)
 
+	for _, collection := range cmdArgs.collections {
+		collection.OpenDB()
+		defer collection.CloseDB()
+	}
+
 	// Cache thumbnails in background
 	if cmdArgs.cacheThumbnails {
 		log.Println("Generating thumbnails in background...")
