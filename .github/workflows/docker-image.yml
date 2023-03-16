@@ -6,9 +6,10 @@ on:
     branches:
     - "master"
     tags:
-    - "*.*.*"
+    - "v*.*.*"
   pull_request:
-    branches: [ "master" ]
+    branches:
+    - "master"
 
 jobs:
   build:
@@ -23,10 +24,8 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: rigon/photo-gallery
-        flavor: latest=auto
         # generate Docker tags based on the following events/attributes
         tags: |
-          type=schedule
           type=ref,event=branch
           type=ref,event=pr
           type=semver,pattern={{version}}
