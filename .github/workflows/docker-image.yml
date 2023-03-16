@@ -23,6 +23,7 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: rigon/photo-gallery
+        flavor: latest=auto
         # generate Docker tags based on the following events/attributes
         tags: |
           type=schedule
@@ -31,7 +32,6 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
-          type=sha
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Set up Docker Buildx
