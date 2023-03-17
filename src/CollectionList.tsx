@@ -12,7 +12,7 @@ const CollectionList: FC = () => {
     const { collection } = useParams();
     const { data: collections = [], isFetching } = useGetCollectionsQuery();
 
-    const selected = isFetching ? "" : collection || collections[0].name || "";
+    const selected = isFetching ? "" : collection || collections[0]?.name || "";
 
     // Select collection if none is selected
     useEffect(() => {
