@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -14,12 +13,13 @@ import (
 type CmdArgs struct {
 	cacheThumbnails bool
 	webdavDisabled  bool
-	collections     map[string]Collection
+	collections     map[string]*Collection
 	port            int
 	host            string
 }
 
-func parseCollectionOptions(collectionOption string, defaultIndex int) (collection Collection, err error) {
+func parseCollectionOptions(collectionOption string, defaultIndex int) (collection *Collection, err error) {
+	collection = new(Collection)
 	collection.Index = defaultIndex
 	collection.Hide = false
 	collection.ReadOnly = false
@@ -70,7 +70,6 @@ func parseCollectionOptions(collectionOption string, defaultIndex int) (collecti
 }
 
 func ParseCmdArgs() (cmdArgs CmdArgs) {
-	//cmdArgs = new(CmdArgs)
 	var collectionArgs []string
 	pflag.StringArrayVarP(&collectionArgs, "collection", "c", collectionArgs, `Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
 List of possible options:
@@ -87,7 +86,7 @@ readonly=false`)
 	pflag.IntVarP(&cmdArgs.port, "port", "p", 3080, "Specify a port")
 	pflag.Parse()
 
-	cmdArgs.collections = make(map[string]Collection)
+	cmdArgs.collections = make(map[string]*Collection)
 	for i, c := range collectionArgs {
 		collection, err := parseCollectionOptions(c, i)
 		if err != nil {
@@ -95,6 +94,5 @@ readonly=false`)
 		}
 		cmdArgs.collections[collection.Name] = collection
 	}
-	fmt.Println(cmdArgs)
 	return
 }

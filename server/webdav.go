@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -14,6 +13,12 @@ import (
 	"golang.org/x/net/webdav"
 )
 
+var WebDAVMethods = []string{
+	"OPTIONS", "GET", "HEAD", "POST", "DELETE",
+	"PUT", "MKCOL", "COPY", "MOVE", "LOCK",
+	"UNLOCK", "PROPFIND", "PROPPATCH",
+}
+
 type webDavCollections map[string]*Collection
 
 type collectionsNodeFS struct {
@@ -22,7 +27,6 @@ type collectionsNodeFS struct {
 }
 
 func (cs webDavCollections) find(name string) (*Collection, webdav.Dir, string, error) {
-	fmt.Println(name)
 	for _, c := range cs {
 		var prefix string = ""
 		if name == c.Name {

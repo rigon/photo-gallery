@@ -48,9 +48,9 @@ func (c Collection) String() string {
 }
 
 func GetCollections(collections map[string]*Collection) []CollectionResponse {
-	list := make([]CollectionResponse, len(app.Collections))
+	list := make([]CollectionResponse, len(collections))
 
-	for _, c := range app.Collections {
+	for _, c := range collections {
 		if !c.Hide {
 			st, err := c.StorageUsage()
 			if err != nil {
@@ -63,18 +63,9 @@ func GetCollections(collections map[string]*Collection) []CollectionResponse {
 	return list
 }
 
-func GetCollection(collection string) *Collection {
-	val, present := app.Collections[collection]
-	if !present {
-		log.Println("invalid collection")
-	}
-	return val
-}
-
 func (c *Collection) OpenDB() error {
 	var err error
 	filename := path.Join(c.ThumbsPath, c.Name+DB_NAME_SUFFIX)
-	fmt.Println(filename)
 	c.Db, err = bolt.Open(filename, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Fatal(err)
