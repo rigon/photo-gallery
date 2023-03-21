@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,12 +15,12 @@ import (
 
 var config CmdArgs
 
-func GetCollection(collection string) *Collection {
+func GetCollection(collection string) (*Collection, error) {
 	val, present := config.collections[collection]
 	if !present {
-		log.Println("invalid collection")
+		return nil, errors.New("invalid collection")
 	}
-	return val
+	return val, nil
 }
 
 func collections(c *fiber.Ctx) error {
@@ -31,24 +32,29 @@ func pseudos(c *fiber.Ctx) error {
 }
 
 func albums(c *fiber.Ctx) error {
-	collection := GetCollection(c.Params("collection"))
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
 
 	albums, err := ListAlbums(*collection)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return c.JSON(albums)
 }
 
 func album(c *fiber.Ctx) error {
-	collection := GetCollection(c.Params("collection"))
-	albumName := c.Params("album")
-	fmt.Println("albumName", albumName)
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
 
+	albumName := c.Params("album")
 	album, err := GetAlbum(*collection, albumName)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	// Cache selected album
@@ -59,7 +65,11 @@ func album(c *fiber.Ctx) error {
 
 func addAlbum(c *fiber.Ctx) error {
 	var album AddAlbumQuery
-	collection := GetCollection(c.Params("collection"))
+
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
 	// Decode body
 	if err := c.BodyParser(&album); err != nil {
 		return err
@@ -69,32 +79,28 @@ func addAlbum(c *fiber.Ctx) error {
 }
 
 func photo(c *fiber.Ctx) error {
-	collection := GetCollection(c.Params("collection"))
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
 	albumName := c.Params("album")
 	photoName := c.Params("photo")
 	fileNumber, err := strconv.Atoi(c.Params("file"))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	// filename := filepath.Join(config.PhotosPath, albumName, photoName)
-	// if strings.HasSuffix(strings.ToLower(photoName), ".heic") {
-	// 	convertPhoto(w, filename)
-	// } else {
-	//http.ServeFile(w, req, filepath.Join(config.PhotosPath, albumName, photoName))
-	// }
-	log.Printf("Photo [%s] %s\n", albumName, photoName)
 
 	// Check if cached album is the one we want
 	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != albumName {
 		collection.loadedAlbum, err = GetAlbum(*collection, albumName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	photo, err := collection.loadedAlbum.FindPhoto(photoName)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	//mime.TypeByExtension()
@@ -103,22 +109,24 @@ func photo(c *fiber.Ctx) error {
 
 func thumb(c *fiber.Ctx) error {
 	var err error
-	collection := GetCollection(c.Params("collection"))
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
 	albumName := c.Params("album")
 	photoName := c.Params("photo")
-	//log.Printf("Thumb [%s] %s\n", albumName, photoName)
 
 	// Check if cached album is the one we want
 	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != albumName {
 		collection.loadedAlbum, err = GetAlbum(*collection, albumName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	photo, err := collection.loadedAlbum.FindPhoto(photoName)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	AddWorkPhoto(c.Response().BodyWriter(), *collection, *collection.loadedAlbum, *photo)
@@ -127,7 +135,7 @@ func thumb(c *fiber.Ctx) error {
 
 func saveToPseudo(c *fiber.Ctx) error {
 	var saveTo PseudoAlbum
-	var err error
+
 	fromCollection := c.Params("collection")
 	fromAlbum := c.Params("album")
 	fromPhoto := c.Params("photo")
@@ -136,13 +144,16 @@ func saveToPseudo(c *fiber.Ctx) error {
 		return err
 	}
 
-	collection := GetCollection(saveTo.Collection)
+	collection, err := GetCollection(saveTo.Collection)
+	if err != nil {
+		return err
+	}
 
 	// Check if cached album is the one we want
 	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != saveTo.Name {
 		collection.loadedAlbum, err = GetAlbum(*collection, saveTo.Name)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 

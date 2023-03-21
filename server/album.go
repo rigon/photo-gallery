@@ -95,8 +95,14 @@ func (album *Album) GetPhotos(config Collection) error {
 			// Decompose slice
 			collectionName, albumName, photoName := split[0], split[1], strings.ToLower(split[2])
 
-			collection := GetCollection(collectionName)
-			album, _ := GetAlbum(*collection, albumName)
+			collection, err := GetCollection(collectionName)
+			if err != nil {
+				return err
+			}
+			album, err := GetAlbum(*collection, albumName)
+			if err != nil {
+				return err
+			}
 
 			// Create a new photo
 			photo := new(Photo)
@@ -120,7 +126,7 @@ func (album *Album) GetPhotos(config Collection) error {
 		// Read album (or folder) contents
 		files, err := ioutil.ReadDir(filepath.Join(config.PhotosPath, album.Name))
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		// Iterate over folder items

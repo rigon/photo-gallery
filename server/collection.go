@@ -96,7 +96,7 @@ func (c Collection) AddAlbum(info AddAlbumQuery) error {
 	case "pseudo":
 		file, err := os.Create(p)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		// Just touching the file
 		file.Close()

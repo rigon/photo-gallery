@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -54,6 +54,9 @@ func (photo Photo) GetThumbnail(w io.Writer, config Collection, album Album) err
 }
 
 func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
+	if fileNumber < 0 || fileNumber >= len(photo.Files) {
+		return errors.New("invalid photo file number")
+	}
 	file := photo.Files[fileNumber]
 
 	// If the file requires transcoding
@@ -75,7 +78,7 @@ func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
 	// Open input file
 	fin, err := os.Open(file.Path)
 	if err != nil {
-		return nil
+		return err
 	}
 	defer fin.Close()
 	// create buffer
@@ -85,7 +88,7 @@ func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
 		readTotal, err := fin.Read(b)
 		if err != nil {
 			if err != io.EOF {
-				fmt.Println(err)
+				return err
 			}
 			break
 		}
