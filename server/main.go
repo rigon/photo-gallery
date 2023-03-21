@@ -44,6 +44,7 @@ func albums(c *fiber.Ctx) error {
 func album(c *fiber.Ctx) error {
 	collection := GetCollection(c.Params("collection"))
 	albumName := c.Params("album")
+	fmt.Println("albumName", albumName)
 
 	album, err := GetAlbum(*collection, albumName)
 	if err != nil {
@@ -183,6 +184,7 @@ func main() {
 	// Server
 	app := fiber.New(fiber.Config{
 		RequestMethods: mergeWithoutDuplicates(fiber.DefaultMethods, WebDAVMethods),
+		UnescapePath:   true,
 	})
 
 	// Middlewares
