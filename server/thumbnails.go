@@ -1,21 +1,19 @@
 package main
 
-import (
-	"log"
-)
+import "log"
 
-func CreateThumbnails(config Collection) {
-	albums, err := ListAlbums(config)
+func CreateThumbnails(collection *Collection) {
+	albums, err := collection.GetAlbums()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, album := range albums {
-		album, err := GetAlbum(config, album.Name)
+		album, err := collection.GetAlbumWithPhotos(album.Name)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		album.GenerateThumbnails(config)
+		album.GenerateThumbnails(collection)
 	}
 }

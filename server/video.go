@@ -9,7 +9,10 @@ import (
 )
 
 // Encoding videos in Raspberry PI 4:
-//   ffmpeg -i input.mp4 -c:v h264_v4l2m2m -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,fps=30" -b:v 25M /tmp/test.mp4
+//   ffmpeg -i input.mp4 -c:v h264_v4l2m2m -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,fps=30" -b:v 25M output.mp4
+//
+// Video being download twice
+//   ffmpeg -i initial-file.mp4 -c copy -movflags +faststart corrected-file.mp4
 
 func GetVideoFrame(srcFileName string) (image.Image, error) {
 	var swsctx *gmf.SwsCtx

@@ -6,11 +6,11 @@ import (
 )
 
 func TestCreateThumbnails(t *testing.T) {
-	config := Collection{
+	collection := &Collection{
 		PhotosPath: "tests/collection/",
 		ThumbsPath: "tests/thumbs/"}
 
-	CreateThumbnails(config)
+	CreateThumbnails(collection)
 	wg.Wait()
 }
 

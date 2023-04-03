@@ -8,11 +8,11 @@ import (
 )
 
 type Work struct {
-	config Collection
-	album  Album
-	photo  Photo
-	writer io.Writer
-	wg     *sync.WaitGroup
+	collection *Collection
+	album      *Album
+	photo      *Photo
+	writer     io.Writer
+	wg         *sync.WaitGroup
 }
 
 var (
@@ -25,19 +25,19 @@ func init() {
 	for i := 0; i < NT; i++ {
 		go func() {
 			for w := range ch {
-				w.photo.GetThumbnail(w.writer, w.config, w.album)
+				w.photo.GetThumbnail(w.writer, w.collection, w.album)
 				w.wg.Done()
 			}
 		}()
 	}
 }
 
-func AddWorkPhoto(writer io.Writer, config Collection, album Album, photo Photo) {
+func AddWorkPhoto(writer io.Writer, collection *Collection, album *Album, photo *Photo) {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 
 	w := new(Work)
-	w.config = config
+	w.collection = collection
 	w.album = album
 	w.photo = photo
 	w.writer = writer
@@ -46,14 +46,14 @@ func AddWorkPhoto(writer io.Writer, config Collection, album Album, photo Photo)
 	wg.Wait()
 }
 
-func AddWorkPhotos(config Collection, album Album, photos ...*Photo) {
-	for _, photo := range photos {
+func AddWorkPhotos(collection *Collection, album *Album) {
+	for _, photo := range album.Photos {
 		log.Printf("Background Thumb [%s] %s\n", album.Name, photo.Title)
 		wg.Add(1)
 		w := new(Work)
-		w.config = config
+		w.collection = collection
 		w.album = album
-		w.photo = *photo
+		w.photo = &photo
 		w.writer = nil
 		w.wg = &wg
 		ch <- w
