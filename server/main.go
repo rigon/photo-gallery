@@ -55,7 +55,7 @@ func album(c *fiber.Ctx) error {
 	albumName := c.Params("album")
 
 	// Fetch album from disk
-	album, err := collection.GetAlbumWithPhotos(albumName)
+	album, err := collection.GetAlbumWithPhotos(albumName, true)
 	if err != nil {
 		return err
 	}
@@ -88,13 +88,8 @@ func thumb(c *fiber.Ctx) error {
 	albumName := c.Params("album")
 	photoName := c.Params("photo")
 
-	// Check first if album exists (must be cached)
-	if !collection.cache.IsAlbum(albumName) {
-		return errors.New("album not found")
-	}
-
 	// Fetch album with photos including info
-	album, err := collection.cache.GetAlbum(albumName)
+	album, err := collection.GetAlbumWithPhotos(albumName, false)
 	if err != nil {
 		return err
 	}
@@ -263,10 +258,8 @@ func main() {
 	// serve Single Page application on "/"
 	// assume static file at ../build folder
 	app.Static("/", "../build", fiber.Static{ByteRange: true, Next: func(c *fiber.Ctx) bool {
-		fmt.Println("PILAS")
 		return false
 	}})
-
 	app.Get("/*", func(ctx *fiber.Ctx) error {
 		return ctx.SendFile("../build/index.html")
 	})

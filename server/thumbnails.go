@@ -9,7 +9,7 @@ func CreateThumbnails(collection *Collection) {
 	}
 
 	for _, album := range albums {
-		album, err := collection.GetAlbumWithPhotos(album.Name)
+		album, err := collection.GetAlbumWithPhotos(album.Name, false)
 		if err != nil {
 			log.Fatal(err)
 		}

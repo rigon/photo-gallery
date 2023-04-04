@@ -53,6 +53,10 @@ func (c Cache) AddToListAlbums(albums ...*Album) {
 	}
 }
 
+func (c *Cache) IsListAlbumsLoaded() bool {
+	return len(c.albums) > 0
+}
+
 func (c Cache) IsAlbum(albumName string) bool {
 	// Check if value is present
 	_, present := c.albums[albumName]
@@ -66,6 +70,10 @@ func (c Cache) GetAlbum(albumName string) (*Album, error) {
 		return nil, err
 	}
 	return album.(*Album), nil
+}
+
+func (c Cache) SaveAlbum(album *Album) error {
+	return c.mem.Set(album.Name, album)
 }
 
 // // Add a list of albums to the cache database

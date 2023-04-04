@@ -32,7 +32,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 			if err != nil {
 				return err
 			}
-			targetAlbum, err := targetCollection.GetAlbumWithPhotos(pseudo.Album)
+			targetAlbum, err := targetCollection.GetAlbumWithPhotos(pseudo.Album, false)
 			if err != nil {
 				return err
 			}

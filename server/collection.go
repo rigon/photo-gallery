@@ -89,11 +89,20 @@ func (c *Collection) GetAlbums() (albums []*Album, err error) {
 	return
 }
 
+func (c Collection) IsAlbum(albumName string) bool {
+	// Cache list of albums if not cached
+	if !c.cache.IsListAlbumsLoaded() {
+		c.GetAlbums()
+	}
+	// Check if album exists (must be cached)
+	return c.cache.IsAlbum(albumName)
+}
+
 // Get album, however photos are not loaded together.
 // For that use Album.GetPhotos()
 func (c Collection) GetAlbum(albumName string) (*Album, error) {
-	// Check first if album exists (must be cached)
-	if !c.cache.IsAlbum(albumName) {
+	// Check if album exists
+	if !c.IsAlbum(albumName) {
 		return nil, errors.New("album not found")
 	}
 	// Check for regular album (i.e. folder)
@@ -134,16 +143,18 @@ func readAlbum(file fs.FileInfo) (*Album, error) {
 }
 
 // Get album with photos
-func (c *Collection) GetAlbumWithPhotos(albumName string) (*Album, error) {
-	// Check if album is in cache
-	cachedAlbum, err := c.cache.GetAlbum(albumName)
-	if err == nil {
-		return cachedAlbum, nil
+func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Album, error) {
+	if !forceUpdate {
+		// Check if album is in cache
+		cachedAlbum, err := c.cache.GetAlbum(albumName)
+		if err == nil { // Is cached
+			return cachedAlbum, nil
+		}
 	}
 	// If not in cache, read from disk
 	album, err := c.GetAlbum(albumName)
 	if err != nil {
-		return album, err
+		return nil, err
 	}
 
 	// Get photos from the disk
@@ -151,7 +162,7 @@ func (c *Collection) GetAlbumWithPhotos(albumName string) (*Album, error) {
 	// Fill photos with info in cache (e.g. height and width)
 	c.cache.FillPhotosInfo(album)
 	// ...and save to cache
-	c.cache.mem.Set(album.Name, album)
+	c.cache.SaveAlbum(album)
 
 	return album, nil
 }
@@ -171,9 +182,13 @@ func (c Collection) AddAlbum(info AddAlbumQuery) error {
 	switch info.Type {
 	case "regular":
 		// Create folder
-		os.Mkdir(p, os.ModeDir)
+		err := os.Mkdir(p, os.ModeDir)
+		if err != nil {
+			return err
+		}
 	case "pseudo":
-		file, err := os.Create(p)
+		// Create if does not exist
+		file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
 			return err
 		}
