@@ -1,7 +1,5 @@
-import { SlideVideo } from "yet-another-react-lightbox/plugins/video";
-import { Slide, SlideImage } from "yet-another-react-lightbox/types";
+import { Slide, SlideImage, SlideVideo, SlideLivePhoto } from "yet-another-react-lightbox/types";
 import { FileType, PhotoType } from "./types";
-import { SlideLivePhoto } from "./yarl-plugins/LivePhoto";
 
 const breakpoints = [4320, 2160, 1080, 720, 640];
 const THUMBNAIL_HEIGHT = 200;

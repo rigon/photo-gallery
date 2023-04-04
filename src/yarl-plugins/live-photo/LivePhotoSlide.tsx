@@ -5,8 +5,7 @@ import {
     ACTIVE_SLIDE_PLAYING,
     ImageSlide,
 } from "yet-another-react-lightbox/core";
-import { ContainerRect } from "yet-another-react-lightbox/types";
-import { SlideLivePhoto } from "./index";
+import { SlideLivePhoto, ContainerRect } from "yet-another-react-lightbox/types";
 import { VideoSlide } from "./VideoSlide";
 
 type LivePhotoSlideProps = {

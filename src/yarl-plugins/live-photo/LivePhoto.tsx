@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Plugin } from "yet-another-react-lightbox/types";
+import { PluginProps, Slide, SlideLivePhoto } from "yet-another-react-lightbox/types";
 import { LivePhotoSlide } from "./LivePhotoSlide";
 
 export const defaultVideoProps = {
@@ -8,12 +8,16 @@ export const defaultVideoProps = {
     playsInline: true,
 };
 
+function isLivePhotoSlide(slide: Slide): slide is SlideLivePhoto {
+    return slide.type === "live";
+}
+
 /** LivePhoto plugin */
-export const LivePhoto: Plugin = ({ augment }) => {
+export function LivePhoto({ augment }: PluginProps) {
     augment(({ render: { slide: renderSlide, ...restRender }, video: originalVideo, ...restProps }) => ({
         render: {
-            slide: (slide, offset, rect) => {
-                if (slide.type === "live") {
+            slide: ({slide, offset, rect}) => {
+                if (isLivePhotoSlide(slide)) {
                     return (
                         <LivePhotoSlide
                             //key={`${slide.sources.map((source) => source.src).join(" ")}`}
@@ -23,7 +27,7 @@ export const LivePhoto: Plugin = ({ augment }) => {
                         />
                     );
                 }
-                return renderSlide?.(slide, offset, rect);
+                return renderSlide?.({ slide, offset, rect });
             },
             ...restRender,
         },
@@ -33,4 +37,4 @@ export const LivePhoto: Plugin = ({ augment }) => {
         },
         ...restProps,
     }));
-};
+}

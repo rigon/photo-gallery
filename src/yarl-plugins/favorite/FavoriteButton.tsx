@@ -5,8 +5,8 @@ import {
     cleanup,
     IconButton,
     label,
-    useController,
     useEvents,
+    useLightboxProps,
     useLightboxState,
 } from "yet-another-react-lightbox/core";
 
@@ -19,17 +19,18 @@ const defaultProps = {
 
 export const FavoriteButton: React.FC = () => {
     const {
-        state: { currentIndex },
+        state: {
+            currentIndex,
+            slides,
+        },
     } = useLightboxState();
-    const { getLightboxProps } = useController();
     const { subscribe } = useEvents();
 
     const {
         favorite: props,
         render,
-        slides,
         labels,
-    } = getLightboxProps();
+    } = useLightboxProps();
     
     const {onChange} = { ...defaultProps, ...props };
     const [isFavorite, setFavorite] = React.useState(slides[currentIndex].favorite);

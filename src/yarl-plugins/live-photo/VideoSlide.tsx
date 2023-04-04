@@ -8,26 +8,24 @@ import {
     clsx,
     cssClass,
     useContainerRect,
-    useController,
     useEventCallback,
+    useLightboxProps,
 } from "yet-another-react-lightbox/core";
-import { SlideVideo } from "yet-another-react-lightbox/plugins/video";
-import { LightboxProps } from "yet-another-react-lightbox/types";
+import { SlideVideo, LightboxProps } from "yet-another-react-lightbox/types";
 import { defaultVideoProps } from "./LivePhoto";
 import { PublishState } from "./LivePhotoSlide";
 
-type VideoSlideProps = {
+export type VideoSlideProps = {
     slide: SlideVideo;
     offset: number;
     publish: (state: PublishState ) => void;
 };
 
 /** Video slide */
-export const VideoSlide: React.FC<VideoSlideProps> = ({ slide, offset, publish }) => {
+export function VideoSlide({ slide, offset, publish }: VideoSlideProps) {
+    const video = { ...defaultVideoProps, ...useLightboxProps().video };
     const { setContainerRef, containerRect } = useContainerRect();
     const videoRef = React.useRef<HTMLVideoElement | null>(null);
-
-    const video = { ...defaultVideoProps, ...useController().getLightboxProps().video };
 
     React.useEffect(() => {
         if (offset !== 0 && videoRef.current && !videoRef.current.paused) {
@@ -138,4 +136,4 @@ export const VideoSlide: React.FC<VideoSlideProps> = ({ slide, offset, publish }
             )}
         </>
     );
-};
+}

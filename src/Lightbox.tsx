@@ -21,8 +21,9 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 // import additional lightbox plugins
-import Favorite from "./yarl-plugins/Favorite";
-import LivePhoto from "./yarl-plugins/LivePhoto";
+// FIXME: the two lines bellow cannot be swapped (and it should)
+import LivePhoto from "./yarl-plugins/live-photo";
+import Favorite from "./yarl-plugins/favorite";
 import "./yarl-plugins/captions.scss";
 import "./yarl-plugins/thumbnails.scss";
 
@@ -73,7 +74,7 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
             // Fix lightbox over snackbar
             styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
             // enable optional lightbox plugins
-            plugins={[Captions, Fullscreen, Slideshow, Favorite, LivePhoto, Thumbnails, Video, Zoom]}
+            plugins={[Captions, Fullscreen, Slideshow, Favorite, LivePhoto, Video, Thumbnails, Zoom]}
             render={{
                 thumbnail: renderThumbnail
             }}

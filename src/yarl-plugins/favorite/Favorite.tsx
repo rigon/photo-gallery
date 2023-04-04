@@ -1,10 +1,10 @@
 import * as React from "react";
 
-import { Plugin } from "yet-another-react-lightbox/types";
+import { Plugin, PluginProps } from "yet-another-react-lightbox/types";
 import { FavoriteButton } from "./FavoriteButton";
 
 /** Favorite plugin */
-export const Favorite: Plugin = ({ augment }) => {
+export const Favorite: Plugin = ({ augment }: PluginProps): void => {
     augment(({ toolbar: { buttons, ...restToolbar }, ...restProps }) => ({
         toolbar: {
             buttons: [<FavoriteButton key="favorite" />, ...buttons],
