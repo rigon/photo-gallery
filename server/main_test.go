@@ -10,7 +10,8 @@ func TestCreateThumbnails(t *testing.T) {
 		PhotosPath: "tests/collection/",
 		ThumbsPath: "tests/thumbs/"}
 
-	CreateThumbnails(collection)
+	collection.CreateThumbnails()
+	// Wait to thumbnails to finish
 	wg.Wait()
 }
 

@@ -55,12 +55,12 @@ func GetCollections(collections map[string]*Collection) []CollectionInfo {
 }
 
 // Get string representation of a collection
-func (c Collection) String() string {
+func (c *Collection) String() string {
 	return fmt.Sprintf("%s (%s)", c.Name, c.PhotosPath)
 }
 
 // Info about the collection
-func (c Collection) Info() CollectionInfo {
+func (c *Collection) Info() CollectionInfo {
 	st, err := c.StorageUsage()
 	if err != nil {
 		log.Println("Cannot retrieve storage usage for " + c.Name + ": " + err.Error())
@@ -89,7 +89,7 @@ func (c *Collection) GetAlbums() (albums []*Album, err error) {
 	return
 }
 
-func (c Collection) IsAlbum(albumName string) bool {
+func (c *Collection) IsAlbum(albumName string) bool {
 	// Cache list of albums if not cached
 	if !c.cache.IsListAlbumsLoaded() {
 		c.GetAlbums()
@@ -100,7 +100,7 @@ func (c Collection) IsAlbum(albumName string) bool {
 
 // Get album, however photos are not loaded together.
 // For that use Album.GetPhotos()
-func (c Collection) GetAlbum(albumName string) (*Album, error) {
+func (c *Collection) GetAlbum(albumName string) (*Album, error) {
 	// Check if album exists
 	if !c.IsAlbum(albumName) {
 		return nil, errors.New("album not found")
@@ -167,7 +167,7 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Al
 	return album, nil
 }
 
-func (c Collection) AddAlbum(info AddAlbumQuery) error {
+func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 	name := info.Name
 	if info.Type == "pseudo" {
 		name += PSEUDO_ALBUM_EXT
@@ -203,7 +203,7 @@ func (c Collection) AddAlbum(info AddAlbumQuery) error {
 	return nil
 }
 
-func (collection Collection) StorageUsage() (*CollectionStorage, error) {
+func (collection *Collection) StorageUsage() (*CollectionStorage, error) {
 	di, err := disk.Usage(collection.PhotosPath)
 	if err != nil {
 		return nil, err
@@ -214,4 +214,20 @@ func (collection Collection) StorageUsage() (*CollectionStorage, error) {
 		Free:       humanize.Bytes(di.Total - di.Free),
 		Percentage: int(math.Round(percentage)),
 	}, nil
+}
+
+func (collection *Collection) CreateThumbnails() {
+	albums, err := collection.GetAlbums()
+	if err != nil {
+		log.Println(err)
+	}
+
+	for _, album := range albums {
+		album, err := collection.GetAlbumWithPhotos(album.Name, false)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		album.GenerateThumbnails(collection)
+	}
 }

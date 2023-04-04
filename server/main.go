@@ -193,10 +193,7 @@ func main() {
 		log.Println("Generating thumbnails in background...")
 		go func() {
 			for _, c := range config.collections {
-				albums, _ := c.GetAlbums()
-				for _, album := range albums {
-					album.GenerateThumbnails(c)
-				}
+				c.CreateThumbnails()
 			}
 		}()
 	}
