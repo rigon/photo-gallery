@@ -1,4 +1,4 @@
-import { GenericSlide, SlideImage } from "yet-another-react-lightbox/types";
+import { GenericSlide, SlideImage, SlideVideo } from "yet-another-react-lightbox/types";
 import { LivePhoto } from "./LivePhoto";
 
 declare module "yet-another-react-lightbox/types" {
