@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
 	"strconv"
 
 	"github.com/gofiber/adaptor/v2"
@@ -142,7 +143,9 @@ func file(c *fiber.Ctx) error {
 		return nil
 	}
 
+	filename := path.Base(file.Path)
 	c.Set("Content-Type", file.Type)
+	c.Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 	return c.SendFile(file.Path)
 }
 
