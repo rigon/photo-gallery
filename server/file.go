@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"image"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +17,10 @@ type File struct {
 	Url  string `json:"url"`
 	Path string `json:"-"`
 	Ext  string `json:"-"`
+}
+
+func (file *File) Name() string {
+	return path.Base(file.Path)
 }
 
 // Find which type (image or video) and MIME-type of the file
@@ -81,4 +87,25 @@ func (file *File) Convert(w *bufio.Writer) error {
 		return err
 	}
 	return nil
+}
+
+func (file File) CreateThumbnail(thumbpath string, w io.Writer) error {
+	var img image.Image
+	//var exif []byte
+	var err error
+
+	switch file.Type {
+	case "image":
+		// Decode original image
+		img, _, err = DecodeImage(file.Path)
+	case "video":
+		// Get a frame from the video
+		img, err = GetVideoFrame(file.Path)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return CreateThumbnailFromImage(img, nil, thumbpath, w)
 }
