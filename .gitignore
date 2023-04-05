@@ -23,6 +23,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+__debug_bin
 
 /server/photo-gallery
 /server/tests

@@ -25,14 +25,14 @@ func init() {
 	for i := 0; i < NT; i++ {
 		go func() {
 			for w := range ch {
-				w.photo.GetThumbnail(w.writer, w.collection, w.album)
+				w.photo.GetThumbnail(w.collection, w.album, w.writer)
 				w.wg.Done()
 			}
 		}()
 	}
 }
 
-func AddWorkPhoto(writer io.Writer, collection *Collection, album *Album, photo *Photo) {
+func AddWorkPhoto(collection *Collection, album *Album, photo *Photo, writer io.Writer) {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 

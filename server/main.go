@@ -100,7 +100,7 @@ func thumb(c *fiber.Ctx) error {
 		return err
 	}
 
-	AddWorkPhoto(c.Response().BodyWriter(), collection, album, photo)
+	AddWorkPhoto(collection, album, photo, c.Response().BodyWriter())
 	return nil
 }
 
