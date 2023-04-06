@@ -23,7 +23,7 @@ type File struct {
 	Ext       string `json:"-"`
 	InfoImage struct {
 		Format string       // Image format
-		Info   image.Config // Image configuration
+		Config image.Config // Image configuration
 		Exif   *exif.Exif   // Image EXIF data
 	} `json:"-"`
 	InfoStat struct {
@@ -39,7 +39,7 @@ func (file *File) Name() string {
 }
 
 // Find which type (image or video) and MIME-type of the file
-func (file *File) DetermineTypeAndMIME() error {
+func (file *File) ExtractInfo() error {
 	f, err := os.Open(file.Path)
 	if err != nil {
 		return err
@@ -77,9 +77,17 @@ func (file *File) DetermineTypeAndMIME() error {
 			// TODO: handle unknown file types
 		}
 	}
+
+	if file.Type == "image" {
+		_, cfg, err := ExtractImageConfig(f)
+		if err == nil {
+			file.InfoImage.Config = cfg
+		}
+	}
+
 	return nil
 }
-func (file *File) ExtractInfo() (err error) {
+func (file *File) ExtractExtendedInfo() (err error) {
 	// Stat file info
 	fileInfo, err := os.Stat(file.Path)
 	if err != nil {
@@ -94,7 +102,7 @@ func (file *File) ExtractInfo() (err error) {
 	switch file.Type {
 	case "image":
 		ii := &file.InfoImage
-		ii.Format, ii.Info, ii.Exif, err = ExtractImageInfo(file.Path)
+		ii.Format, ii.Config, ii.Exif, err = ExtractImageInfo(file.Path)
 	case "video":
 		return errors.New("extraction not yet implemented")
 	default:
@@ -103,7 +111,7 @@ func (file *File) ExtractInfo() (err error) {
 	return
 }
 
-// If the file requires transcoding
+// If the file requires transcoding like files that are not supported by the browser
 func (file *File) RequiresConvertion() bool {
 	if file.Type == "image" && file.Ext == ".heic" {
 		return true
@@ -134,7 +142,7 @@ func (file *File) Convert(w *bufio.Writer) error {
 			return err
 		}
 	case "video":
-		return errors.New("unsupported conversion")
+		return errors.New("conversion not yet implemented")
 	}
 	return errors.New("invalid conversion")
 }

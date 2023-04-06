@@ -134,7 +134,7 @@ func file(c *fiber.Ctx) error {
 		return err
 	}
 
-	// Convert file if required (i.e. no supported by the browser)
+	// Convert files that require conversion
 	if file.RequiresConvertion() {
 		c.Response().SetBodyStreamWriter(func(w *bufio.Writer) {
 			file.Convert(w)

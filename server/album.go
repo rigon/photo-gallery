@@ -85,8 +85,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 
 	album.Photos = make([]*Photo, 0, len(photos))
 	for _, photo := range photos {
-		photo.DetermineType()
-		photo.GetInfo()
+		photo.Info()
 		album.Photos = append(album.Photos, photo)
 	}
 

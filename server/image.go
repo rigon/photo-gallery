@@ -119,6 +119,19 @@ func ExtractImageInfo(filepath string) (format string, config image.Config, exif
 	return
 }
 
+func ExtractImageConfig(fin *os.File) (format string, config image.Config, err error) {
+	// Rewind to the start
+	fin.Seek(0, io.SeekStart)
+
+	// Decode image configuration
+	config, format, err = image.DecodeConfig(fin)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func CreateThumbnailFromImage(img image.Image, thumbpath string, w io.Writer) error {
 	if img == nil {
 		return errors.New("invalid image")

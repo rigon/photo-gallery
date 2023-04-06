@@ -60,26 +60,6 @@ func (photo *Photo) MainFile() *File {
 	return nil
 }
 
-func (photo *Photo) GetInfo() error {
-	// Extract info for each file
-	for _, file := range photo.Files {
-		file.ExtractInfo()
-	}
-	// Main file of the photo
-	selected := photo.MainFile()
-	if selected == nil {
-		return errors.New("cannot find file")
-	}
-
-	// TODO: extract info for video
-	if selected.Type == "image" {
-		photo.Height = selected.InfoImage.Info.Height
-		photo.Width = selected.InfoImage.Info.Width
-	}
-
-	return nil
-}
-
 func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writer) error {
 	thumbPath := photo.ThumbnailPath(collection, album)
 
@@ -103,12 +83,13 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 	return nil
 }
 
-func (photo *Photo) DetermineType() {
+func (photo *Photo) Info() error {
 	// Extract info for each file
 	for _, file := range photo.Files {
-		file.DetermineTypeAndMIME()
+		file.ExtractInfo()
 	}
 
+	// Determine photo type
 	size := len(photo.Files)
 	if size == 1 {
 		file := photo.Files[0]
@@ -117,4 +98,25 @@ func (photo *Photo) DetermineType() {
 	if size > 1 {
 		photo.Type = "live"
 	}
+
+	// Main file of the photo
+	selected := photo.MainFile()
+	if selected == nil {
+		return errors.New("cannot find file")
+	}
+	if selected.Type == "image" {
+		photo.Height = selected.InfoImage.Config.Height
+		photo.Width = selected.InfoImage.Config.Width
+	} // TODO: extract info for video
+
+	return nil
+}
+
+func (photo *Photo) GetExtendedInfo() error {
+	// Extract info for each file
+	for _, file := range photo.Files {
+		file.ExtractExtendedInfo()
+	}
+
+	return nil
 }
