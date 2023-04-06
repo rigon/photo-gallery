@@ -10,19 +10,28 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/mholt/goexif2/exif"
 )
 
 type File struct {
-	Type   string       `json:"type"`
-	MIME   string       `json:"mime"`
-	Url    string       `json:"url"`
-	Path   string       `json:"-"`
-	Ext    string       `json:"-"`
-	Format string       `json:"-"`
-	Info   image.Config `json:"-"`
-	Exif   *exif.Exif   `json:"-"`
+	Type      string `json:"type"`
+	MIME      string `json:"mime"`
+	Url       string `json:"url"`
+	Path      string `json:"-"`
+	Ext       string `json:"-"`
+	InfoImage struct {
+		Format string       // Image format
+		Info   image.Config // Image configuration
+		Exif   *exif.Exif   // Image EXIF data
+	} `json:"-"`
+	InfoStat struct {
+		Name    string    // base name of the file
+		Size    int64     // length in bytes for regular files; system-dependent for others
+		Perm    string    // file permissionss
+		ModTime time.Time // modification time
+	} `json:"-"`
 }
 
 func (file *File) Name() string {
@@ -71,11 +80,23 @@ func (file *File) DetermineTypeAndMIME() error {
 	return nil
 }
 func (file *File) ExtractInfo() (err error) {
+	// Stat file info
+	fileInfo, err := os.Stat(file.Path)
+	if err != nil {
+		return err
+	}
+	file.InfoStat.Name = fileInfo.Name()
+	file.InfoStat.Size = fileInfo.Size()
+	file.InfoStat.ModTime = fileInfo.ModTime()
+	file.InfoStat.Perm = fileInfo.Mode().Perm().String()
+
+	// File format info
 	switch file.Type {
 	case "image":
-		file.Format, file.Info, file.Exif, err = ExtractImageInfo(file.Path)
+		ii := &file.InfoImage
+		ii.Format, ii.Info, ii.Exif, err = ExtractImageInfo(file.Path)
 	case "video":
-		return errors.New("unsupported extraction")
+		return errors.New("extraction not yet implemented")
 	default:
 		return errors.New("invalid extraction")
 	}

@@ -7,8 +7,8 @@ const MAX_ZOOM = 5;
 
 export function photoToSlideImage(photo: PhotoType, files: FileType[]): SlideImage {
     const favorite = photo.favorite;
-    const width = 3120; // photo.width;
-    const height = 4160; //photo.height;
+    const width = photo.width;
+    const height = photo.height;
     const ratio = height / width;
     
     return {
@@ -51,10 +51,8 @@ export function photoToSlideVideo(photo: PhotoType, files: FileType[]): SlideVid
         favorite: photo.favorite,
         poster: photo.src,
         title: photo.title,
-        // width: photo.width,
-        // height: photo.height,
-        width: 1440,
-        height: 1920,
+        width: photo.width,
+        height: photo.height,
         sources: files.map(file => ({
             src: file.url,
             type: file.mime,

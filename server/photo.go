@@ -12,76 +12,87 @@ import (
 )
 
 type Photo struct {
-	Thumb    string `json:"src"`
-	Title    string `json:"title"`
-	Type     string `json:"type"`
-	Favorite bool   `json:"favorite"`
-	Date     string `json:"date" boltholdIndex:"date"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
-	Files    []File `json:"files"`
+	Thumb    string  `json:"src"`
+	Title    string  `json:"title"`
+	Type     string  `json:"type"`
+	Favorite bool    `json:"favorite"`
+	Date     string  `json:"date" boltholdIndex:"date"`
+	Width    int     `json:"width"`
+	Height   int     `json:"height"`
+	Files    []*File `json:"files"`
 }
 
-func (photo *Photo) HashName(albumName string) string {
-	hash := sha256.Sum256([]byte(albumName + photo.Title))
+// Returns the path location for the thumbnail
+func (photo *Photo) ThumbnailPath(collection *Collection, album *Album) string {
+	hash := sha256.Sum256([]byte(album.Name + photo.Title))
 	encoded := hex.EncodeToString(hash[:])
-	return encoded
+	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
 }
 
+// Gets a file from the photo
 func (photo *Photo) GetFile(fileNumber int) (*File, error) {
 	if fileNumber < 0 || fileNumber >= len(photo.Files) {
 		return nil, errors.New("invalid photo file number")
 	}
-	return &photo.Files[fileNumber], nil
+	return photo.Files[fileNumber], nil
 }
 
-func (photo *Photo) SelectFileForThumbnail() *File {
+// Selects a file that will represent the photo
+func (photo *Photo) MainFile() *File {
 	size := len(photo.Files)
 	switch {
 	case size < 1:
 		return nil
 	case size == 1:
-		return &photo.Files[0]
+		return photo.Files[0]
 	default:
 		for _, file := range photo.Files {
 			if file.Type == "image" {
-				return &file
+				return file
 			}
 		}
 		for _, file := range photo.Files {
 			if file.Type == "video" {
-				return &file
+				return file
 			}
 		}
 	}
 	return nil
 }
 
-func (photo *Photo) GetThumbnailAndInfo(collection *Collection, album *Album, w io.Writer) error {
+func (photo *Photo) GetInfo() error {
+	// Extract info for each file
 	for _, file := range photo.Files {
 		file.ExtractInfo()
 	}
+	// Main file of the photo
+	selected := photo.MainFile()
+	if selected == nil {
+		return errors.New("cannot find file")
+	}
 
-	return photo.GetThumbnail(collection, album, w)
+	// TODO: extract info for video
+	if selected.Type == "image" {
+		photo.Height = selected.InfoImage.Info.Height
+		photo.Width = selected.InfoImage.Info.Width
+	}
+
+	return nil
 }
 
 func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writer) error {
-	file := photo.SelectFileForThumbnail()
-	if file == nil {
-		return errors.New("cannot create thumbnail for photo")
-	}
-
-	outputPath := filepath.Join(collection.ThumbsPath, photo.HashName(album.Name)+".jpg")
+	thumbPath := photo.ThumbnailPath(collection, album)
 
 	// If the file doesn't exist
-	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
 		// Create thumbnail
-		err := file.CreateThumbnail(outputPath, w)
+		err := photo.MainFile().CreateThumbnail(thumbPath, w)
 		if err != nil {
 			return fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
 		}
 	} else {
-		data, err := ioutil.ReadFile(outputPath)
+		// Cached thumbnail
+		data, err := ioutil.ReadFile(thumbPath)
 		if err != nil {
 			return err
 		}
@@ -93,6 +104,11 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 }
 
 func (photo *Photo) DetermineType() {
+	// Extract info for each file
+	for _, file := range photo.Files {
+		file.DetermineTypeAndMIME()
+	}
+
 	size := len(photo.Files)
 	if size == 1 {
 		file := photo.Files[0]

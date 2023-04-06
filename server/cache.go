@@ -116,6 +116,7 @@ func (c Cache) SaveAlbum(album *Album) error {
 
 // Fill photos with info in cache (e.g. height and width)
 func (c Cache) FillPhotosInfo(album *Album) error {
+	return nil
 	return c.store.Bolt().View(func(tx *bolt.Tx) error {
 		for _, photo := range album.Photos {
 			var photos []Photo
@@ -124,7 +125,7 @@ func (c Cache) FillPhotosInfo(album *Album) error {
 				log.Println(err)
 			}
 			if len(photos) != 1 {
-				log.Println("photo not found")
+				log.Println("photo info not found in cache")
 			}
 		}
 		return nil

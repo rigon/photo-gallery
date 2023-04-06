@@ -11,11 +11,11 @@ import (
 )
 
 type Album struct {
-	Name     string  `json:"name"`
-	Count    int     `json:"count"`
-	Date     string  `json:"title"`
-	Photos   []Photo `json:"photos"`
-	IsPseudo bool    `json:"pseudo"`
+	Name     string   `json:"name"`
+	Count    int      `json:"count"`
+	Date     string   `json:"title"`
+	Photos   []*Photo `json:"photos"`
+	IsPseudo bool     `json:"pseudo"`
 }
 
 func (album *Album) GetPhotos(collection *Collection) error {
@@ -74,20 +74,20 @@ func (album *Album) GetPhotos(collection *Collection) error {
 					photo.Favorite = false
 					photos[fileName] = photo
 				}
-				photoFile := File{
+				photoFile := &File{
 					Path: filepath.Join(collection.PhotosPath, album.Name, file.Name()),
 					Url:  path.Join("/api/collection", collection.Name, "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
-				photoFile.DetermineTypeAndMIME()
 
 				photo.Files = append(photo.Files, photoFile)
 			}
 		}
 	}
 
-	album.Photos = make([]Photo, 0, len(photos))
+	album.Photos = make([]*Photo, 0, len(photos))
 	for _, photo := range photos {
 		photo.DetermineType()
-		album.Photos = append(album.Photos, *photo)
+		photo.GetInfo()
+		album.Photos = append(album.Photos, photo)
 	}
 
 	// Sort photos by name (ascending)
@@ -102,7 +102,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 func (album *Album) FindPhoto(photoName string) (photo *Photo, err error) {
 	for _, photo := range album.Photos {
 		if photo.Title == photoName { // Found
-			return &photo, nil
+			return photo, nil
 		}
 	}
 

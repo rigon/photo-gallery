@@ -53,7 +53,7 @@ func AddWorkPhotos(collection *Collection, album *Album) {
 		w := new(Work)
 		w.collection = collection
 		w.album = album
-		w.photo = &photo
+		w.photo = photo
 		w.writer = nil
 		w.wg = &wg
 		ch <- w
