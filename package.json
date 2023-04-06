@@ -16,8 +16,8 @@
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@fontsource/pt-sans": "^4.5.11",
-    "@mui/icons-material": "^5.11.11",
-    "@mui/material": "^5.11.15",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.11.16",
     "@reduxjs/toolkit": "^1.9.3",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^14.0.0",
@@ -32,8 +32,8 @@
     "react-photo-album": "^2.0.3",
     "react-redux": "^8.0.5",
     "react-router-dom": "^6.10.0",
-    "typescript": "^5.0.3",
-    "yet-another-react-lightbox": "^3.3.0"
+    "typescript": "^4.9.5",
+    "yet-another-react-lightbox": "^3.4.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.33",
@@ -43,7 +43,7 @@
     "eslint-config-react-app": "^7.0.1",
     "nodemon": "^2.0.22",
     "sass": "^1.60.0",
-    "typescript": "^5.0.3",
+    "typescript": "^4.9.5",
     "vite": "^4.2.1",
     "vite-plugin-eslint": "^1.8.1"
   },
