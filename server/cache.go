@@ -11,6 +11,14 @@ import (
 
 const DB_NAME_SUFFIX = "-cache.db"
 
+var dbInfo = DbInfo{
+	Version: 1,
+}
+
+type DbInfo struct {
+	Version int
+}
+
 type Cache struct {
 	albums map[string]struct{}
 	mem    gcache.Cache
@@ -26,6 +34,16 @@ func (c *Cache) Init(collection Collection) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Check DB version
+	err = c.store.Insert("DbInfo", dbInfo)
+	if err == bolthold.ErrKeyExists {
+		var current DbInfo
+		c.store.Get("DbInfo", &current)
+		if current.Version < dbInfo.Version {
+			log.Printf("Warning: current DB version [v%d] is inferior than required [v%d]\n", current.Version, dbInfo.Version)
+		}
+	}
+
 	// In-memonry cache
 	c.mem = gcache.New(20).ARC().Build()
 
