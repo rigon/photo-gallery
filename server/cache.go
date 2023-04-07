@@ -103,44 +103,6 @@ func (c Cache) SaveAlbum(album *Album) error {
 	return c.mem.Set(album.Name, album)
 }
 
-// // Add a list of albums to the cache database
-// func (c Cache) AddAlbums(albums ...Album) error {
-// 	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
-// 		for _, album := range albums {
-// 			// Extract only info required for caching
-// 			// photos := make([]string, len(album.Photos))
-// 			// for _, photo := range album.Photos {
-// 			// 	photos = append(photos, photo.Title)
-// 			// }
-// 			err := c.store.TxUpsert(tx, album.Name, album)
-// 			if err != nil {
-// 				return err
-// 			}
-
-// 			for _, photo := range album.Photos {
-// 				err := c.store.TxUpsert(tx, photo.Title, photo)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		}
-// 		return nil
-// 	})
-// }
-
-// // Get album from cache
-// func (c Cache) GetAlbum(albumName string) (album Album, err error) {
-// 	var albums []Album
-// 	err = c.store.Find(&albums, bolthold.Where(bolthold.Key).Eq(albumName))
-// 	if err != nil {
-// 		return album, err
-// 	}
-// 	if len(albums) != 1 {
-// 		return album, errors.New("album not found")
-// 	}
-// 	return albums[0], nil
-// }
-
 // Fill photos with info in cache (e.g. height and width)
 func (c Cache) FillPhotosInfo(album *Album) (err error) {
 	var update []*Photo
@@ -180,16 +142,3 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 		return nil
 	})
 }
-
-// // Get photo from cache
-// func (c Cache) GetPhoto(albumName string, photoName string) (photo Photo, err error) {
-// 	var photos []Photo
-// 	err = c.store.Find(&photos, bolthold.Where(bolthold.Key).Eq(photoName))
-// 	if err != nil {
-// 		return photo, err
-// 	}
-// 	if len(photos) != 1 {
-// 		return photo, errors.New("photo not found")
-// 	}
-// 	return photos[0], nil
-// }
