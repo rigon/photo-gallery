@@ -25,7 +25,7 @@ type Cache struct {
 	store  *bolthold.Store
 }
 
-// Init cache, boltdb and go-cache
+// Init cache: boltdb and gcache
 func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	// Disk cache
 	var err error
@@ -53,7 +53,7 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 		}
 	}
 
-	// In-memonry cache
+	// In-memonry cache gcache
 	c.mem = gcache.New(20).ARC().Build()
 
 	// Ok
