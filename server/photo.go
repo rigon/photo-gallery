@@ -3,103 +3,126 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 )
 
 type Photo struct {
-	Thumb    string `json:"src"`
-	Title    string `json:"title"`
-	Type     string `json:"type"`
-	Favorite bool   `json:"favorite"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
-	Files    []File `json:"files"`
+	Thumb    string  `json:"src"`
+	Title    string  `json:"title"`
+	Type     string  `json:"type"`
+	Favorite bool    `json:"favorite"`
+	Date     string  `json:"date" boltholdIndex:"date"`
+	Width    int     `json:"width"`
+	Height   int     `json:"height"`
+	Files    []*File `json:"files"`
 }
 
-func (photo Photo) HashName(album Album) string {
+// Returns the path location for the thumbnail
+func (photo *Photo) ThumbnailPath(collection *Collection, album *Album) string {
 	hash := sha256.Sum256([]byte(album.Name + photo.Title))
 	encoded := hex.EncodeToString(hash[:])
-	return encoded
+	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
 }
 
-func (photo Photo) GetThumbnail(w io.Writer, config Collection, album Album) error {
-	// TODO: Brute-force, find a clever way to process thumbnails
+// Gets a file from the photo
+func (photo *Photo) GetFile(fileNumber int) (*File, error) {
+	if fileNumber < 0 || fileNumber >= len(photo.Files) {
+		return nil, errors.New("invalid photo file number")
+	}
+	return photo.Files[fileNumber], nil
+}
+
+// Selects a file that will represent the photo
+func (photo *Photo) MainFile() *File {
+	size := len(photo.Files)
+	switch {
+	case size < 1:
+		return nil
+	case size == 1:
+		return photo.Files[0]
+	default:
+		for _, file := range photo.Files {
+			if file.Type == "image" {
+				return file
+			}
+		}
+		for _, file := range photo.Files {
+			if file.Type == "video" {
+				return file
+			}
+		}
+	}
+	return nil
+}
+
+func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writer) error {
+	thumbPath := photo.ThumbnailPath(collection, album)
+
+	// If the file doesn't exist
+	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
+		// Create thumbnail
+		err := photo.MainFile().CreateThumbnail(thumbPath, w)
+		if err != nil {
+			return fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
+		}
+	} else {
+		// Cached thumbnail
+		data, err := ioutil.ReadFile(thumbPath)
+		if err != nil {
+			return err
+		}
+		if w != nil {
+			w.Write(data)
+		}
+	}
+	return nil
+}
+
+func (photo *Photo) Info() error {
+	// Extract info for each file
 	for _, file := range photo.Files {
-		outputPath := filepath.Join(config.ThumbsPath, photo.HashName(album)+".jpg")
-
-		// If the file doesn't exist
-		if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-			// Create thumbnail
-			err := CreateThumbnail(file, outputPath, w)
-			if err != nil {
-				log.Printf("Failed to creating thumbnail for [%s] %s: %v\n", album.Name, photo.Title, err)
-				return err
-			}
-		} else {
-			data, err := ioutil.ReadFile(outputPath)
-			if err != nil {
-				return err
-			}
-			if w != nil {
-				w.Write(data)
-			}
-		}
-	}
-	return nil
-}
-
-func (photo Photo) GetImage(fileNumber int, w io.Writer) error {
-	file := photo.Files[fileNumber]
-
-	// If the file requires transcoding
-	if file.Type == "image" && file.Ext == ".heic" {
-		// Decode original image
-		img, exif, err := DecodeImage(file.Path)
-		if err != nil {
-			return err
-		}
-
-		// Encode thumbnail
-		err = EncodeImage(w, img, exif)
-		if err != nil {
-			return err
-		}
-		return nil
+		file.ExtractInfo()
 	}
 
-	// Open input file
-	fin, err := os.Open(file.Path)
-	if err != nil {
-		return nil
+	// Determine photo type
+	size := len(photo.Files)
+	if size == 1 {
+		file := photo.Files[0]
+		photo.Type = file.Type
 	}
-	defer fin.Close()
-	// create buffer
-	b := make([]byte, 4096)
-	for {
-		// read content to buffer
-		readTotal, err := fin.Read(b)
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println(err)
-			}
-			break
-		}
-		w.Write(b[:readTotal]) // print content from buffer
-	}
-	return nil
-}
-
-func (photo *Photo) DetermineType() {
-	s := len(photo.Files)
-	if s == 1 {
-		photo.Type = photo.Files[0].Type
-	}
-	if s > 1 {
+	if size > 1 {
 		photo.Type = "live"
 	}
+
+	// Main file of the photo
+	selected := photo.MainFile()
+	if selected == nil {
+		return errors.New("cannot find file")
+	}
+
+	switch selected.Type {
+	case "image":
+		photo.Width = selected.InfoImage.Width
+		photo.Height = selected.InfoImage.Height
+	case "video":
+		// TODO: extract info for video
+		photo.Width = 1920
+		photo.Height = 1080
+	}
+
+	return nil
+}
+
+func (photo *Photo) GetExtendedInfo() error {
+	// Extract info for each file
+	for _, file := range photo.Files {
+		file.ExtractExtendedInfo()
+	}
+
+	return nil
 }

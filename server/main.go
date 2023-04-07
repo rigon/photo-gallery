@@ -1,304 +1,268 @@
 package main
 
 import (
-	"encoding/csv"
-	"encoding/json"
+	"bufio"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
-	"github.com/gorilla/mux"
-	"github.com/spf13/pflag"
+	"github.com/gofiber/adaptor/v2"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"golang.org/x/net/webdav"
 )
 
-type App struct {
-	Collections map[string]*Collection
+var config CmdArgs
+
+func GetCollection(collection string) (*Collection, error) {
+	val, present := config.collections[collection]
+	if !present {
+		return nil, errors.New("invalid collection")
+	}
+	return val, nil
 }
 
-var app App
-
-func collections(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(GetCollections(app.Collections))
+func collections(c *fiber.Ctx) error {
+	return c.JSON(GetCollections(config.collections))
 }
 
-func pseudos(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(GetPseudoAlbums(app.Collections))
+func pseudos(c *fiber.Ctx) error {
+	return c.JSON(GetPseudoAlbums(config.collections))
 }
 
-func albums(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	collection := GetCollection(vars["collection"])
-
-	albums, err := ListAlbums(*collection)
+func albums(c *fiber.Ctx) error {
+	collection, err := GetCollection(c.Params("collection"))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(albums)
-}
-
-func album(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	collection := GetCollection(vars["collection"])
-	albumName := vars["album"]
-
-	album, err := GetAlbum(*collection, albumName)
+	// Get all albums from the disk
+	albums, err := collection.GetAlbums()
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
-	// Cache selected album
-	collection.loadedAlbum = album
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(album)
+	return c.JSON(albums)
 }
 
-func addAlbum(w http.ResponseWriter, req *http.Request) {
-	var album AddAlbumQuery
-	vars := mux.Vars(req)
-	collection := GetCollection(vars["collection"])
+func album(c *fiber.Ctx) error {
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
+	albumName := c.Params("album")
+
+	// Fetch album from disk
+	album, err := collection.GetAlbumWithPhotos(albumName, true)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(album)
+}
+
+func addAlbum(c *fiber.Ctx) error {
+	var albumQuery AddAlbumQuery
+
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
 	// Decode body
-	reqBody, _ := ioutil.ReadAll(req.Body)
-	json.Unmarshal(reqBody, &album)
+	if err := c.BodyParser(&albumQuery); err != nil {
+		return err
+	}
+
 	// Add album
-	collection.AddAlbum(album)
+	return collection.AddAlbum(albumQuery)
 }
 
-func photo(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	collection := GetCollection(vars["collection"])
-	albumName := vars["album"]
-	photoName := vars["photo"]
-	fileNumber, err := strconv.Atoi(vars["file"])
-	if err != nil {
-		log.Fatal(err)
-	}
-	// filename := filepath.Join(config.PhotosPath, albumName, photoName)
-	// if strings.HasSuffix(strings.ToLower(photoName), ".heic") {
-	// 	convertPhoto(w, filename)
-	// } else {
-	//http.ServeFile(w, req, filepath.Join(config.PhotosPath, albumName, photoName))
-	// }
-	log.Printf("Photo [%s] %s\n", albumName, photoName)
-
-	// Check if cached album is the one we want
-	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != albumName {
-		collection.loadedAlbum, err = GetAlbum(*collection, albumName)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	photo, err := collection.loadedAlbum.FindPhoto(photoName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//mime.TypeByExtension()
-	photo.GetImage(fileNumber, w)
-}
-
-func thumb(w http.ResponseWriter, req *http.Request) {
+func thumb(c *fiber.Ctx) error {
 	var err error
-	vars := mux.Vars(req)
-	collection := GetCollection(vars["collection"])
-	albumName := vars["album"]
-	photoName := vars["photo"]
-	//log.Printf("Thumb [%s] %s\n", albumName, photoName)
-
-	// Check if cached album is the one we want
-	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != albumName {
-		collection.loadedAlbum, err = GetAlbum(*collection, albumName)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	photo, err := collection.loadedAlbum.FindPhoto(photoName)
+	collection, err := GetCollection(c.Params("collection"))
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	albumName := c.Params("album")
+	photoName := c.Params("photo")
+
+	// Fetch album with photos including info
+	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	if err != nil {
+		return err
 	}
 
-	AddWorkPhoto(w, *collection, *collection.loadedAlbum, *photo)
+	// Find photo
+	photo, err := album.FindPhoto(photoName)
+	if err != nil {
+		return err
+	}
+
+	AddWorkPhoto(collection, album, photo, c.Response().BodyWriter())
+	return nil
 }
 
-func saveToPseudo(w http.ResponseWriter, req *http.Request) {
+func file(c *fiber.Ctx) error {
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
+	albumName := c.Params("album")
+	photoName := c.Params("photo")
+	fileNumber, err := strconv.Atoi(c.Params("file"))
+	if err != nil {
+		return err
+	}
+
+	// Fetch photo from cache
+	album, err := collection.cache.GetAlbum(albumName)
+	if err != nil {
+		return err
+	}
+
+	// Find photo
+	photo, err := album.FindPhoto(photoName)
+	if err != nil {
+		return err
+	}
+
+	// Get file
+	file, err := photo.GetFile(fileNumber)
+	if err != nil {
+		return err
+	}
+
+	// Convert files that require conversion
+	if file.RequiresConvertion() {
+		c.Response().SetBodyStreamWriter(func(w *bufio.Writer) {
+			file.Convert(w)
+		})
+		return nil
+	}
+
+	c.Set("Content-Type", file.Type)
+	c.Set("Content-Disposition", "attachment; filename=\""+file.Name()+"\"")
+	return c.SendFile(file.Path)
+}
+
+func saveToPseudo(c *fiber.Ctx) error {
 	var saveTo PseudoAlbum
-	var err error
-	vars := mux.Vars(req)
-	fromCollection := vars["collection"]
-	fromAlbum := vars["album"]
-	fromPhoto := vars["photo"]
+
+	fromCollection := c.Params("collection")
+	fromAlbum := c.Params("album")
+	fromPhoto := c.Params("photo")
 	// Decode body
-	reqBody, _ := ioutil.ReadAll(req.Body)
-	json.Unmarshal(reqBody, &saveTo)
+	if err := c.BodyParser(&saveTo); err != nil {
+		return err
+	}
 
-	collection := GetCollection(saveTo.Collection)
+	collection, err := GetCollection(saveTo.Collection)
+	if err != nil {
+		return err
+	}
 
-	// Check if cached album is the one we want
-	if collection.loadedAlbum == nil || collection.loadedAlbum.Name != saveTo.Name {
-		collection.loadedAlbum, err = GetAlbum(*collection, saveTo.Name)
-		if err != nil {
-			log.Fatal(err)
-		}
+	album, err := collection.GetAlbum(saveTo.Album)
+	if err != nil {
+		return err
 	}
 
 	// Add photo to pseudo album
-	if req.Method == "PUT" {
-		collection.loadedAlbum.SavePhotoToPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+	if c.Method() == "PUT" {
+		album.SavePhotoToPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
 	}
 	// Remove photo from pseudo album
-	if req.Method == "DELETE" {
-		collection.loadedAlbum.RemovePhotoFromPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+	if c.Method() == "DELETE" {
+		album.RemovePhotoFromPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
 	}
+	return c.JSON(map[string]bool{"ok": true})
 }
 
 func main() {
-	//rand.Seed(time.Now().UnixNano())
+	config = ParseCmdArgs()
+	serverAddr := config.host + ":" + strconv.Itoa(config.port)
+	log.Println("Collections:", config.collections)
 
-	var cacheThumbnails, webdavDisabled bool
-	var collectionArgs []string
-	pflag.StringArrayVarP(&collectionArgs, "collection", "c", collectionArgs, `Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
-List of possible options:
-  index          Position in the collection list
-  name           Name of the collection
-  path           Path to load the albums from
-  thumbs         Path to store the thumbnails
-  hide=false     Hide the collection from the list (does not affect webdav)
-  rename=true    Rename files instead of overwriting them
-  readonly=false`)
-	pflag.BoolVarP(&cacheThumbnails, "cache-thumbnails", "b", false, "Generate thumbnails in background when the application starts")
-	pflag.BoolVar(&webdavDisabled, "disable-webdav", false, "Disable WebDAV")
-	pflag.Parse()
-
-	app.Collections = make(map[string]*Collection)
-	for i, c := range collectionArgs {
-		collection := new(Collection)
-		collection.Index = i
-		collection.Hide = false
-		collection.ReadOnly = false
-		collection.RenameOnReplace = true
-
-		reader := csv.NewReader(strings.NewReader(c))
-		ss, err := reader.Read()
-		if err != nil {
-			log.Println(err)
-		}
-		for _, pair := range ss {
-			kv := strings.SplitN(pair, "=", 2)
-			if len(kv) != 2 {
-				log.Printf("%s must be formatted as key=value\n", pair)
-			}
-			switch kv[0] {
-			case "index":
-				collection.Index, err = strconv.Atoi(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			case "name":
-				collection.Name = kv[1]
-			case "path":
-				collection.PhotosPath = kv[1]
-			case "thumbs":
-				collection.ThumbsPath = kv[1]
-			case "rename":
-				collection.RenameOnReplace, err = strconv.ParseBool(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			case "readonly":
-				collection.ReadOnly, err = strconv.ParseBool(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			case "hide":
-				collection.Hide, err = strconv.ParseBool(kv[1])
-				if err != nil {
-					log.Println(err)
-				}
-			default:
-				log.Printf("%s option is not valid\n", kv[0])
-			}
-		}
-
-		app.Collections[collection.Name] = collection
+	for _, collection := range config.collections {
+		collection.cache.Init(collection, config.recreateCacheDB)
+		defer collection.cache.End()
 	}
-	log.Println("Collections:", app.Collections)
 
 	// Cache thumbnails in background
-	if cacheThumbnails {
+	if config.cacheThumbnails {
 		log.Println("Generating thumbnails in background...")
 		go func() {
-			for _, c := range app.Collections {
-				albums, _ := ListAlbums(*c)
-				for _, album := range albums {
-					album.GenerateThumbnails(*c)
-				}
+			for _, c := range config.collections {
+				c.CreateThumbnails()
 			}
 		}()
 	}
 
-	router := mux.NewRouter()
-	// API
-	router.HandleFunc("/api/pseudos", pseudos)
-	router.HandleFunc("/api/collections", collections)
-	router.HandleFunc("/api/collection/{collection}/albums", albums)
-	router.HandleFunc("/api/collection/{collection}/album", addAlbum).Methods("PUT")
-	router.HandleFunc("/api/collection/{collection}/album/{album}", album)
-	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/thumb", thumb)
-	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/saveToPseudo", saveToPseudo).Methods("PUT")
-	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/saveToPseudo", saveToPseudo).Methods("DELETE")
-	router.HandleFunc("/api/collection/{collection}/album/{album}/photo/{photo}/file/{file}", photo)
-	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
-		// an example API handler
-		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
-	})
-	// Create a catch-all route for /api/*
-	router.PathPrefix("/api/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
+	// Server
+	app := fiber.New(fiber.Config{
+		RequestMethods: mergeWithoutDuplicates(fiber.DefaultMethods, WebDAVMethods),
+		UnescapePath:   true,
 	})
 
+	// Middlewares
+	app.Use(logger.New(logger.Config{
+		Format: "[${latency}] ${status} - ${method} ${path}\n",
+	}))
+
+	// API
+	api := app.Group("/api")
+	api.Get("/pseudos", pseudos)
+	api.Get("/collections", collections)
+	api.Get("/collection/:collection/albums", albums)
+	api.Put("/collection/:collection/album", addAlbum)
+	api.Get("/collection/:collection/album/:album", album)
+	api.Get("/collection/:collection/album/:album/photo/:photo/thumb", thumb)
+	api.Get("/collection/:collection/album/:album/photo/:photo/file/:file", file)
+	api.Put("/collection/:collection/album/:album/photo/:photo/saveToPseudo", saveToPseudo)
+	api.Delete("/collection/:collection/album/:album/photo/:photo/saveToPseudo", saveToPseudo)
+	api.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(map[string]bool{"ok": true})
+	})
+	// Create a catch-all route for /api/*
+	// Add handlers only for HTTP (TODO: fiber v3 should fix)
+	for _, method := range fiber.DefaultMethods {
+		api.Add(method, "/*", func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusNotFound).SendString("Not found")
+		})
+	}
+
 	// WebDAV
-	if !webdavDisabled {
-		wd := &webdav.Handler{
+	if !config.webdavDisabled {
+		webdavHandler := &webdav.Handler{
 			Prefix:     "/webdav",
-			FileSystem: CreateWebDavFS(app.Collections),
+			FileSystem: CreateWebDavFS(config.collections),
 			LockSystem: webdav.NewMemLS(),
 			Logger: func(r *http.Request, err error) {
 				if err != nil {
 					fmt.Printf("WebDAV %s: %s, ERROR: %s\n", r.Method, r.URL, err)
-				} else {
-					fmt.Printf("WebDAV %s: %s \n", r.Method, r.URL)
 				}
 			},
 		}
-		router.PathPrefix("/webdav").Handler(wd)
-		log.Println("WebDAV will be available at http://localhost:3080/webdav")
+		// Add handlers only for methods required by WebDAV (TODO: fiber v3 should fix)
+		webdav := app.Group("/webdav")
+		for _, method := range WebDAVMethods {
+			webdav.Add(method, "*", adaptor.HTTPHandler(webdavHandler))
+		}
+		log.Println("WebDAV will be available at http://" + serverAddr + "/webdav")
 	}
 
 	// Frontend
-	spa := spaHandler{
-		staticPath: "../build",
-		indexPath:  "index.html",
-	}
-	router.PathPrefix("/").Handler(spa)
+	// serve Single Page application on "/"
+	// assume static file at ../build folder
+	app.Static("/", "../build", fiber.Static{ByteRange: true, Next: func(c *fiber.Ctx) bool {
+		return false
+	}})
+	app.Get("/*", func(ctx *fiber.Ctx) error {
+		return ctx.SendFile("../build/index.html")
+	})
 
 	// Start server
-	srv := &http.Server{
-		Handler: router,
-		Addr:    "0.0.0.0:3080",
-		// // Good practice: enforce timeouts for servers you create!
-		// WriteTimeout: 15 * time.Second,
-		// ReadTimeout:  15 * time.Second,
-	}
-	log.Println("Starting server: http://localhost:3080")
-	log.Fatal(srv.ListenAndServe())
+	log.Println("Starting server: http://" + serverAddr)
+	log.Fatal(app.Listen(serverAddr))
 }

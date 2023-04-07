@@ -5,11 +5,10 @@ const breakpoints = [4320, 2160, 1080, 720, 640];
 const THUMBNAIL_HEIGHT = 200;
 const MAX_ZOOM = 5;
 
-export function photoToSlideImage(photo: PhotoType, file: FileType): SlideImage {
+export function photoToSlideImage(photo: PhotoType, files: FileType[]): SlideImage {
     const favorite = photo.favorite;
-    const original = file.url;
-    const width = 3120; // photo.width;
-    const height = 4160; //photo.height;
+    const width = photo.width;
+    const height = photo.height;
     const ratio = height / width;
     
     return {
@@ -26,19 +25,22 @@ export function photoToSlideImage(photo: PhotoType, file: FileType): SlideImage 
                 width: Math.round(THUMBNAIL_HEIGHT / ratio),
                 height: THUMBNAIL_HEIGHT,
             },
-            {   // Original
-                src: encodeURI(original),
-                width,
-                height,
-            },
-            ...breakpoints.filter(bp => bp < width).map((width) => {
-                const height = Math.round(ratio * width);
-                return {
-                    src: encodeURI(`${original}?width=${width}&height=${height}`),
+            ...files.flatMap(file => ([{
+                    // Original
+                    src: encodeURI(file.url),
                     width,
                     height,
-                };
-            })
+                },
+                // Reduced images according with breakpoints
+                ...breakpoints.filter(bp => bp < width).map(bkWidth => {
+                    const bkHeight = Math.round(ratio * bkWidth);
+                    return {
+                        src: encodeURI(`${file.url}?width=${bkWidth}&height=${bkHeight}`),
+                        width: bkWidth,
+                        height: bkHeight,
+                    };
+                })
+            ])),
         ]
     };
 }
@@ -49,14 +51,11 @@ export function photoToSlideVideo(photo: PhotoType, files: FileType[]): SlideVid
         favorite: photo.favorite,
         poster: photo.src,
         title: photo.title,
-        // width: photo.width,
-        // height: photo.height,
-        width: 1440,
-        height: 1920,
+        width: photo.width,
+        height: photo.height,
         sources: files.map(file => ({
             src: file.url,
-            //type: file.type,
-            type: "",
+            type: file.mime,
         }))
     };
 }
@@ -72,7 +71,7 @@ export function photoToSlideLivePhoto(photo: PhotoType): SlideLivePhoto {
         title: photo.title,
         width: photo.width,
         height: photo.height,
-        image: photoToSlideImage(photo, file_image as FileType),
+        image: photoToSlideImage(photo, [file_image as FileType]),
         video: photoToSlideVideo(photo, [file_video as FileType]),
     }
 }
@@ -82,9 +81,7 @@ export function photosToSlides(photos: PhotoType[]): Slide[] {
     return photos.map((photo) => {
         switch(photo.type) {
             case "image":
-                if(photo.files.length !== 1)
-                    console.error("Photo of type image with more or less than one file", photo.title, photo.files);
-                return photoToSlideImage(photo, photo.files[0]);
+                return photoToSlideImage(photo, photo.files);
             case "video":
                 return photoToSlideVideo(photo, photo.files);
             case "live":

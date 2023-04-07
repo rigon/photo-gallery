@@ -32,6 +32,7 @@ export interface PhotoType {
 }
 
 export interface FileType {
-    type: string;
+    type: "image" | "video";
+    mime: string;
     url: string;
 }

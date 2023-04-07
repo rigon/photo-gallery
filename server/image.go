@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	_ "image/gif"
 	"image/jpeg"
@@ -10,9 +11,9 @@ import (
 	"log"
 	"os"
 
-	heif "github.com/adrium/goheif"
+	_ "github.com/adrium/goheif"
+	"github.com/mholt/goexif2/exif"
 	"github.com/nfnt/resize"
-	"github.com/rwcarlsen/goexif/exif"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/vp8"
@@ -77,77 +78,61 @@ func EncodeImage(w io.Writer, image image.Image, exifData []byte) error {
 	return jpeg.Encode(writer, image, nil)
 }
 
-func DecodeImage(filepath string) (image.Image, []byte, error) {
-	var err error
-
+func DecodeImage(filepath string) (image.Image, error) {
 	// Open input file image
 	fin, err := os.Open(filepath)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+	defer fin.Close()
+	// Decode image
+	img, format, err := image.Decode(fin)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding image type %s: %v", format, err)
+	}
+	return img, nil
+}
+
+func ExtractImageInfo(filepath string) (format string, config image.Config, exifData *exif.Exif, err error) {
+	// Open input file image
+	fin, err := os.Open(filepath)
+	if err != nil {
+		return
 	}
 	defer fin.Close()
 
-	_, format, err := image.DecodeConfig(fin)
+	// Decode image configuration
+	config, format, err = image.DecodeConfig(fin)
 	if err != nil {
-		return nil, nil, err
+		return
 	}
 
 	// Rewind to the start
 	fin.Seek(0, io.SeekStart)
 
 	// Extract EXIF
-	var exifData []byte
-	switch format {
-	case "heic":
-		exifData, err = heif.ExtractExif(fin)
-	case "jpeg":
-		var ex *exif.Exif
-		ex, err = exif.Decode(fin)
-		if ex == nil || err != nil {
-			break
-		}
-		exifData = ex.Raw
-	default:
-		exifData, err = nil, nil
-	}
-	if exifData == nil || err != nil {
-		log.Println("Warning: error while extracting EXIF from image")
+	exifData, err = exif.Decode(fin)
+	if err != nil {
+		return
 	}
 
+	return
+}
+
+func ExtractImageConfig(fin *os.File) (format string, config image.Config, err error) {
 	// Rewind to the start
 	fin.Seek(0, io.SeekStart)
 
-	// Decode image
-	img, _, err := image.Decode(fin)
+	// Decode image configuration
+	config, format, err = image.DecodeConfig(fin)
 	if err != nil {
-		log.Println("Warning: error while decoding image")
+		return
 	}
 
-	return img, exifData, err
+	return
 }
 
-func CreateThumbnail(file File, thumbpath string, w io.Writer) error {
-	var img image.Image
-	var exif []byte
-	var err error
-
-	switch file.Type {
-	case "image":
-		// Decode original image
-		img, exif, err = DecodeImage(file.Path)
-	case "video":
-		// Get a frame from the video
-		img, err = GetVideoFrame(file.Path)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	return CreateThumbnailFromImage(img, exif, thumbpath, w)
-}
-
-func CreateThumbnailFromImage(img image.Image, exif []byte, thumbpath string, w io.Writer) error {
+func CreateThumbnailFromImage(img image.Image, thumbpath string, w io.Writer) error {
 	if img == nil {
 		return errors.New("invalid image")
 	}
@@ -167,7 +152,7 @@ func CreateThumbnailFromImage(img image.Image, exif []byte, thumbpath string, w 
 	if w != nil {
 		mw = io.MultiWriter(w, fout)
 	}
-	err = EncodeImage(mw, resized, exif)
+	err = EncodeImage(mw, resized, nil)
 	if err != nil {
 		return err
 	}

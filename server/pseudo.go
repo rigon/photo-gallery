@@ -5,15 +5,19 @@ import (
 	"errors"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
+const PSEUDO_ALBUM_EXT = ".PG-ALBUM"
+
 type PseudoAlbum struct {
 	Collection string `json:"collection"`
-	Name       string `json:"album"`
+	Album      string `json:"album"`
 }
 
+// Entry in a pseudo album, in other words
+// it is a reference for the photo.
 type PseudoAlbumEntry struct {
 	Collection string
 	Album      string
@@ -25,7 +29,7 @@ func readPseudoAlbum(album Album, config *Collection) ([]PseudoAlbumEntry, error
 		return nil, errors.New("the destination must be a pseudo album")
 	}
 
-	filename := path.Join(config.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
+	filename := filepath.Join(config.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -54,7 +58,7 @@ func writePseudoAlbum(entries []PseudoAlbumEntry, album Album, config *Collectio
 		return errors.New("the destination must be a pseudo album")
 	}
 
-	filename := path.Join(config.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
+	filename := filepath.Join(config.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
 	file, err := os.OpenFile(filename, os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -73,10 +77,10 @@ func GetPseudoAlbums(collections map[string]*Collection) []PseudoAlbum {
 	pseudos := make([]PseudoAlbum, 0)
 
 	for name, collection := range collections {
-		albums, _ := ListAlbums(*collection)
+		albums, _ := collection.GetAlbums()
 		for _, album := range albums {
 			if album.IsPseudo {
-				pseudos = append(pseudos, PseudoAlbum{Collection: name, Name: album.Name})
+				pseudos = append(pseudos, PseudoAlbum{Collection: name, Album: album.Name})
 			}
 		}
 	}
