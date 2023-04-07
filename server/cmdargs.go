@@ -12,6 +12,7 @@ import (
 
 type CmdArgs struct {
 	cacheThumbnails bool
+	recreateCacheDB bool
 	webdavDisabled  bool
 	collections     map[string]*Collection
 	port            int
@@ -81,8 +82,9 @@ hide=false     Hide the collection from the list (does not affect webdav)
 rename=true    Rename files instead of overwriting them
 readonly=false`)
 	pflag.BoolVarP(&cmdArgs.cacheThumbnails, "cache-thumbnails", "b", false, "Generate thumbnails in background when the application starts")
+	pflag.BoolVarP(&cmdArgs.recreateCacheDB, "recreate-cache", "r", false, "Recreate cache DB, required after DB version upgrade")
 	pflag.BoolVar(&cmdArgs.webdavDisabled, "disable-webdav", false, "Disable WebDAV")
-	pflag.StringVarP(&cmdArgs.host, "host", "h", "localhost", "Specify a host")
+	pflag.StringVar(&cmdArgs.host, "host", "localhost", "Specify a host")
 	pflag.IntVarP(&cmdArgs.port, "port", "p", 3080, "Specify a port")
 	pflag.Parse()
 

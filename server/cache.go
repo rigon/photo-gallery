@@ -26,7 +26,7 @@ type Cache struct {
 }
 
 // Init cache, boltdb and go-cache
-func (c *Cache) Init(collection Collection) error {
+func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	// Disk cache
 	var err error
 	filename := filepath.Join(collection.ThumbsPath, collection.Name+DB_NAME_SUFFIX)
@@ -35,12 +35,21 @@ func (c *Cache) Init(collection Collection) error {
 		log.Fatal(err)
 	}
 	// Check DB version
-	err = c.store.Insert("DbInfo", dbInfo)
-	if err == bolthold.ErrKeyExists {
-		var current DbInfo
-		c.store.Get("DbInfo", &current)
-		if current.Version < dbInfo.Version {
-			log.Printf("Warning: current DB version [v%d] is inferior than required [v%d]\n", current.Version, dbInfo.Version)
+	var current DbInfo
+	err = c.store.Get("DbInfo", &current)
+	if err != nil || current.Version != dbInfo.Version {
+		log.Printf("Current DB version v%d is different than required v%d\n", current.Version, dbInfo.Version)
+		if rebuildCache {
+			log.Println("Running with option -r enabled: recreating cache DB...")
+			c.store.Bolt().Update(func(tx *bolt.Tx) error {
+				tx.DeleteBucket([]byte("DbInfo"))
+				tx.DeleteBucket([]byte("Photo"))
+				tx.DeleteBucket([]byte("_index:Photo:date"))
+				return c.store.TxInsert(tx, "DbInfo", dbInfo)
+			})
+			log.Println("OK!")
+		} else {
+			log.Fatalln("Run with command with option -r enabled to recreate cache DB")
 		}
 	}
 

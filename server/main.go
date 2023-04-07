@@ -185,7 +185,7 @@ func main() {
 	log.Println("Collections:", config.collections)
 
 	for _, collection := range config.collections {
-		collection.cache.Init(*collection)
+		collection.cache.Init(collection, config.recreateCacheDB)
 		defer collection.cache.End()
 	}
 
