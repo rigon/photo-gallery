@@ -115,17 +115,39 @@ func (c Cache) SaveAlbum(album *Album) error {
 // }
 
 // Fill photos with info in cache (e.g. height and width)
-func (c Cache) FillPhotosInfo(album *Album) error {
-	return nil
-	return c.store.Bolt().View(func(tx *bolt.Tx) error {
+func (c Cache) FillPhotosInfo(album *Album) (err error) {
+	var update []*Photo
+
+	// Get photos that are in cache
+	err = c.store.Bolt().View(func(tx *bolt.Tx) error {
 		for _, photo := range album.Photos {
-			var photos []Photo
-			err := c.store.TxFind(tx, &photos, bolthold.Where(bolthold.Key).Eq(photo.Title))
+			var data Photo
+			key := album.Name + ":" + photo.Title
+			err := c.store.TxGet(tx, key, &data)
+			if err == nil {
+				*photo = data
+				continue
+			}
+
+			log.Println("photo info not found in cache")
+			photo.Info()
+			update = append(update, photo)
+		}
+		return nil
+	})
+
+	// Nothing to update
+	if len(update) < 1 {
+		return
+	}
+
+	// Update missing entries
+	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
+		for _, photo := range update {
+			key := album.Name + ":" + photo.Title
+			err := c.store.TxUpsert(tx, key, photo)
 			if err != nil {
 				log.Println(err)
-			}
-			if len(photos) != 1 {
-				log.Println("photo info not found in cache")
 			}
 		}
 		return nil

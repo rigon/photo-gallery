@@ -104,10 +104,16 @@ func (photo *Photo) Info() error {
 	if selected == nil {
 		return errors.New("cannot find file")
 	}
-	if selected.Type == "image" {
-		photo.Height = selected.InfoImage.Config.Height
-		photo.Width = selected.InfoImage.Config.Width
-	} // TODO: extract info for video
+
+	switch selected.Type {
+	case "image":
+		photo.Width = selected.InfoImage.Width
+		photo.Height = selected.InfoImage.Height
+	case "video":
+		// TODO: extract info for video
+		photo.Width = 1920
+		photo.Height = 1080
+	}
 
 	return nil
 }

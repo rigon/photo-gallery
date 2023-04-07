@@ -22,9 +22,10 @@ type File struct {
 	Path      string `json:"-"`
 	Ext       string `json:"-"`
 	InfoImage struct {
-		Format string       // Image format
-		Config image.Config // Image configuration
-		Exif   *exif.Exif   // Image EXIF data
+		Format string     // Image Format
+		Width  int        // Image Width
+		Height int        // Image Height
+		Exif   *exif.Exif // Image EXIF data
 	} `json:"-"`
 	InfoStat struct {
 		Name    string    // base name of the file
@@ -81,7 +82,8 @@ func (file *File) ExtractInfo() error {
 	if file.Type == "image" {
 		_, cfg, err := ExtractImageConfig(f)
 		if err == nil {
-			file.InfoImage.Config = cfg
+			file.InfoImage.Width = cfg.Width
+			file.InfoImage.Height = cfg.Height
 		}
 	}
 
@@ -102,7 +104,7 @@ func (file *File) ExtractExtendedInfo() (err error) {
 	switch file.Type {
 	case "image":
 		ii := &file.InfoImage
-		ii.Format, ii.Config, ii.Exif, err = ExtractImageInfo(file.Path)
+		ii.Format, _, ii.Exif, err = ExtractImageInfo(file.Path)
 	case "video":
 		return errors.New("extraction not yet implemented")
 	default:
