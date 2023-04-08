@@ -39,17 +39,19 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	err = c.store.Get("DbInfo", &current)
 	if err != nil || current.Version != dbInfo.Version {
 		log.Printf("Current DB version v%d is different than required v%d\n", current.Version, dbInfo.Version)
-		if rebuildCache {
-			log.Println("Running with option -r enabled: recreating cache DB...")
-			c.store.Bolt().Update(func(tx *bolt.Tx) error {
+		if rebuildCache || err == bolthold.ErrNotFound {
+			log.Printf("Recreating cache DB for collection %s at %s", collection.Name, filename)
+			err := c.store.Bolt().Update(func(tx *bolt.Tx) error {
 				tx.DeleteBucket([]byte("DbInfo"))
 				tx.DeleteBucket([]byte("Photo"))
 				tx.DeleteBucket([]byte("_index:Photo:date"))
 				return c.store.TxInsert(tx, "DbInfo", dbInfo)
 			})
-			log.Println("OK!")
+			if err != nil {
+				log.Fatal(err)
+			}
 		} else {
-			log.Fatalln("Run with command with option -r enabled to recreate cache DB")
+			log.Fatal("Run command with option -r enabled to recreate cache DB")
 		}
 	}
 
