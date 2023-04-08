@@ -16,23 +16,31 @@ import (
 )
 
 type File struct {
-	Type      string `json:"type"`
-	MIME      string `json:"mime"`
-	Url       string `json:"url"`
-	Path      string `json:"-"`
-	Ext       string `json:"-"`
-	InfoImage struct {
-		Format string     // Image Format
-		Width  int        // Image Width
-		Height int        // Image Height
-		Exif   *exif.Exif // Image EXIF data
-	} `json:"-"`
-	InfoStat struct {
+	Type   string `json:"type"`
+	MIME   string `json:"mime"`
+	Url    string `json:"url"`
+	Path   string `json:"-"`
+	Ext    string `json:"-"`
+	Width  int    `json:"width"`  // Image Width
+	Height int    `json:"height"` // Image Height
+}
+
+type FileExtendedInfo struct {
+	Type     string `json:"type"`
+	MIME     string `json:"mime"`
+	Url      string `json:"url"`
+	FileStat struct {
 		Name    string    // base name of the file
 		Size    int64     // length in bytes for regular files; system-dependent for others
 		Perm    string    // file permissionss
 		ModTime time.Time // modification time
-	} `json:"-"`
+	}
+	ImageInfo struct {
+		Format string     // Image Format
+		Width  int        // Image Width
+		Height int        // Image Height
+		Exif   *exif.Exif // Image EXIF data
+	}
 }
 
 func (file *File) Name() string {
@@ -82,33 +90,44 @@ func (file *File) ExtractInfo() error {
 	if file.Type == "image" {
 		_, cfg, err := ExtractImageConfig(f)
 		if err == nil {
-			file.InfoImage.Width = cfg.Width
-			file.InfoImage.Height = cfg.Height
+			file.Width = cfg.Width
+			file.Height = cfg.Height
 		}
 	}
 
 	return nil
 }
-func (file *File) ExtractExtendedInfo() (err error) {
+func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
+	// Copy some data from File
+	info.Type = file.Type
+	info.MIME = file.MIME
+	info.Url = file.Url
 	// Stat file info
 	fileInfo, err := os.Stat(file.Path)
 	if err != nil {
-		return err
+		return info, err
 	}
-	file.InfoStat.Name = fileInfo.Name()
-	file.InfoStat.Size = fileInfo.Size()
-	file.InfoStat.ModTime = fileInfo.ModTime()
-	file.InfoStat.Perm = fileInfo.Mode().Perm().String()
+	info.FileStat.Name = fileInfo.Name()
+	info.FileStat.Size = fileInfo.Size()
+	info.FileStat.ModTime = fileInfo.ModTime()
+	info.FileStat.Perm = fileInfo.Mode().Perm().String()
 
 	// File format info
 	switch file.Type {
 	case "image":
-		ii := &file.InfoImage
-		ii.Format, _, ii.Exif, err = ExtractImageInfo(file.Path)
+		var cfg image.Config
+		ii := &info.ImageInfo
+		ii.Format, cfg, ii.Exif, err = ExtractImageInfo(file.Path)
+		if err != nil {
+			log.Println("error while extracting image info", err)
+		}
+		ii.Width = cfg.Width
+		ii.Height = cfg.Height
 	case "video":
-		return errors.New("extraction not yet implemented")
+		log.Println("extraction not yet implemented")
+		return info, nil
 	default:
-		return errors.New("invalid extraction")
+		return info, errors.New("invalid extraction")
 	}
 	return
 }

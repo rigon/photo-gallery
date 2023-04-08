@@ -107,8 +107,8 @@ func (photo *Photo) Info() error {
 
 	switch selected.Type {
 	case "image":
-		photo.Width = selected.InfoImage.Width
-		photo.Height = selected.InfoImage.Height
+		photo.Width = selected.Width
+		photo.Height = selected.Height
 	case "video":
 		// TODO: extract info for video
 		photo.Width = 1920
@@ -118,11 +118,11 @@ func (photo *Photo) Info() error {
 	return nil
 }
 
-func (photo *Photo) GetExtendedInfo() error {
+func (photo *Photo) GetExtendedInfo() (exs []FileExtendedInfo, err error) {
 	// Extract info for each file
 	for _, file := range photo.Files {
-		file.ExtractExtendedInfo()
+		ex, _ := file.ExtractExtendedInfo()
+		exs = append(exs, ex)
 	}
-
-	return nil
+	return
 }

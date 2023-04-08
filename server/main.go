@@ -80,7 +80,6 @@ func addAlbum(c *fiber.Ctx) error {
 }
 
 func thumb(c *fiber.Ctx) error {
-	var err error
 	collection, err := GetCollection(c.Params("collection"))
 	if err != nil {
 		return err
@@ -100,8 +99,37 @@ func thumb(c *fiber.Ctx) error {
 		return err
 	}
 
+	c.Set("Content-Type", "image/jpeg")
 	AddWorkPhoto(collection, album, photo, c.Response().BodyWriter())
 	return nil
+}
+
+func info(c *fiber.Ctx) error {
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return err
+	}
+	albumName := c.Params("album")
+	photoName := c.Params("photo")
+
+	// Fetch album with photos including info
+	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	if err != nil {
+		return err
+	}
+
+	// Find photo
+	photo, err := album.FindPhoto(photoName)
+	if err != nil {
+		return err
+	}
+
+	info, err := photo.GetExtendedInfo()
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(map[string]any{"photo": photo, "info": info})
 }
 
 func file(c *fiber.Ctx) error {
@@ -218,6 +246,7 @@ func main() {
 	api.Put("/collection/:collection/album", addAlbum)
 	api.Get("/collection/:collection/album/:album", album)
 	api.Get("/collection/:collection/album/:album/photo/:photo/thumb", thumb)
+	api.Get("/collection/:collection/album/:album/photo/:photo/info", info)
 	api.Get("/collection/:collection/album/:album/photo/:photo/file/:file", file)
 	api.Put("/collection/:collection/album/:album/photo/:photo/saveToPseudo", saveToPseudo)
 	api.Delete("/collection/:collection/album/:album/photo/:photo/saveToPseudo", saveToPseudo)

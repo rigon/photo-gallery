@@ -28,16 +28,16 @@ export function photoToSlideImage(photo: PhotoType, files: FileType[]): SlideIma
             ...files.flatMap(file => ([{
                     // Original
                     src: encodeURI(file.url),
-                    width,
-                    height,
+                    width: file.width * MAX_ZOOM,
+                    height: file.height * MAX_ZOOM,
                 },
                 // Reduced images according with breakpoints
                 ...breakpoints.filter(bp => bp < width).map(bkWidth => {
                     const bkHeight = Math.round(ratio * bkWidth);
                     return {
                         src: encodeURI(`${file.url}?width=${bkWidth}&height=${bkHeight}`),
-                        width: bkWidth,
-                        height: bkHeight,
+                        width: bkWidth * MAX_ZOOM,
+                        height: bkHeight * MAX_ZOOM,
                     };
                 })
             ])),
