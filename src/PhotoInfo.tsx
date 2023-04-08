@@ -1,4 +1,5 @@
 import React, { FC } from "react";
+import { useParams } from 'react-router-dom';
 
 import Box from "@mui/material/Box";
 import Button from '@mui/material/Button';
@@ -12,6 +13,8 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 import { PhotoType } from "./types";
+import { useGetPhotoInfoQuery } from "./services/api";
+import LinearProgress from "@mui/material/LinearProgress";
 
 interface InfoPanelProps {
     photos: PhotoType[];
@@ -20,11 +23,14 @@ interface InfoPanelProps {
 }
 
 const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
-    const [index, setIndex] = React.useState(selected);
+    const { collection, album } = useParams();
+    const [ index, setIndex ] = React.useState(selected);
+    const photo = photos[index]?.title || undefined;
+    const { data = [], isLoading } = useGetPhotoInfoQuery({collection, album, photo }, {skip: photo === undefined});
+    const photoObj = photos[index] || undefined;
 
     React.useEffect(() => setIndex(selected), [setIndex, selected]);
 
-    const photo = photos[index] || undefined;
     const hasBefore = index > 0;
     const hasNext = index < photos.length - 1;
 
@@ -66,7 +72,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
             onKeyDown={onKeyDown}
         >
             <DialogTitle id="photo-info-title">
-                {photo?.title}
+                {photo}
                 <Box sx={{ position: 'absolute', right: 8, top: 8 }}>
                     <IconButton onClick={handleBefore} disabled={!hasBefore} aria-label="before">
                         <NavigateBeforeIcon />
@@ -84,9 +90,13 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
-                <img src={photo?.src} alt="" />
+                {isLoading && (<Box sx={{ width: '100%' }}>
+                    <LinearProgress />
+                </Box>)}
+                <img src={photoObj?.src} alt="" />
                 {/* <Typography gutterBottom> */}
-                    <pre>{JSON.stringify(photo, null, 2)}</pre>
+                    <pre>{JSON.stringify(photoObj, null, 2)}</pre>
+                    <pre>{JSON.stringify(data, null, 2)}</pre>
                 {/* </Typography> */}
             </DialogContent>
             <DialogActions>

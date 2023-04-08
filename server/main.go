@@ -129,7 +129,7 @@ func info(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(map[string]any{"photo": photo, "info": info})
+	return c.JSON(info)
 }
 
 func file(c *fiber.Ctx) error {

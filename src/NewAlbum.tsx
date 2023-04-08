@@ -1,7 +1,6 @@
 import { FC, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
-import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CloseIcon from '@mui/icons-material/Close';
 import Dialog from '@mui/material/Dialog';
