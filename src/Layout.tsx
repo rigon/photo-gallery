@@ -18,12 +18,12 @@ import Typography from '@mui/material/Typography';
 import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
 
-import CollectionList from './CollectionList';
 import AlbumList from './AlbumList';
-import NewAlbum from './NewAlbum';
+import CollectionList from './CollectionList';
 import FavoriteMenu from './FavoriteMenu';
-import ThemeMenu from './ThemeMenu';
+import NewAlbum from './NewAlbum';
 import Storage from './Storage';
+import ThemeMenu from './ThemeMenu';
 
 import { increaseZoom, decreaseZoom } from "./services/app";
 
