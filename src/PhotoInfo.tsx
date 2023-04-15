@@ -137,10 +137,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                 </Grid>
                 {data.map((file: any) => (
                     <Accordion key={file.filestat.name} defaultExpanded>
-                        <AccordionSummary
-                                expandIcon={<ExpandMoreIcon />}
-                                aria-controls="panel1a-content"
-                                >
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                             <Typography>{file.filestat.name}</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
@@ -161,8 +158,8 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                                 <Divider />
                                 <StyledList>
                                     {Object.entries(file.imageinfo.exif).map(([key, value]) => (<>
-                                        <dt>{key}</dt>
-                                        <dd>{String(value)}</dd>
+                                        <dt key={key}>{key}</dt>
+                                        <dd key={key+"val"}>{String(value)}</dd>
                                     </>))}
                                 </StyledList>
                             </>)}

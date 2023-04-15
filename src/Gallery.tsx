@@ -65,6 +65,9 @@ const Gallery: FC = () => {
     const closeLightbox = () => {
         setLightboxIndex(-1);
     }
+    const openInfoPhoto = (index: number) => {
+        setInfoPhotoIndex(index);
+    }
     const closeInfoPhoto = () => {
         setInfoPhotoIndex(-1);
     }
@@ -138,7 +141,8 @@ const Gallery: FC = () => {
                 photos={photos}
                 selected={lightboxIndex}
                 onClose={closeLightbox}
-                onFavorite={toggleFavorite} />
+                onFavorite={toggleFavorite}
+                onInfo={openInfoPhoto} />
             <PhotoInfo
                 photos={photos}
                 selected={infoPhotoIndex}
