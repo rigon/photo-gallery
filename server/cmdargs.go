@@ -17,6 +17,7 @@ type CmdArgs struct {
 	collections     map[string]*Collection
 	port            int
 	host            string
+	autoHttps       []string
 }
 
 func parseCollectionOptions(collectionOption string, defaultIndex int) (collection *Collection, err error) {
@@ -86,6 +87,7 @@ readonly=false`)
 	pflag.BoolVar(&cmdArgs.webdavDisabled, "disable-webdav", false, "Disable WebDAV")
 	pflag.StringVar(&cmdArgs.host, "host", "localhost", "Specify a host")
 	pflag.IntVarP(&cmdArgs.port, "port", "p", 3080, "Specify a port")
+	pflag.StringSliceVar(&cmdArgs.autoHttps, "auto-https", []string{}, "Specify domain list for HTTPS, ACME Autocert is used to create a Let's Encrypt certificate")
 	pflag.Parse()
 
 	cmdArgs.collections = make(map[string]*Collection)

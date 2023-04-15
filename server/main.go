@@ -311,5 +311,12 @@ func main() {
 
 	// Start server
 	log.Println("Starting server: http://" + serverAddr)
-	log.Fatal(app.Listen(serverAddr))
+	if len(config.autoHttps) > 0 {
+		for _, domain := range config.autoHttps {
+			log.Println("Server sould be as well at: https://" + domain + ":" + strconv.Itoa(config.port))
+		}
+		initServerWithAutoCert(app, config.autoHttps, serverAddr)
+	} else {
+		log.Fatal(app.Listen(serverAddr))
+	}
 }

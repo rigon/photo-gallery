@@ -15,6 +15,7 @@ require (
 	github.com/timshannon/bolthold v0.0.0-20210913165410-232392fc8a6a
 	gitlab.com/golang-utils/image2 v0.0.1
 	go.etcd.io/bbolt v1.3.7
+	golang.org/x/crypto v0.8.0
 	golang.org/x/image v0.8.0
 	golang.org/x/net v0.11.0
 )
@@ -38,4 +39,5 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 )
