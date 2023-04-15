@@ -7,6 +7,7 @@ export interface CollectionType {
 export interface CollectionStorageType {
     size: string;
     free: string;
+    used: string;
     percentage: number;
 }
 

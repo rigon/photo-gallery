@@ -33,6 +33,7 @@ type CollectionInfo struct {
 type CollectionStorage struct {
 	Size       string `json:"size"`
 	Free       string `json:"free"`
+	Used       string `json:"used"`
 	Percentage int    `json:"percentage"`
 }
 
@@ -211,7 +212,8 @@ func (collection *Collection) StorageUsage() (*CollectionStorage, error) {
 	percentage := (float64(di.Total-di.Free) / float64(di.Total)) * 100
 	return &CollectionStorage{
 		Size:       humanize.Bytes(di.Total),
-		Free:       humanize.Bytes(di.Total - di.Free),
+		Free:       humanize.Bytes(di.Free),
+		Used:       humanize.Bytes(di.Total - di.Free),
 		Percentage: int(math.Round(percentage)),
 	}, nil
 }
