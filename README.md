@@ -55,6 +55,8 @@ Main features:
   - [X] Create
   - [X] Save favorite photos
 - [X] Show storage info
+- [X] Metadata extraction from photos (EXIF)
+- [X] Show locations in a map
 - [ ] Organize photos:
   - [ ] Upload
   - [ ] Move photos between albums
@@ -64,12 +66,8 @@ Main features:
   - [ ] Delete
   - [ ] Save favorites
 - [ ] Image resizing according with screen
-- [ ] Upload photos
 - [ ] Authentication
-- [ ] Metadata extraction (EXIF)
 - [ ] Photos timeline with virtual scroll
-- [ ] Show locations in a map
-- [ ] Face recognition and aggregation by person
 
 
 ## Build and Run

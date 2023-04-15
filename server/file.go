@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/mholt/goexif2/exif"
 )
 
@@ -30,17 +31,18 @@ type FileExtendedInfo struct {
 	MIME     string `json:"mime"`
 	Url      string `json:"url"`
 	FileStat struct {
-		Name    string    // base name of the file
-		Size    int64     // length in bytes for regular files; system-dependent for others
-		Perm    string    // file permissionss
-		ModTime time.Time // modification time
-	}
+		Name      string    `json:"name"`      // base name of the file
+		Size      int64     `json:"size"`      // length in bytes for regular files; system-dependent for others
+		SizeHuman string    `json:"sizehuman"` // length in a human readable format
+		Perm      string    `json:"perm"`      // file permissionss
+		ModTime   time.Time `json:"modtime"`   // modification time
+	} `json:"filestat"`
 	ImageInfo struct {
-		Format string     // Image Format
-		Width  int        // Image Width
-		Height int        // Image Height
-		Exif   *exif.Exif // Image EXIF data
-	}
+		Format string     `json:"format"` // Image Format
+		Width  int        `json:"width"`  // Image Width
+		Height int        `json:"height"` // Image Height
+		Exif   *exif.Exif `json:"exif"`   // Image EXIF data
+	} `json:"imageinfo"`
 }
 
 func (file *File) Name() string {
@@ -109,6 +111,7 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 	}
 	info.FileStat.Name = fileInfo.Name()
 	info.FileStat.Size = fileInfo.Size()
+	info.FileStat.SizeHuman = humanize.Bytes(uint64(fileInfo.Size()))
 	info.FileStat.ModTime = fileInfo.ModTime()
 	info.FileStat.Perm = fileInfo.Mode().Perm().String()
 
