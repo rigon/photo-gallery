@@ -21,10 +21,11 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 // import additional lightbox plugins
-// FIXME: the two lines bellow cannot be swapped (and it should)
+// FIXME: LivePhoto must be imported first than other custom plugins,
+// otherwise the project does not build with "npm run build"
+import LivePhoto from "./yarl-plugins/live-photo";
 import Favorite from "./yarl-plugins/favorite";
 import Info from "./yarl-plugins/info";
-import LivePhoto from "./yarl-plugins/live-photo";
 import "./yarl-plugins/captions.scss";
 import "./yarl-plugins/thumbnails.scss";
 

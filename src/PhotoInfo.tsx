@@ -151,6 +151,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                                     <dt>Format</dt><dd>{file.imageinfo.format.toUpperCase()}</dd>
                                     <dt>Width</dt><dd>{file.imageinfo.width}px</dd>
                                     <dt>Height</dt><dd>{file.imageinfo.height}px</dd>
+                                    <dt>Date taken</dt><dd>{file.imageinfo.date}</dd>
                                 </>)}
                             </StyledList>
                             {file.imageinfo?.exif && (<>

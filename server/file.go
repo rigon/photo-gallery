@@ -17,13 +17,14 @@ import (
 )
 
 type File struct {
-	Type   string `json:"type"`
-	MIME   string `json:"mime"`
-	Url    string `json:"url"`
-	Path   string `json:"-"`
-	Ext    string `json:"-"`
-	Width  int    `json:"width"`  // Image Width
-	Height int    `json:"height"` // Image Height
+	Type   string    `json:"type"`
+	MIME   string    `json:"mime"`
+	Url    string    `json:"url"`
+	Path   string    `json:"-"`
+	Ext    string    `json:"-"`
+	Width  int       `json:"width"`  // Image Width
+	Height int       `json:"height"` // Image Height
+	Date   time.Time `json:"date"`   // Image Date taken
 }
 
 type FileExtendedInfo struct {
@@ -34,13 +35,14 @@ type FileExtendedInfo struct {
 		Name      string    `json:"name"`      // base name of the file
 		Size      int64     `json:"size"`      // length in bytes for regular files; system-dependent for others
 		SizeHuman string    `json:"sizehuman"` // length in a human readable format
-		Perm      string    `json:"perm"`      // file permissionss
+		Perm      string    `json:"perm"`      // file permissions
 		ModTime   time.Time `json:"modtime"`   // modification time
 	} `json:"filestat"`
 	ImageInfo struct {
 		Format string     `json:"format"` // Image Format
 		Width  int        `json:"width"`  // Image Width
 		Height int        `json:"height"` // Image Height
+		Date   time.Time  `json:"date"`   // Image Date taken
 		Exif   *exif.Exif `json:"exif"`   // Image EXIF data
 	} `json:"imageinfo"`
 }
@@ -89,16 +91,23 @@ func (file *File) ExtractInfo() error {
 		}
 	}
 
-	if file.Type == "image" {
-		_, cfg, err := ExtractImageConfig(f)
+	switch file.Type {
+	case "image":
+		_, cfg, exif, err := ExtractImageConfigOpened(f)
 		if err == nil {
 			file.Width = cfg.Width
 			file.Height = cfg.Height
+			file.Date, _ = exif.DateTime()
 		}
+	case "video":
+		// TODO: extract info for video
+		file.Width = 1920
+		file.Height = 1080
 	}
 
 	return nil
 }
+
 func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 	// Copy some data from File
 	info.Type = file.Type
@@ -126,11 +135,12 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 		}
 		ii.Width = cfg.Width
 		ii.Height = cfg.Height
+		ii.Date, _ = ii.Exif.DateTime()
 	case "video":
-		log.Println("extraction not yet implemented")
+		log.Println("video info extraction not yet implemented")
 		return info, nil
 	default:
-		return info, errors.New("invalid extraction")
+		return info, errors.New("invalid info extraction")
 	}
 	return
 }

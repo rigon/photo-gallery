@@ -9,17 +9,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Photo struct {
-	Thumb    string  `json:"src"`
-	Title    string  `json:"title"`
-	Type     string  `json:"type"`
-	Favorite bool    `json:"favorite"`
-	Date     string  `json:"date" boltholdIndex:"date"`
-	Width    int     `json:"width"`
-	Height   int     `json:"height"`
-	Files    []*File `json:"files"`
+	Thumb    string    `json:"src"`
+	Title    string    `json:"title"`
+	Type     string    `json:"type"`
+	Favorite bool      `json:"favorite"`
+	Date     time.Time `json:"date" boltholdIndex:"date"`
+	Width    int       `json:"width"`
+	Height   int       `json:"height"`
+	Files    []*File   `json:"files"`
 }
 
 // Returns the path location for the thumbnail
@@ -65,8 +66,10 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 
 	// If the file doesn't exist
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
+		photo.GetExtendedInfo()
 		// Create thumbnail
-		err := photo.MainFile().CreateThumbnail(thumbPath, w)
+		selected := photo.MainFile()
+		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
 			return fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
 		}
@@ -105,16 +108,9 @@ func (photo *Photo) Info() error {
 		return errors.New("cannot find file")
 	}
 
-	switch selected.Type {
-	case "image":
-		photo.Width = selected.Width
-		photo.Height = selected.Height
-	case "video":
-		// TODO: extract info for video
-		photo.Width = 1920
-		photo.Height = 1080
-	}
-
+	photo.Width = selected.Width
+	photo.Height = selected.Height
+	photo.Date = selected.Date
 	return nil
 }
 

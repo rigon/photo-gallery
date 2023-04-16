@@ -12,7 +12,7 @@ import (
 const DB_NAME_SUFFIX = "-cache.db"
 
 var dbInfo = DbInfo{
-	Version: 1,
+	Version: 2,
 }
 
 type DbInfo struct {

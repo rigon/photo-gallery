@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -87,11 +86,6 @@ func (album *Album) GetPhotos(collection *Collection) error {
 	for _, photo := range photos {
 		album.Photos = append(album.Photos, photo)
 	}
-
-	// Sort photos by name (ascending)
-	sort.Slice(album.Photos, func(i, j int) bool {
-		return album.Photos[i].Title < album.Photos[j].Title
-	})
 
 	album.Count = len(album.Photos)
 	return nil

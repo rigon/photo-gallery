@@ -93,13 +93,20 @@ func DecodeImage(filepath string) (image.Image, error) {
 	return img, nil
 }
 
-func ExtractImageInfo(filepath string) (format string, config image.Config, exifData *exif.Exif, err error) {
+func ExtractImageInfo(filepath string) (string, image.Config, *exif.Exif, error) {
 	// Open input file image
 	fin, err := os.Open(filepath)
 	if err != nil {
-		return
+		return "", image.Config{}, nil, err
 	}
 	defer fin.Close()
+
+	return ExtractImageConfigOpened(fin)
+}
+
+func ExtractImageConfigOpened(fin *os.File) (format string, config image.Config, exifData *exif.Exif, err error) {
+	// Rewind to the start
+	fin.Seek(0, io.SeekStart)
 
 	// Decode image configuration
 	config, format, err = image.DecodeConfig(fin)
@@ -112,19 +119,6 @@ func ExtractImageInfo(filepath string) (format string, config image.Config, exif
 
 	// Extract EXIF
 	exifData, err = exif.Decode(fin)
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-func ExtractImageConfig(fin *os.File) (format string, config image.Config, err error) {
-	// Rewind to the start
-	fin.Seek(0, io.SeekStart)
-
-	// Decode image configuration
-	config, format, err = image.DecodeConfig(fin)
 	if err != nil {
 		return
 	}
