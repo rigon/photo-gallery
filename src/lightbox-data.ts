@@ -81,9 +81,9 @@ export function photosToSlides(photos: PhotoType[]): Slide[] {
     return photos.map((photo) => {
         switch(photo.type) {
             case "image":
-                return photoToSlideImage(photo, photo.files);
+                return photoToSlideImage(photo, photo.files.filter(f => f.type === "image"));
             case "video":
-                return photoToSlideVideo(photo, photo.files);
+                return photoToSlideVideo(photo, photo.files.filter(f => f.type === "video"));
             case "live":
                 return photoToSlideLivePhoto(photo);
         }

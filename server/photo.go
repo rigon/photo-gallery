@@ -66,7 +66,6 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 
 	// If the file doesn't exist
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		photo.GetExtendedInfo()
 		// Create thumbnail
 		selected := photo.MainFile()
 		err := selected.CreateThumbnail(thumbPath, w)
@@ -87,9 +86,17 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 }
 
 func (photo *Photo) Info() error {
+	var countImages = 0
+	var countVideos = 0
 	// Extract info for each file
 	for _, file := range photo.Files {
 		file.ExtractInfo()
+		switch file.Type {
+		case "image":
+			countImages++
+		case "video":
+			countVideos++
+		}
 	}
 
 	// Determine photo type
@@ -99,7 +106,16 @@ func (photo *Photo) Info() error {
 		photo.Type = file.Type
 	}
 	if size > 1 {
-		photo.Type = "live"
+		if countImages > 0 && countVideos > 0 {
+			photo.Type = "live"
+		} else {
+			if countImages > 0 && countVideos == 0 {
+				photo.Type = "image"
+			}
+			if countVideos > 0 && countImages == 0 {
+				photo.Type = "video"
+			}
+		}
 	}
 
 	// Main file of the photo

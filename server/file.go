@@ -94,10 +94,17 @@ func (file *File) ExtractInfo() error {
 	switch file.Type {
 	case "image":
 		_, cfg, exif, err := ExtractImageConfigOpened(f)
+		file.Width = cfg.Width
+		file.Height = cfg.Height
 		if err == nil {
-			file.Width = cfg.Width
-			file.Height = cfg.Height
+			// If date is available from EXIF
 			file.Date, _ = exif.DateTime()
+		} else {
+			// File Modification Date otherwise
+			fileInfo, err := os.Stat(file.Path)
+			if err == nil {
+				file.Date = fileInfo.ModTime()
+			}
 		}
 	case "video":
 		// TODO: extract info for video
@@ -127,15 +134,16 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 	// File format info
 	switch file.Type {
 	case "image":
-		var cfg image.Config
 		ii := &info.ImageInfo
-		ii.Format, cfg, ii.Exif, err = ExtractImageInfo(file.Path)
+		// Copy some data from File
+		ii.Width = file.Width
+		ii.Height = file.Height
+		ii.Date = file.Date
+		// Extract info
+		ii.Format, _, ii.Exif, err = ExtractImageInfo(file.Path)
 		if err != nil {
 			log.Println("error while extracting image info", err)
 		}
-		ii.Width = cfg.Width
-		ii.Height = cfg.Height
-		ii.Date, _ = ii.Exif.DateTime()
 	case "video":
 		log.Println("video info extraction not yet implemented")
 		return info, nil
