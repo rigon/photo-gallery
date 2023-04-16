@@ -99,14 +99,17 @@ Server help:
       -b, --cache-thumbnails         Generate thumbnails in background when the application starts
       -c, --collection stringArray   Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
                                      List of possible options:
-                                        index          Position in the collection list
-                                        name           Name of the collection
-                                        path           Path to load the albums from
-                                        thumbs         Path to store the thumbnails
-                                        hide=false     Hide the collection from the list (does not affect webdav)
-                                        rename=true    Rename files instead of overwriting them
-                                        readonly=false
-           --disable-webdav           Disable WebDAV
+                                     index          Position in the collection list
+                                     name           Name of the collection
+                                     path           Path to load the albums from
+                                     thumbs         Path to store the thumbnails
+                                     hide=false     Hide the collection from the list (does not affect webdav)
+                                     rename=true    Rename files instead of overwriting them
+                                     readonly=false
+          --disable-webdav           Disable WebDAV
+          --host string              Specify a host (default "localhost")
+      -p, --port int                 Specify a port (default 3080)
+      -r, --recreate-cache           Recreate cache DB, required after DB version upgrade
 
 ### Docker
 

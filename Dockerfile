@@ -29,4 +29,4 @@ RUN apk update && apk add ffmpeg-libs
 COPY --from=frontend /app/build /app/build/
 COPY --from=server /app/photo-gallery /app/server/photo-gallery
 ENTRYPOINT ["./photo-gallery"]
-CMD ["-c", "name=Photos,path=/photos,thumbs=/thumbs"]
+CMD ["-r", "-c", "name=Photos,path=/photos,thumbs=/thumbs"]
