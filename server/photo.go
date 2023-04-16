@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -70,7 +71,9 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		selected := photo.MainFile()
 		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
-			return fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
+			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
+			log.Println(err)
+			return err
 		}
 	} else {
 		// Cached thumbnail
