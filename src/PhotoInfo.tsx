@@ -129,7 +129,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
 
                 <Grid container spacing={2}>
                     <Grid item xs={4}>
-                        <img src={thumb} alt={photo} style={{ width: "100%", height: "200px"}} />
+                        <img src={thumb} alt={photo} style={{ width: "100%", height: "200px", objectFit: "cover" }} />
                     </Grid>
                     <Grid item xs={8}>
                         {hasMap && <Map height="200px" mark={mapMark} />}
