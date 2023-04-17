@@ -6,12 +6,14 @@ import Box from "@mui/material/Box";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import NotFavoriteIcon from '@mui/icons-material/FavoriteBorder';
 import IconButton from '@mui/material/IconButton';
+import InfoIcon from '@mui/icons-material/Info';
 import LinearProgress from '@mui/material/LinearProgress';
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 
 import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
 
 import BoxBar from "./BoxBar";
+import PhotoInfo from "./PhotoInfo";
 import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoType } from "./types";
@@ -22,7 +24,8 @@ import { selectZoom, selectFavorite } from "./services/app";
 const Gallery: FC = () => {
     const { collection, album } = useParams();
     const { data, isFetching } = useGetAlbumQuery({collection, album});
-    const [ index, setIndex ] = useState(-1);
+    const [ lightboxIndex, setLightboxIndex ] = useState<number>(-1);
+    const [ infoPhotoIndex, setInfoPhotoIndex ] = useState<number>(-1);
     const [ saveFavorite ] = useSavePhotoToPseudoMutation();
     const { infoNotification, errorNotification } = useNotification();
     const zoom = useSelector(selectZoom);
@@ -60,7 +63,13 @@ const Gallery: FC = () => {
         }
     }
     const closeLightbox = () => {
-        setIndex(-1);
+        setLightboxIndex(-1);
+    }
+    const openInfoPhoto = (index: number) => {
+        setInfoPhotoIndex(index);
+    }
+    const closeInfoPhoto = () => {
+        setInfoPhotoIndex(-1);
     }
 
     const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoType>) => {
@@ -73,11 +82,15 @@ const Gallery: FC = () => {
             setMouseOver(false);
         }
         const openLightbox = (event: any) => {
-            setIndex(layout.index);
+            setLightboxIndex(layout.index);
         }
         const saveFavorite = (event: { stopPropagation: () => void; }) => {
             event.stopPropagation();
             toggleFavorite(layout.index);
+        }
+        const showInfo = (event: { stopPropagation: () => void; }) => {
+            event.stopPropagation();
+            setInfoPhotoIndex(layout.index);
         }
         
         return (
@@ -98,6 +111,13 @@ const Gallery: FC = () => {
                             <PlayIcon style={{width: "100%", height: "100%"}}/>
                         </BoxBar>
                     }
+                    {(mouseOver) && (
+                        <BoxBar top right>
+                            <IconButton color="inherit" onClick={showInfo}>
+                                <InfoIcon/>
+                            </IconButton>
+                        </BoxBar>
+                    )}
                     {(photo.favorite || mouseOver) && (
                         <BoxBar bottom right>
                             <IconButton color="inherit" onClick={saveFavorite}>
@@ -119,9 +139,14 @@ const Gallery: FC = () => {
                 renderPhoto={RenderPhoto} />
             <Lightbox
                 photos={photos}
-                selected={index}
+                selected={lightboxIndex}
                 onClose={closeLightbox}
-                onFavorite={toggleFavorite} />
+                onFavorite={toggleFavorite}
+                onInfo={openInfoPhoto} />
+            <PhotoInfo
+                photos={photos}
+                selected={infoPhotoIndex}
+                onClose={closeInfoPhoto} />
         </>);
     
     const loading = (

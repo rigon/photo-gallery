@@ -17,6 +17,12 @@ export interface QueryAddAlbum {
     type: "regular" | "pseudo";
 }
 
+export interface QueryPhoto {
+    collection?: string;
+    album?: string;
+    photo?: string;
+}
+
 export interface QuerySaveFavorite {
     collection: CollectionType["name"];
     album: AlbumType["name"];
@@ -56,6 +62,9 @@ export const api = createApi({
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
+        getPhotoInfo: builder.query<any, QueryPhoto>({
+            query: ({ collection, album, photo }) => `collection/${collection}/album/${album}/photo/${photo}/info`,
+        }),
         savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
             query: ({ collection, album, photo, favorite, saveTo }) => ({
                 url: `/collection/${collection}/album/${album}/photo/${photo}/saveToPseudo`,
@@ -83,5 +92,6 @@ export const {
     useGetAlbumsQuery,
     useGetAlbumQuery,
     useAddAlbumMutation,
+    useGetPhotoInfoQuery,
     useSavePhotoToPseudoMutation,
 } = api;

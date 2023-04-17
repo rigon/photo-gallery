@@ -19,16 +19,13 @@ const defaultProps = {
 
 export const FavoriteButton: React.FC = () => {
     const {
-        state: {
-            currentIndex,
-            slides,
-        },
+        currentIndex,
+        slides,
     } = useLightboxState();
     const { subscribe } = useEvents();
 
     const {
         favorite: props,
-        render,
         labels,
     } = useLightboxProps();
     
@@ -51,13 +48,10 @@ export const FavoriteButton: React.FC = () => {
     }, [onChange, currentIndex, slides, isFavorite]);
 
 
-    return render.buttonFavorite ? (
-        <>{render.buttonFavorite({ isFavorite, toggleFavorite })}</>
-    ) : (
+    return (
         <IconButton
             label={isFavorite ? label(labels, "Save to favorites") : label(labels, "Remove from favorites")}
             icon={isFavorite ? FavoriteIcon : FavoriteBorderIcon}
-            renderIcon={isFavorite ? render.iconFavorite : render.iconNotFavorite}
             onClick={toggleFavorite}
         />
     );

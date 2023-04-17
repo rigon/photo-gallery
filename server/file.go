@@ -12,27 +12,39 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/mholt/goexif2/exif"
 )
 
 type File struct {
-	Type      string `json:"type"`
-	MIME      string `json:"mime"`
-	Url       string `json:"url"`
-	Path      string `json:"-"`
-	Ext       string `json:"-"`
-	InfoImage struct {
-		Format string     // Image Format
-		Width  int        // Image Width
-		Height int        // Image Height
-		Exif   *exif.Exif // Image EXIF data
-	} `json:"-"`
-	InfoStat struct {
-		Name    string    // base name of the file
-		Size    int64     // length in bytes for regular files; system-dependent for others
-		Perm    string    // file permissionss
-		ModTime time.Time // modification time
-	} `json:"-"`
+	Type   string    `json:"type"`
+	MIME   string    `json:"mime"`
+	Url    string    `json:"url"`
+	Path   string    `json:"-"`
+	Ext    string    `json:"-"`
+	Width  int       `json:"width"`  // Image Width
+	Height int       `json:"height"` // Image Height
+	Date   time.Time `json:"date"`   // Image Date taken
+}
+
+type FileExtendedInfo struct {
+	Type     string `json:"type"`
+	MIME     string `json:"mime"`
+	Url      string `json:"url"`
+	FileStat struct {
+		Name      string    `json:"name"`      // base name of the file
+		Size      int64     `json:"size"`      // length in bytes for regular files; system-dependent for others
+		SizeHuman string    `json:"sizehuman"` // length in a human readable format
+		Perm      string    `json:"perm"`      // file permissions
+		ModTime   time.Time `json:"modtime"`   // modification time
+	} `json:"filestat"`
+	ImageInfo struct {
+		Format string     `json:"format"` // Image Format
+		Width  int        `json:"width"`  // Image Width
+		Height int        `json:"height"` // Image Height
+		Date   time.Time  `json:"date"`   // Image Date taken
+		Exif   *exif.Exif `json:"exif"`   // Image EXIF data
+	} `json:"imageinfo"`
 }
 
 func (file *File) Name() string {
@@ -79,36 +91,64 @@ func (file *File) ExtractInfo() error {
 		}
 	}
 
-	if file.Type == "image" {
-		_, cfg, err := ExtractImageConfig(f)
+	switch file.Type {
+	case "image":
+		_, cfg, exif, err := ExtractImageConfigOpened(f)
+		file.Width = cfg.Width
+		file.Height = cfg.Height
 		if err == nil {
-			file.InfoImage.Width = cfg.Width
-			file.InfoImage.Height = cfg.Height
+			// If date is available from EXIF
+			file.Date, _ = exif.DateTime()
+		} else {
+			// File Modification Date otherwise
+			fileInfo, err := os.Stat(file.Path)
+			if err == nil {
+				file.Date = fileInfo.ModTime()
+			}
 		}
+	case "video":
+		// TODO: extract info for video
+		file.Width = 1920
+		file.Height = 1080
 	}
 
 	return nil
 }
-func (file *File) ExtractExtendedInfo() (err error) {
+
+func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
+	// Copy some data from File
+	info.Type = file.Type
+	info.MIME = file.MIME
+	info.Url = file.Url
 	// Stat file info
 	fileInfo, err := os.Stat(file.Path)
 	if err != nil {
-		return err
+		return info, err
 	}
-	file.InfoStat.Name = fileInfo.Name()
-	file.InfoStat.Size = fileInfo.Size()
-	file.InfoStat.ModTime = fileInfo.ModTime()
-	file.InfoStat.Perm = fileInfo.Mode().Perm().String()
+	info.FileStat.Name = fileInfo.Name()
+	info.FileStat.Size = fileInfo.Size()
+	info.FileStat.SizeHuman = humanize.Bytes(uint64(fileInfo.Size()))
+	info.FileStat.ModTime = fileInfo.ModTime()
+	info.FileStat.Perm = fileInfo.Mode().Perm().String()
 
 	// File format info
 	switch file.Type {
 	case "image":
-		ii := &file.InfoImage
+		ii := &info.ImageInfo
+		// Copy some data from File
+		ii.Width = file.Width
+		ii.Height = file.Height
+		ii.Date = file.Date
+		// Extract info
 		ii.Format, _, ii.Exif, err = ExtractImageInfo(file.Path)
+		if err != nil {
+			log.Println("error while extracting image info", err)
+		}
 	case "video":
-		return errors.New("extraction not yet implemented")
+		log.Println("video info extraction not yet implemented")
+		return info, nil
 	default:
-		return errors.New("invalid extraction")
+		return info, errors.New("invalid info extraction")
 	}
 	return
 }

@@ -1,7 +1,6 @@
 import { FC, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
-import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CloseIcon from '@mui/icons-material/Close';
 import Dialog from '@mui/material/Dialog';
@@ -88,15 +87,12 @@ const NewAlbum: FC = () => {
             </Tooltip>
 
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
-                <DialogTitle id="form-dialog-title">
-                    <Box display="flex" alignItems="center">
-                        <Box flexGrow={1}>Create a new album</Box>
-                        <Box>
-                            <IconButton size="small" onClick={handleClose}>
-                                <CloseIcon />
-                            </IconButton>
-                        </Box>
-                    </Box>
+                <DialogTitle id="form-dialog-title" >
+                    Create a new album
+                    
+                    <IconButton sx={{ position: 'absolute', right: 8, top: 8 }} onClick={handleClose}>
+                        <CloseIcon />
+                    </IconButton>
                 </DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2}>

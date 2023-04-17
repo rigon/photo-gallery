@@ -13,7 +13,7 @@ import Gallery from './Gallery';
 import { selectTheme } from "./services/app";
 
 function Home() {
-  return (<p>Select an album from the list on the left.</p>);
+  return (<p style={{margin: 32}}>Select an album from the list on the left.</p>);
 }
 
 function Router() {

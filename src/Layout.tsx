@@ -18,12 +18,12 @@ import Typography from '@mui/material/Typography';
 import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
 
-import CollectionList from './CollectionList';
 import AlbumList from './AlbumList';
-import NewAlbum from './NewAlbum';
+import CollectionList from './CollectionList';
 import FavoriteMenu from './FavoriteMenu';
-import ThemeMenu from './ThemeMenu';
+import NewAlbum from './NewAlbum';
 import Storage from './Storage';
+import ThemeMenu from './ThemeMenu';
 
 import { increaseZoom, decreaseZoom } from "./services/app";
 
@@ -75,7 +75,7 @@ const Layout: FC = () => {
   );
   
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <AppBar
         position="fixed"
@@ -117,7 +117,6 @@ const Layout: FC = () => {
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="mailbox folders"
       >
         {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
         <Drawer
@@ -147,7 +146,7 @@ const Layout: FC = () => {
       </Box>
       <Box
         component="main"
-        sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
+        sx={{ flexGrow: 1, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
       >
         <Toolbar />
 

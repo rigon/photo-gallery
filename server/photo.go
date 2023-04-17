@@ -7,19 +7,21 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Photo struct {
-	Thumb    string  `json:"src"`
-	Title    string  `json:"title"`
-	Type     string  `json:"type"`
-	Favorite bool    `json:"favorite"`
-	Date     string  `json:"date" boltholdIndex:"date"`
-	Width    int     `json:"width"`
-	Height   int     `json:"height"`
-	Files    []*File `json:"files"`
+	Thumb    string    `json:"src"`
+	Title    string    `json:"title"`
+	Type     string    `json:"type"`
+	Favorite bool      `json:"favorite"`
+	Date     time.Time `json:"date" boltholdIndex:"date"`
+	Width    int       `json:"width"`
+	Height   int       `json:"height"`
+	Files    []*File   `json:"files"`
 }
 
 // Returns the path location for the thumbnail
@@ -66,9 +68,15 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 	// If the file doesn't exist
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
 		// Create thumbnail
-		err := photo.MainFile().CreateThumbnail(thumbPath, w)
+		selected := photo.MainFile()
+		if selected == nil {
+			return errors.New("is not a photo")
+		}
+		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
-			return fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
+			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
+			log.Println(err)
+			return err
 		}
 	} else {
 		// Cached thumbnail
@@ -84,9 +92,17 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 }
 
 func (photo *Photo) Info() error {
+	var countImages = 0
+	var countVideos = 0
 	// Extract info for each file
 	for _, file := range photo.Files {
 		file.ExtractInfo()
+		switch file.Type {
+		case "image":
+			countImages++
+		case "video":
+			countVideos++
+		}
 	}
 
 	// Determine photo type
@@ -96,7 +112,16 @@ func (photo *Photo) Info() error {
 		photo.Type = file.Type
 	}
 	if size > 1 {
-		photo.Type = "live"
+		if countImages > 0 && countVideos > 0 {
+			photo.Type = "live"
+		} else {
+			if countImages > 0 && countVideos == 0 {
+				photo.Type = "image"
+			}
+			if countVideos > 0 && countImages == 0 {
+				photo.Type = "video"
+			}
+		}
 	}
 
 	// Main file of the photo
@@ -105,24 +130,17 @@ func (photo *Photo) Info() error {
 		return errors.New("cannot find file")
 	}
 
-	switch selected.Type {
-	case "image":
-		photo.Width = selected.InfoImage.Width
-		photo.Height = selected.InfoImage.Height
-	case "video":
-		// TODO: extract info for video
-		photo.Width = 1920
-		photo.Height = 1080
-	}
-
+	photo.Width = selected.Width
+	photo.Height = selected.Height
+	photo.Date = selected.Date
 	return nil
 }
 
-func (photo *Photo) GetExtendedInfo() error {
+func (photo *Photo) GetExtendedInfo() (exs []FileExtendedInfo, err error) {
 	// Extract info for each file
 	for _, file := range photo.Files {
-		file.ExtractExtendedInfo()
+		ex, _ := file.ExtractExtendedInfo()
+		exs = append(exs, ex)
 	}
-
-	return nil
+	return
 }

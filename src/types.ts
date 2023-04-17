@@ -36,4 +36,6 @@ export interface FileType {
     type: "image" | "video";
     mime: string;
     url: string;
+    width: number;
+    height: number;
 }

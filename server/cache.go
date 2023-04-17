@@ -12,7 +12,7 @@ import (
 const DB_NAME_SUFFIX = "-cache.db"
 
 var dbInfo = DbInfo{
-	Version: 1,
+	Version: 2,
 }
 
 type DbInfo struct {
@@ -120,7 +120,7 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 				continue
 			}
 
-			log.Println("photo info not found in cache")
+			log.Printf("caching photo [%s] %s", album.Name, photo.Title)
 			photo.Info()
 			update = append(update, photo)
 		}

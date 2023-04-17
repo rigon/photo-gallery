@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -162,6 +163,13 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Al
 	album.GetPhotos(c)
 	// Fill photos with info in cache (e.g. height and width)
 	c.cache.FillPhotosInfo(album)
+	// Sort photos by date (ascending), by title if not possible
+	sort.Slice(album.Photos, func(i, j int) bool {
+		if album.Photos[i].Date.IsZero() || album.Photos[j].Date.IsZero() {
+			return album.Photos[i].Title < album.Photos[j].Title
+		}
+		return album.Photos[i].Date.Sub(album.Photos[j].Date) < 0
+	})
 	// ...and save to cache
 	c.cache.SaveAlbum(album)
 
@@ -199,8 +207,8 @@ func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 		return errors.New("Invalid album type " + info.Type)
 	}
 
-	// Save to cache in background
-	go c.cache.AddToListAlbums(&Album{Name: info.Name})
+	// Save to cache
+	c.cache.AddToListAlbums(&Album{Name: info.Name})
 	return nil
 }
 

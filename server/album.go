@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -88,11 +87,6 @@ func (album *Album) GetPhotos(collection *Collection) error {
 		album.Photos = append(album.Photos, photo)
 	}
 
-	// Sort photos by name (ascending)
-	sort.Slice(album.Photos, func(i, j int) bool {
-		return album.Photos[i].Title < album.Photos[j].Title
-	})
-
 	album.Count = len(album.Photos)
 	return nil
 }
@@ -108,6 +102,5 @@ func (album *Album) FindPhoto(photoName string) (photo *Photo, err error) {
 }
 
 func (album *Album) GenerateThumbnails(collection *Collection) {
-	album.GetPhotos(collection)
 	AddWorkPhotos(collection, album)
 }

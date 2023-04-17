@@ -21,21 +21,23 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 // import additional lightbox plugins
-// FIXME: the two lines bellow cannot be swapped (and it should)
+// FIXME: LivePhoto must be imported first than other custom plugins,
+// otherwise the project does not build with "npm run build"
 import LivePhoto from "./yarl-plugins/live-photo";
 import Favorite from "./yarl-plugins/favorite";
+import Info from "./yarl-plugins/info";
 import "./yarl-plugins/captions.scss";
 import "./yarl-plugins/thumbnails.scss";
 
 import { PhotoType } from "./types";
 import { photosToSlides } from "./lightbox-data";
 
-
 interface LightboxProps {
     photos: PhotoType[];
     selected: number;
     onClose?: () => void;
     onFavorite?: (index: number, isFavorite: boolean, slide: Slide) => void;
+    onInfo?: (index: number) => void;
 }
 
 const thumbnailImageClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_image`);
@@ -60,7 +62,7 @@ const renderThumbnail: Render["thumbnail"] = ({ slide }) => {
         </>);
 };
 
-const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) => {
+const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onInfo}) => {
     const theme = useTheme();
     const slides = useMemo(() => photosToSlides(photos), [photos]);
 
@@ -74,7 +76,7 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
             // Fix lightbox over snackbar
             styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
             // enable optional lightbox plugins
-            plugins={[Captions, Fullscreen, Slideshow, Favorite, LivePhoto, Video, Thumbnails, Zoom]}
+            plugins={[Captions, Fullscreen, Slideshow, Info, Favorite, LivePhoto, Video, Thumbnails, Zoom]}
             render={{
                 thumbnail: renderThumbnail
             }}
@@ -101,6 +103,9 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite}) =>
             }}
             favorite={{
                 onChange: onFavorite
+            }}
+            info={{
+                onClick: onInfo
             }} />
     );
 }
