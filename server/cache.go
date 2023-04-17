@@ -120,7 +120,7 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 				continue
 			}
 
-			log.Println("photo info not found in cache")
+			log.Printf("caching photo [%s] %s", album.Name, photo.Title)
 			photo.Info()
 			update = append(update, photo)
 		}

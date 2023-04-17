@@ -69,6 +69,9 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
 		// Create thumbnail
 		selected := photo.MainFile()
+		if selected == nil {
+			return errors.New("is not a photo")
+		}
 		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
 			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
