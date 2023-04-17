@@ -14,6 +14,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spf13/pflag v1.0.5
 	github.com/timshannon/bolthold v0.0.0-20210913165410-232392fc8a6a
+	gitlab.com/golang-utils/image2 v0.0.1
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/image v0.6.0
 	golang.org/x/net v0.8.0

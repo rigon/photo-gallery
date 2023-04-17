@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"image"
 	_ "image/gif"
-	"image/jpeg"
 	_ "image/png"
 	"io"
 	"log"
 	"os"
+
+	// Fork from standard library "image/jpeg" that decodes corrupted images
+	// REMINDER: check for updates
+	"gitlab.com/golang-utils/image2/jpeg"
 
 	_ "github.com/adrium/goheif"
 	"github.com/mholt/goexif2/exif"
