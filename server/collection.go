@@ -207,8 +207,8 @@ func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 		return errors.New("Invalid album type " + info.Type)
 	}
 
-	// Save to cache in background
-	go c.cache.AddToListAlbums(&Album{Name: info.Name})
+	// Save to cache
+	c.cache.AddToListAlbums(&Album{Name: info.Name})
 	return nil
 }
 
