@@ -65,8 +65,9 @@ Main features:
   - [ ] Move
   - [ ] Delete
   - [ ] Save favorites
-- [ ] Image resizing according with screen
 - [ ] Authentication
+- [ ] Search for duplicates
+- [ ] Image resizing according with screen
 - [ ] Photos timeline with virtual scroll
 
 

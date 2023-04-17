@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"path/filepath"
+	"sync"
 
 	"github.com/bluele/gcache"
 	"github.com/timshannon/bolthold"
@@ -20,7 +21,7 @@ type DbInfo struct {
 }
 
 type Cache struct {
-	albums map[string]struct{}
+	albums *sync.Map
 	mem    gcache.Cache
 	store  *bolthold.Store
 }
@@ -55,8 +56,11 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 		}
 	}
 
-	// In-memonry cache gcache
+	// In-memory cache gcache
 	c.mem = gcache.New(20).ARC().Build()
+
+	// Cache for listing albums
+	c.albums = new(sync.Map)
 
 	// Ok
 	return nil
@@ -69,26 +73,33 @@ func (c Cache) End() error {
 }
 
 func (c *Cache) SetListAlbums(albums ...*Album) {
-	for k := range c.albums {
-		delete(c.albums, k)
-	}
-	c.albums = make(map[string]struct{}) // Empty map
+	// Empty map
+	c.albums.Range(func(key, value any) bool {
+		c.albums.Delete(key)
+		return true
+	})
+
 	c.AddToListAlbums(albums...)
 }
 
 func (c Cache) AddToListAlbums(albums ...*Album) {
 	for _, album := range albums {
-		c.albums[album.Name] = struct{}{}
+		c.albums.Store(album.Name, true)
 	}
 }
 
 func (c *Cache) IsListAlbumsLoaded() bool {
-	return len(c.albums) > 0
+	var ret = false
+	c.albums.Range(func(key, value any) bool {
+		ret = true
+		return false
+	})
+	return ret
 }
 
 func (c Cache) IsAlbum(albumName string) bool {
 	// Check if value is present
-	_, present := c.albums[albumName]
+	_, present := c.albums.Load(albumName)
 	return present
 }
 
