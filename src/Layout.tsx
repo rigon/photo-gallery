@@ -67,7 +67,7 @@ const Layout: FC = () => {
                 If you find this project useful, please consider supporting it.
                 Only with your help is possible to make this project better.
             </Link>
-            <span style={{float: "right"}}>v{import.meta.env.PACKAGE_VERSION} </span>
+            <span style={{float: "right"}}>v{APP_VERSION}</span>
           </Typography>
         </Paper>
       </Box>

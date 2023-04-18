@@ -1,8 +1,3 @@
-interface ImportMetaEnv {
-    readonly PACKAGE_VERSION: string;
-    // more env variables...
-}
+/// <reference types="vite/client" />
 
-interface ImportMeta {
-    readonly env: ImportMetaEnv
-}
+declare const APP_VERSION: string;
