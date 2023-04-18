@@ -57,7 +57,7 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	}
 
 	// In-memory cache gcache
-	c.mem = gcache.New(20).ARC().Build()
+	c.mem = gcache.New(50).ARC().Build()
 
 	// Cache for listing albums
 	c.albums = new(sync.Map)

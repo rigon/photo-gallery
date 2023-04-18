@@ -145,7 +145,7 @@ func file(c *fiber.Ctx) error {
 	}
 
 	// Fetch photo from cache
-	album, err := collection.cache.GetAlbum(albumName)
+	album, err := collection.GetAlbumWithPhotos(albumName, false)
 	if err != nil {
 		return err
 	}
