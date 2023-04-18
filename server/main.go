@@ -229,8 +229,9 @@ func main() {
 
 	// Server
 	app := fiber.New(fiber.Config{
-		RequestMethods: mergeWithoutDuplicates(fiber.DefaultMethods, WebDAVMethods),
-		UnescapePath:   true,
+		RequestMethods:    mergeWithoutDuplicates(fiber.DefaultMethods, WebDAVMethods),
+		UnescapePath:      true,
+		StreamRequestBody: true, // For requests > BodyLimit(4MB), body is streamed
 	})
 
 	// Middlewares
