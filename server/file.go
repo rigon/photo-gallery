@@ -17,14 +17,15 @@ import (
 )
 
 type File struct {
-	Type   string    `json:"type"`
-	MIME   string    `json:"mime"`
-	Url    string    `json:"url"`
-	Path   string    `json:"-"`
-	Ext    string    `json:"-"`
-	Width  int       `json:"width"`  // Image Width
-	Height int       `json:"height"` // Image Height
-	Date   time.Time `json:"date"`   // Image Date taken
+	Type     string      `json:"type"`
+	MIME     string      `json:"mime"`
+	Url      string      `json:"url"`
+	Path     string      `json:"-"`
+	Ext      string      `json:"-"`
+	Width    int         `json:"width"`    // Image Width
+	Height   int         `json:"height"`   // Image Height
+	Date     time.Time   `json:"date"`     // Image Date taken
+	Location GPSLocation `json:"location"` // Image location
 }
 
 type FileExtendedInfo struct {
@@ -39,12 +40,19 @@ type FileExtendedInfo struct {
 		ModTime   time.Time `json:"modtime"`   // modification time
 	} `json:"filestat"`
 	ImageInfo struct {
-		Format string     `json:"format"` // Image Format
-		Width  int        `json:"width"`  // Image Width
-		Height int        `json:"height"` // Image Height
-		Date   time.Time  `json:"date"`   // Image Date taken
-		Exif   *exif.Exif `json:"exif"`   // Image EXIF data
+		Format   string      `json:"format"`   // Image Format
+		Width    int         `json:"width"`    // Image Width
+		Height   int         `json:"height"`   // Image Height
+		Date     time.Time   `json:"date"`     // Image Date taken
+		Location GPSLocation `json:"location"` // Image location
+		Exif     *exif.Exif  `json:"exif"`     // Image EXIF data
 	} `json:"imageinfo"`
+}
+
+type GPSLocation struct {
+	Present bool    `json:"present"`
+	Lat     float64 `json:"lat"` // Latitude
+	Long    float64 `json:"lng"` // Longitude
 }
 
 func (file *File) Name() string {
@@ -99,12 +107,16 @@ func (file *File) ExtractInfo() error {
 		if err == nil {
 			// If date is available from EXIF
 			file.Date, _ = exif.DateTime()
+			// If GPS Location is available from EXIF
+			file.Location.Lat, file.Location.Long, err = exif.LatLong()
+			file.Location.Present = (err == nil) // Present if no errors
 		} else {
 			// File Modification Date otherwise
 			fileInfo, err := os.Stat(file.Path)
 			if err == nil {
 				file.Date = fileInfo.ModTime()
 			}
+			file.Location.Present = false
 		}
 	case "video":
 		// TODO: extract info for video
@@ -139,6 +151,7 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 		ii.Width = file.Width
 		ii.Height = file.Height
 		ii.Date = file.Date
+		ii.Location = file.Location
 		// Extract info
 		ii.Format, _, ii.Exif, err = ExtractImageInfo(file.Path)
 		if err != nil {

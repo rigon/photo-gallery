@@ -14,14 +14,15 @@ import (
 )
 
 type Photo struct {
-	Thumb    string    `json:"src"`
-	Title    string    `json:"title"`
-	Type     string    `json:"type"`
-	Favorite bool      `json:"favorite"`
-	Date     time.Time `json:"date" boltholdIndex:"date"`
-	Width    int       `json:"width"`
-	Height   int       `json:"height"`
-	Files    []*File   `json:"files"`
+	Thumb    string      `json:"src"`
+	Title    string      `json:"title"`
+	Type     string      `json:"type"`
+	Favorite bool        `json:"favorite"`
+	Width    int         `json:"width"`
+	Height   int         `json:"height"`
+	Date     time.Time   `json:"date" boltholdIndex:"date"`
+	Location GPSLocation `json:"location" boltholdIndex:"location"`
+	Files    []*File     `json:"files"`
 }
 
 // Returns the path location for the thumbnail

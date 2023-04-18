@@ -62,12 +62,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
     const hasBefore = index > 0;
     const hasNext = index < photos.length - 1;
 
-    const exif = data[0]?.imageinfo?.exif;
-    const hasMap = exif?.GPSLatitude && exif?.GPSLatitudeRef && exif?.GPSLongitude && exif?.GPSLongitudeRef;
-    const mapMark = {
-        lat: parseInt(exif?.GPSLatitude) * (exif?.GPSLatitudeRef === "S" ? -1 : 1),
-        lng: parseInt(exif?.GPSLongitude) * (exif?.GPSLongitudeRef === "W" ? -1 : 1)
-    };
+    const mapLocation = data[0]?.imageinfo?.location;
 
     const handleClose = () => {
         setIndex(-1);
@@ -132,7 +127,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                         <img src={thumb} alt={photo} style={{ width: "100%", height: "200px", objectFit: "cover" }} />
                     </Grid>
                     <Grid item xs={8}>
-                        {hasMap && <Map height="200px" mark={mapMark} />}
+                        {mapLocation?.present && <Map height="200px" mark={mapLocation} />}
                     </Grid>
                 </Grid>
                 {data.map((file: any) => (
@@ -160,7 +155,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                                 <StyledList>
                                     {Object.entries(file.imageinfo.exif).map(([key, value]) => (<>
                                         <dt key={key}>{key}</dt>
-                                        <dd key={key+"val"}>{String(value)}</dd>
+                                        <dd key={key+"-val"}>{String(value)}</dd>
                                     </>))}
                                 </StyledList>
                             </>)}
