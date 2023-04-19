@@ -219,9 +219,9 @@ func (collection *Collection) StorageUsage() (*CollectionStorage, error) {
 	}
 	percentage := (float64(di.Total-di.Free) / float64(di.Total)) * 100
 	return &CollectionStorage{
-		Size:       humanize.Bytes(di.Total),
-		Free:       humanize.Bytes(di.Free),
-		Used:       humanize.Bytes(di.Total - di.Free),
+		Size:       humanize.IBytes(di.Total),
+		Free:       humanize.IBytes(di.Free),
+		Used:       humanize.IBytes(di.Total - di.Free),
 		Percentage: int(math.Round(percentage)),
 	}, nil
 }

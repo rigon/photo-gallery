@@ -139,7 +139,7 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 	}
 	info.FileStat.Name = fileInfo.Name()
 	info.FileStat.Size = fileInfo.Size()
-	info.FileStat.SizeHuman = humanize.Bytes(uint64(fileInfo.Size()))
+	info.FileStat.SizeHuman = humanize.IBytes(uint64(fileInfo.Size()))
 	info.FileStat.ModTime = fileInfo.ModTime()
 	info.FileStat.Perm = fileInfo.Mode().Perm().String()
 
