@@ -6,11 +6,11 @@ require (
 	github.com/3d0c/gmf v0.0.0-20220906170454-be727bc5b56c
 	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
 	github.com/bluele/gcache v0.0.2
+	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gofiber/adaptor/v2 v2.2.0
 	github.com/gofiber/fiber/v2 v2.43.0
 	github.com/mholt/goexif2 v0.0.0-20230302025153-4d89d35092b2
-	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spf13/pflag v1.0.5
 	github.com/timshannon/bolthold v0.0.0-20210913165410-232392fc8a6a

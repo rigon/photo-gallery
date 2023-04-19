@@ -6,7 +6,7 @@ import (
 )
 
 func TestDecodeEncodeImage(t *testing.T) {
-	img, err := DecodeImage("tests/album1/image3.heic")
+	img, err := DecodeImage("tests/album1/image3.heic", orientationUnspecified)
 	if err != nil {
 		t.Errorf("Failed decode image: %s\n", err)
 		return

@@ -15,8 +15,8 @@ import (
 	"gitlab.com/golang-utils/image2/jpeg"
 
 	_ "github.com/adrium/goheif"
+	"github.com/disintegration/imaging"
 	"github.com/mholt/goexif2/exif"
-	"github.com/nfnt/resize"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/vp8"
@@ -29,6 +29,23 @@ type writerSkipper struct {
 	w           io.Writer
 	bytesToSkip int
 }
+
+// From: https://github.com/disintegration/imaging/blob/d40f48ce0f098c53ab1fcd6e0e402da682262da5/io.go#L285
+// orientation is an EXIF flag that specifies the transformation
+// that should be applied to image to display it correctly.
+type Orientation int
+
+const (
+	orientationUnspecified = 0
+	orientationNormal      = 1
+	orientationFlipH       = 2
+	orientationRotate180   = 3
+	orientationFlipV       = 4
+	orientationTranspose   = 5
+	orientationRotate270   = 6
+	orientationTransverse  = 7
+	orientationRotate90    = 8
+)
 
 func (w *writerSkipper) Write(data []byte) (int, error) {
 	if w.bytesToSkip <= 0 {
@@ -81,7 +98,7 @@ func EncodeImage(w io.Writer, image image.Image, exifData []byte) error {
 	return jpeg.Encode(writer, image, nil)
 }
 
-func DecodeImage(filepath string) (image.Image, error) {
+func DecodeImage(filepath string, orientation Orientation) (image.Image, error) {
 	// Open input file image
 	fin, err := os.Open(filepath)
 	if err != nil {
@@ -93,6 +110,26 @@ func DecodeImage(filepath string) (image.Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decoding image type %s: %v", format, err)
 	}
+
+	// From: https://github.com/disintegration/imaging/blob/d40f48ce0f098c53ab1fcd6e0e402da682262da5/io.go#L424
+	switch orientation {
+	case orientationNormal:
+	case orientationFlipH:
+		img = imaging.FlipH(img)
+	case orientationFlipV:
+		img = imaging.FlipV(img)
+	case orientationRotate90:
+		img = imaging.Rotate90(img)
+	case orientationRotate180:
+		img = imaging.Rotate180(img)
+	case orientationRotate270:
+		img = imaging.Rotate270(img)
+	case orientationTranspose:
+		img = imaging.Transpose(img)
+	case orientationTransverse:
+		img = imaging.Transverse(img)
+	}
+
 	return img, nil
 }
 
@@ -142,14 +179,14 @@ func CreateThumbnailFromImage(img image.Image, thumbpath string, w io.Writer) er
 	defer fout.Close()
 
 	// Resize image for thumbnail size
-	resized := resize.Resize(0, 200, img, resize.Lanczos3)
+	img = imaging.Resize(img, 0, 200, imaging.Lanczos)
 
 	// Encode thumbnail
 	var mw io.Writer = fout
 	if w != nil {
 		mw = io.MultiWriter(w, fout)
 	}
-	err = EncodeImage(mw, resized, nil)
+	err = EncodeImage(mw, img, nil)
 	if err != nil {
 		return err
 	}

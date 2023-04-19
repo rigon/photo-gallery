@@ -13,7 +13,7 @@ import (
 const DB_NAME_SUFFIX = "-cache.db"
 
 var dbInfo = DbInfo{
-	Version: 3,
+	Version: 4,
 }
 
 type DbInfo struct {
@@ -126,7 +126,10 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 			var data Photo
 			key := album.Name + ":" + photo.Title
 			err := c.store.TxGet(tx, key, &data)
-			if err == nil {
+			// Does not require update
+			if err == nil && data.Title == photo.Title && data.Thumb == photo.Thumb &&
+				len(data.Files) == len(photo.Files) { // Validate some fields
+
 				*photo = data
 				continue
 			}
