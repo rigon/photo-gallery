@@ -14,18 +14,20 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/mholt/goexif2/exif"
+	"github.com/mholt/goexif2/tiff"
 )
 
 type File struct {
-	Type     string      `json:"type"`
-	MIME     string      `json:"mime"`
-	Url      string      `json:"url"`
-	Path     string      `json:"-"`
-	Ext      string      `json:"-"`
-	Width    int         `json:"width"`    // Image Width
-	Height   int         `json:"height"`   // Image Height
-	Date     time.Time   `json:"date"`     // Image Date taken
-	Location GPSLocation `json:"location"` // Image location
+	Type        string      `json:"type"`
+	MIME        string      `json:"mime"`
+	Url         string      `json:"url"`
+	Path        string      `json:"-"`
+	Ext         string      `json:"-"`
+	Width       int         `json:"width"`    // Image Width
+	Height      int         `json:"height"`   // Image Height
+	Date        time.Time   `json:"date"`     // Image Date taken
+	Location    GPSLocation `json:"location"` // Image location
+	Orientation Orientation `json:"-"`        // Image orientation
 }
 
 type FileExtendedInfo struct {
@@ -101,15 +103,31 @@ func (file *File) ExtractInfo() error {
 
 	switch file.Type {
 	case "image":
-		_, cfg, exif, err := ExtractImageConfigOpened(f)
+		_, cfg, exifInfo, err := ExtractImageConfigOpened(f)
 		file.Width = cfg.Width
 		file.Height = cfg.Height
 		if err == nil {
 			// If date is available from EXIF
-			file.Date, _ = exif.DateTime()
+			file.Date, _ = exifInfo.DateTime()
 			// If GPS Location is available from EXIF
-			file.Location.Lat, file.Location.Long, err = exif.LatLong()
-			file.Location.Present = (err == nil) // Present if no errors
+			file.Location.Lat, file.Location.Long, err = exifInfo.LatLong()
+			file.Location.Present = (err == nil) // Location present if no errors
+			// Image orientation
+			orient, err := exifInfo.Get(exif.Orientation)
+			if err == nil && orient.Count == 1 && orient.Format() == tiff.IntVal {
+				orientInt, _ := orient.Int(0)
+				file.Orientation = Orientation(orientInt)
+				// Dimensions are swapped due to orientation
+				switch file.Orientation {
+				case orientationRotate90,
+					orientationRotate270,
+					orientationTranspose,
+					orientationTransverse:
+					file.Width, file.Height = file.Height, file.Width
+				}
+			} else {
+				file.Orientation = orientationUnspecified // tag not present
+			}
 		} else {
 			// File Modification Date otherwise
 			fileInfo, err := os.Stat(file.Path)
@@ -186,7 +204,7 @@ func (file *File) Convert(w *bufio.Writer) error {
 		}
 
 		// Decode original image
-		img, err := DecodeImage(file.Path)
+		img, err := DecodeImage(file.Path, file.Orientation)
 		if err != nil {
 			return err
 		}
@@ -208,7 +226,7 @@ func (file File) CreateThumbnail(thumbpath string, w io.Writer) (err error) {
 	switch file.Type {
 	case "image":
 		// Decode original image
-		img, err = DecodeImage(file.Path)
+		img, err = DecodeImage(file.Path, file.Orientation)
 	case "video":
 		// Get a frame from the video
 		img, err = GetVideoFrame(file.Path)
