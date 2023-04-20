@@ -13,7 +13,7 @@ import (
 const DB_NAME_SUFFIX = "-cache.db"
 
 var dbInfo = DbInfo{
-	Version: 4,
+	Version: 5,
 }
 
 type DbInfo struct {
@@ -122,7 +122,7 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 
 	// Get photos that are in cache
 	err = c.store.Bolt().View(func(tx *bolt.Tx) error {
-		for _, photo := range album.Photos {
+		for _, photo := range album.photosMap {
 			var data Photo
 			key := album.Name + ":" + photo.Title
 			err := c.store.TxGet(tx, key, &data)

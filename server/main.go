@@ -94,7 +94,7 @@ func thumb(c *fiber.Ctx) error {
 	}
 
 	// Find photo
-	photo, err := album.FindPhoto(photoName)
+	photo, err := album.GetPhoto(photoName)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func info(c *fiber.Ctx) error {
 	}
 
 	// Find photo
-	photo, err := album.FindPhoto(photoName)
+	photo, err := album.GetPhoto(photoName)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func file(c *fiber.Ctx) error {
 	}
 
 	// Find photo
-	photo, err := album.FindPhoto(photoName)
+	photo, err := album.GetPhoto(photoName)
 	if err != nil {
 		return err
 	}
