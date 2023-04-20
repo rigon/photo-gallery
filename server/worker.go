@@ -47,7 +47,7 @@ func AddWorkPhoto(collection *Collection, album *Album, photo *Photo, writer io.
 }
 
 func AddWorkPhotos(collection *Collection, album *Album) {
-	for _, photo := range album.Photos {
+	for _, photo := range album.photosMap {
 		log.Printf("Background Thumb [%s] %s\n", album.Name, photo.Title)
 		wg.Add(1)
 		w := new(Work)
