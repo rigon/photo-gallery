@@ -72,8 +72,6 @@ func (c *Collection) Info() CollectionInfo {
 // Lists all albums, however photos are not loaded together.
 // For that use Album.GetPhotos()
 func (c *Collection) GetAlbums() (albums []*Album, err error) {
-	albums = make([]*Album, 0)
-
 	files, err := ioutil.ReadDir(c.PhotosPath)
 	if err != nil {
 		return

@@ -91,7 +91,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 }
 
 func (album *Album) GetPhoto(photoName string) (photo *Photo, err error) {
-	photo, ok := album.photosMap[photoName]
+	photo, ok := album.photosMap[strings.ToLower(photoName)]
 	if !ok {
 		return nil, errors.New("photo not found in album: [" + album.Name + "] " + photoName)
 	}

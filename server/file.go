@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,11 +18,10 @@ import (
 )
 
 type File struct {
+	Path        string      `json:"-"`
 	Type        string      `json:"type"`
 	MIME        string      `json:"mime"`
 	Url         string      `json:"url"`
-	Path        string      `json:"-"`
-	Ext         string      `json:"-"`
 	Width       int         `json:"width"`    // Image Width
 	Height      int         `json:"height"`   // Image Height
 	Date        time.Time   `json:"date"`     // Image Date taken
@@ -58,7 +57,10 @@ type GPSLocation struct {
 }
 
 func (file *File) Name() string {
-	return path.Base(file.Path)
+	return filepath.Base(file.Path)
+}
+func (file *File) Ext() string {
+	return strings.ToLower(filepath.Ext(file.Path))
 }
 
 // Find which type (image or video) and MIME-type of the file
@@ -80,7 +82,6 @@ func (file *File) ExtractInfo() error {
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
 	file.MIME = http.DetectContentType(buffer)
-	file.Ext = strings.ToLower(path.Ext(file.Path))
 
 	switch {
 	case strings.HasPrefix(file.MIME, "image/"):
@@ -89,14 +90,14 @@ func (file *File) ExtractInfo() error {
 		file.Type = "video"
 	default:
 		// Unknown MIME types, determine using file extension
-		switch file.Ext {
+		switch file.Ext() {
 		case ".heic", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".tif":
 			file.Type = "image"
 		case ".mov", ".mp4", ".mpeg", ".avi":
 			file.Type = "video"
 			file.MIME = "video/mp4" // FIXME: force MP4 for the browser to be happy and play the video
 		default:
-			log.Printf("Unknown file type - ext: %s, mime: %s\n", file.Ext, file.Type)
+			log.Printf("Unknown file type - ext: %s, mime: %s\n", file.Ext(), file.Type)
 			// TODO: handle unknown file types
 		}
 	}
@@ -186,7 +187,7 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 
 // If the file requires transcoding like files that are not supported by the browser
 func (file *File) RequiresConvertion() bool {
-	if file.Type == "image" && file.Ext == ".heic" {
+	if file.Type == "image" && file.Ext() == ".heic" {
 		return true
 	}
 
