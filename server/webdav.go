@@ -7,8 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
-	"strconv"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,123 +17,95 @@ import (
 
 type webDavCollections map[string]*Collection
 
-type collectionsNodeFS struct {
-	cs webDavCollections // Used by root folder
-	c  *Collection       // Used by each collection
+type webDavFileInfo struct {
+	name       string
+	isDir      bool
+	path       string
+	dir        webDavFileInfoable
+	collection *Collection
+	album      *Album
 }
 
-func (cs webDavCollections) find(name string) (*Collection, webdav.Dir, string, error) {
-	for _, c := range cs {
-		var prefix string = ""
-		if name == c.Name {
-			prefix = c.Name
-		}
-		if name == "/"+c.Name {
-			prefix = "/" + c.Name
-		}
-		if strings.HasPrefix(name, "/"+c.Name+"/") {
-			prefix = "/" + c.Name + "/"
-		}
-		if prefix != "" {
-			return c, webdav.Dir(c.PhotosPath), strings.TrimPrefix(name, prefix), nil
-		}
-	}
-	return nil, webdav.Dir(""), "", errors.New("collection not found")
+type webDavFileInfoable interface {
+	webDavInfo(c *Collection, a *Album) webDavFileInfo
+	webDavDir(info webDavFileInfo) ([]fs.FileInfo, error)
 }
 
-func (c collectionsNodeFS) Readdir(count int) ([]fs.FileInfo, error) {
-	children := make([]fs.FileInfo, len(c.cs))
-	i := 0
-	for _, c := range c.cs {
-		children[i] = collectionsNodeFS{c: c}
-		i++
+// Root (list collections)
+
+func (cs webDavCollections) webDavInfo(collection *Collection, album *Album) webDavFileInfo {
+	return webDavFileInfo{
+		name:       "",
+		isDir:      true,
+		dir:        cs,
+		collection: nil,
+		album:      nil,
 	}
-	return children, nil
 }
-func (c collectionsNodeFS) Stat() (fs.FileInfo, error)                   { return collectionsNodeFS{}, nil }
-func (c collectionsNodeFS) Write(p []byte) (n int, err error)            { return 0, nil }
-func (c collectionsNodeFS) Close() error                                 { return nil }
-func (c collectionsNodeFS) Read(p []byte) (n int, err error)             { return 0, nil }
-func (c collectionsNodeFS) Seek(offset int64, whence int) (int64, error) { return 0, nil }
-
-func (f collectionsNodeFS) Name() string       { return f.c.Name }
-func (f collectionsNodeFS) Size() int64        { return 0 }
-func (f collectionsNodeFS) Mode() os.FileMode  { return 0660 | os.ModeDir }
-func (f collectionsNodeFS) ModTime() time.Time { return time.Now() }
-func (f collectionsNodeFS) IsDir() bool        { return true }
-func (f collectionsNodeFS) Sys() interface{}   { return nil }
-
-func (cs webDavCollections) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	_, dir, name, err := cs.find(name)
-	if err != nil {
-		return err
+func (cs webDavCollections) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
+	for _, collection := range cs {
+		list = append(list, collection.webDavInfo(info.collection, info.album))
 	}
-	return dir.Mkdir(ctx, name, perm)
+	return list, nil
 }
-func (cs webDavCollections) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
-	// Open root folder (i.e. list of collections)
-	if name == "" || name == "/" {
-		return collectionsNodeFS{cs: cs}, nil
+
+// Collection
+
+func (collection *Collection) webDavInfo(c *Collection, a *Album) webDavFileInfo {
+	return webDavFileInfo{
+		name:       collection.Name,
+		isDir:      true,
+		dir:        collection,
+		collection: nil,
+		album:      nil,
 	}
-
-	c, dir, name, err := cs.find(name)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.RenameOnReplace {
-		// If file exists, create a new file instead with an increment
-		if (flag & os.O_CREATE) == os.O_CREATE {
-			for i := 1; true; i++ {
-				f := name
-				if i > 1 {
-					ext := path.Ext(name)
-					f = strings.TrimSuffix(name, ext) + "_" + strconv.Itoa(i) + ext
-				}
-
-				// Check if file doesnt exist
-				_, err := dir.Stat(ctx, f)
-				if err != nil {
-					name = f
-					break
-				}
-			}
-		}
-	}
-
-	return dir.OpenFile(ctx, name, flag, perm)
 }
-func (cs webDavCollections) RemoveAll(ctx context.Context, name string) error {
-	_, dir, name, err := cs.find(name)
-	if err != nil {
-		return err
+func (collection *Collection) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
+	albums, _ := collection.GetAlbums()
+	for _, album := range albums {
+		list = append(list, album.webDavInfo(info.collection, info.album))
 	}
-	return dir.RemoveAll(ctx, name)
+	return list, nil
 }
-func (cs webDavCollections) Rename(ctx context.Context, oldName, newName string) error {
-	_, oldDir, oldName, err := cs.find(oldName)
-	if err != nil {
-		return err
+
+// Album
+
+func (album Album) webDavInfo(c *Collection, a *Album) webDavFileInfo {
+	return webDavFileInfo{
+		name:       album.Name,
+		isDir:      true,
+		dir:        album,
+		collection: c,
+		album:      nil,
 	}
-	_, newDir, newName, err := cs.find(newName)
-	if err != nil {
-		return err
-	}
-	if oldDir != newDir {
-		return errors.New("can't move across collections")
-	}
-	return oldDir.Rename(ctx, oldName, newName)
 }
-func (cs webDavCollections) Stat(ctx context.Context, name string) (os.FileInfo, error) {
-	// Stat for root folder (i.e. list of collections)
-	if name == "" || name == "/" {
-		return collectionsNodeFS{cs: cs}, nil
-	}
-	_, dir, name, err := cs.find(name)
+func (album Album) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
+	loadedAlbum, err := info.collection.GetAlbumWithPhotos(album.Name, false, false)
 	if err != nil {
 		return nil, err
 	}
-	return dir.Stat(ctx, name)
+	for _, photo := range loadedAlbum.photosMap {
+		for _, file := range photo.Files {
+			list = append(list, file.webDavInfo(info.collection, info.album))
+		}
+	}
+	return list, nil
+}
+
+// Photo file
+
+func (file File) webDavInfo(c *Collection, a *Album) webDavFileInfo {
+	return webDavFileInfo{
+		name:       file.Name(),
+		path:       file.Path,
+		isDir:      false,
+		dir:        nil,
+		collection: c,
+		album:      a,
+	}
+}
+func (file File) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
+	return nil, nil
 }
 
 func WebDAVWithConfig(prefix string, collections map[string]*Collection) echo.MiddlewareFunc {
@@ -158,4 +129,138 @@ func WebDAVWithConfig(prefix string, collections map[string]*Collection) echo.Mi
 			return next(c)
 		}
 	}
+}
+
+func (cs webDavCollections) resolve(name string) (webDavFileInfo, error) {
+	var collection *Collection
+	var album *Album
+	var photo *Photo
+	var err error
+
+	bits := strings.Split(name, "/")
+	size := len(bits)
+
+	// Root
+	if size <= 1 {
+		return cs.webDavInfo(nil, nil), nil
+	}
+
+	// Collection
+	if size >= 2 {
+		collection, err = GetCollection(bits[1])
+		if err != nil {
+			return webDavFileInfo{}, err
+		}
+		if size == 2 {
+			return collection.webDavInfo(nil, nil), nil
+		}
+	}
+
+	// Album
+	if size >= 3 {
+		if size == 3 { // for loading albums from a collection
+			album, err = collection.GetAlbum(bits[2])
+			if err != nil {
+				return webDavFileInfo{}, err
+			}
+			return album.webDavInfo(collection, nil), nil
+		}
+
+		// for loading photos from album
+		album, err = collection.GetAlbumWithPhotos(bits[2], false, false)
+		if err != nil {
+			return webDavFileInfo{}, err
+		}
+	}
+
+	// Photo
+	if size >= 4 {
+		basename := bits[3]
+		photoname := strings.TrimSuffix(basename, filepath.Ext(basename))
+		photo, err = album.GetPhoto(photoname)
+		if err != nil {
+			return webDavFileInfo{}, err
+		}
+		if size == 4 {
+			for _, file := range photo.Files {
+				if file.Name() == basename {
+					return file.webDavInfo(collection, album), nil
+				}
+			}
+			return webDavFileInfo{}, errors.New("photo not found")
+		}
+	}
+
+	return webDavFileInfo{}, errors.New("invalid request")
+}
+
+// File Info
+
+func (fi webDavFileInfo) Name() string {
+	return fi.name
+}
+func (fi webDavFileInfo) Size() int64 {
+	return 0
+}
+func (fi webDavFileInfo) Mode() fs.FileMode {
+	return os.ModeDir
+}
+func (fi webDavFileInfo) ModTime() time.Time {
+	return time.Now()
+}
+func (fi webDavFileInfo) IsDir() bool {
+	return fi.isDir
+}
+func (fi webDavFileInfo) Sys() any {
+	return nil
+}
+func (fi webDavFileInfo) Close() error {
+	return errors.New("close not supported")
+}
+func (fi webDavFileInfo) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read not supported")
+}
+func (fi webDavFileInfo) Seek(offset int64, whence int) (int64, error) {
+	return 0, errors.New("seek not supported")
+}
+func (fi webDavFileInfo) Readdir(count int) ([]fs.FileInfo, error) {
+	return fi.dir.webDavDir(fi)
+}
+func (fi webDavFileInfo) Stat() (fs.FileInfo, error) {
+	return fi, nil
+}
+func (fi webDavFileInfo) Write(p []byte) (n int, err error) {
+	return 0, errors.New("write not supported")
+}
+
+// Webdav actions
+
+func (cs webDavCollections) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
+	return errors.New("not implemented Mkdir")
+}
+func (cs webDavCollections) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
+	info, err := cs.resolve(name)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return info, nil
+	}
+	return webdav.Dir("/").OpenFile(ctx, info.path, flag, perm)
+}
+func (cs webDavCollections) RemoveAll(ctx context.Context, name string) error {
+	return errors.New("not implemented RemoveAll")
+}
+func (cs webDavCollections) Rename(ctx context.Context, oldName, newName string) error {
+	return errors.New("not implemented Rename")
+}
+func (cs webDavCollections) Stat(ctx context.Context, name string) (os.FileInfo, error) {
+	info, err := cs.resolve(name)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return info, nil
+	}
+	return webdav.Dir("/").Stat(ctx, info.path)
 }
