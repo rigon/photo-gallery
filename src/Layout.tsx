@@ -1,5 +1,5 @@
 import { FC, useState } from 'react';
-import { useParams, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -26,6 +26,7 @@ import Storage from './Storage';
 import ThemeMenu from './ThemeMenu';
 
 import { increaseZoom, decreaseZoom } from "./services/app";
+import AlbumTitle from './AlbumTitle';
 
 const drawerWidth = 300;
 
@@ -34,8 +35,6 @@ const Layout: FC = () => {
   const dispatch = useDispatch();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [mobileOpen, setMobileOpen] = useState<boolean>(isSmallScreen);
-  
-  const {album} = useParams();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -94,9 +93,7 @@ const Layout: FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            { album }
-          </Typography>
+          <AlbumTitle />
           <Box sx={{ flexGrow: 1 }} />
           <NewAlbum />
           <FavoriteMenu />
