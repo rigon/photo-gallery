@@ -17,8 +17,7 @@ export interface PseudoAlbumType {
 }
 
 export interface AlbumType {
-    /** Name of the album */
-    name: string;
+    name: string;   // Name of the album
     photos: PhotoType[];
     subalbums: string[];
     pseudo: boolean;

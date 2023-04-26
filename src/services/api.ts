@@ -26,10 +26,13 @@ export interface QueryPhoto {
 export interface QuerySaveFavorite {
     collection: CollectionType["name"];
     album: AlbumType["name"];
-    photo: PhotoType["title"];
-    photoIndex: number;
-    saveTo: PseudoAlbumType;
     favorite: boolean;
+    photoIndex: number[];
+    saveData: {
+        collection: CollectionType["name"];
+        album: AlbumType["name"];
+        photos: PhotoType["title"][];
+    }
 }
 
 export const api = createApi({
@@ -66,17 +69,19 @@ export const api = createApi({
             query: (infoUrl) => infoUrl,
         }),
         savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
-            query: ({ collection, album, photo, favorite, saveTo }) => ({
-                url: `/collection/${collection}/album/${album}/photo/${photo}/saveToPseudo`,
+            query: ({ collection, album, favorite, saveData }) => ({
+                url: `/collection/${collection}/album/${album}/pseudo`,
                 method: favorite ? 'PUT' : 'DELETE',
-                body: saveTo,
+                body: saveData,
             }),
-            invalidatesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.saveTo.collection}-${arg.saveTo.album}` }],
-            async onQueryStarted({ collection, album, photoIndex, favorite }, { dispatch, queryFulfilled }) {
+            invalidatesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}-${arg.album}` }],
+            async onQueryStarted({ saveData, photoIndex, favorite }, { dispatch, queryFulfilled }) {
+                const query: QueryAlbum = { collection: saveData.collection, album: saveData.album };
+                console.log("Optimistic Updates", query, photoIndex);
                 const patchResult = dispatch(
-                    api.util.updateQueryData('getAlbum', {collection, album}, draft => {
+                    api.util.updateQueryData('getAlbum', query, draft => {
                         // Optimistic Updates
-                        draft.photos[photoIndex].favorite = favorite;
+                        photoIndex.forEach(i => draft.photos[i].favorite = favorite);
                     }));
                 // Undo if the request fails
                 queryFulfilled.catch(patchResult.undo);

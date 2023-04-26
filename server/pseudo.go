@@ -24,12 +24,18 @@ type PseudoAlbumEntry struct {
 	Photo      string
 }
 
-func readPseudoAlbum(album Album, config *Collection) ([]PseudoAlbumEntry, error) {
+type PseudoAlbumSaveQuery struct {
+	Collection string   `json:"collection"`
+	Album      string   `json:"album"`
+	Photos     []string `json:"photos"`
+}
+
+func readPseudoAlbum(collection *Collection, album Album) ([]PseudoAlbumEntry, error) {
 	if !album.IsPseudo {
 		return nil, errors.New("the destination must be a pseudo album")
 	}
 
-	filename := filepath.Join(config.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
+	filename := filepath.Join(collection.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -53,12 +59,12 @@ func readPseudoAlbum(album Album, config *Collection) ([]PseudoAlbumEntry, error
 	return entries, nil
 }
 
-func writePseudoAlbum(entries []PseudoAlbumEntry, album Album, config *Collection) error {
+func writePseudoAlbum(collection *Collection, album Album, entries ...PseudoAlbumEntry) error {
 	if !album.IsPseudo {
 		return errors.New("the destination must be a pseudo album")
 	}
 
-	filename := filepath.Join(config.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
+	filename := filepath.Join(collection.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
 	file, err := os.OpenFile(filename, os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -88,44 +94,42 @@ func GetPseudoAlbums(collections map[string]*Collection) []PseudoAlbum {
 	return pseudos
 }
 
-func (album Album) SavePhotoToPseudoAlbum(fromCollection string, fromAlbum string, fromPhoto string, config *Collection) error {
-	entries, err := readPseudoAlbum(album, config)
+func (album Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSaveQuery, isAdd bool) error {
+	entries, err := readPseudoAlbum(collection, album)
 	if err != nil {
 		return err
 	}
 
-	// Check for duplicate entries
-	for _, entry := range entries {
-		if entry.Collection == fromCollection && entry.Album == fromAlbum && entry.Photo == fromPhoto {
-			return nil
+	for _, photo := range query.Photos {
+		// Find entry already in the album
+		found := -1
+		for i, entry := range entries {
+			if entry.Collection == query.Collection && entry.Album == query.Album && entry.Photo == photo {
+				found = i
+				break
+			}
+		}
+
+		if isAdd {
+			if found >= 0 { // Duplicated entry
+				return errors.New("entry duplicated")
+			}
+			// Add a new entry
+			entries = append(entries, PseudoAlbumEntry{Collection: query.Collection, Album: query.Album, Photo: photo})
+		} else {
+			if found < 0 {
+				return errors.New("entry could not be found")
+			}
+			// Remove the entry
+			entries = append(entries[:found], entries[found+1:]...)
 		}
 	}
 
-	// Add a new entry
-	entries = append(entries, PseudoAlbumEntry{Collection: fromCollection, Album: fromAlbum, Photo: fromPhoto})
-	// Save to file
-	writePseudoAlbum(entries, album, config)
+	// Save back the pseudo album with changed entries
+	err = writePseudoAlbum(collection, album, entries...)
+	if err != nil {
+		return err
+	}
 
 	return nil
-}
-
-func (album Album) RemovePhotoFromPseudoAlbum(fromCollection string, fromAlbum string, fromPhoto string, config *Collection) error {
-	entries, err := readPseudoAlbum(album, config)
-	if err != nil {
-		return err
-	}
-
-	// Find entry
-	for i, entry := range entries {
-		if entry.Collection == fromCollection && entry.Album == fromAlbum && entry.Photo == fromPhoto {
-			entries = append(entries[:i], entries[i+1:]...)
-			err := writePseudoAlbum(entries, album, config)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-
-	return errors.New("entry could not be found")
 }

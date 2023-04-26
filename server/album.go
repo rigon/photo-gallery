@@ -27,7 +27,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 	album.photosMap = make(map[string]*Photo)
 
 	if album.IsPseudo {
-		pseudos, err := readPseudoAlbum(*album, collection)
+		pseudos, err := readPseudoAlbum(collection, *album)
 		if err != nil {
 			return err
 		}

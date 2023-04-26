@@ -52,23 +52,26 @@ const Gallery: FC = () => {
 
     const toggleFavorite = async (index: number) => {
         if(favorite === undefined) {
-            errorNotification("No favorite album is selected. Select first from the top menu.");
+            errorNotification("No favorite album is selected. Select first from the top toolbar.");
             return;
         }
         if(collection === undefined || album === undefined || index >= photos.length) {
-            errorNotification("Select a collection and an album first from the left menu.");
+            errorNotification("Select a collection and an album from the left menu.");
             return;
         }
 
         const isFavorite = !(photos[index].favorite);
         try {
             await saveFavorite({
-                collection: collection,
-                album: album,
-                photo: photos[index].id,
-                photoIndex: index,
-                saveTo: favorite,
+                collection: favorite.collection,
+                album: favorite.album,
                 favorite: isFavorite,
+                saveData: {
+                    collection,
+                    album,
+                    photos: [photos[index].id], // TODO: change here for bulk selection
+                },
+                photoIndex: [index], // TODO: change here for bulk selection
             }).unwrap();
             infoNotification(isFavorite ?
                 `Photo added as favorite to ${favorite.album}` :
