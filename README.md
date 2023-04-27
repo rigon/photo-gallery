@@ -59,8 +59,8 @@ Main features:
 - [X] Show photo location in a map
 - [ ] Organize photos in bulk:
   - [ ] Upload new photos
-  - [ ] Move photos
-  - [ ] Delete photos
+  - [X] Move photos
+  - [X] Delete photos
   - [X] Save favorites
   - [ ] Easy selection
 - [ ] Authentication

@@ -179,6 +179,73 @@ func file(c echo.Context) error {
 	return c.File(file.Path)
 }
 
+func move(c echo.Context) error {
+	var query AlbumMoveQuery
+
+	// Decode body
+	if err := c.Bind(&query); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	srcCollection, err := GetCollection(c.Param("collection"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	dstCollection, err := GetCollection(query.Collection)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	albumName := c.Param("album")
+
+	// Fetch album with photos
+	srcAlbum, err := srcCollection.GetAlbumWithPhotos(albumName, false)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	dstAlbum, err := dstCollection.GetAlbum(query.Album)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Delete photos
+	err = srcAlbum.MovePhotos(srcCollection, dstCollection, dstAlbum, query.Photos...)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+}
+
+func delete(c echo.Context) error {
+	var query AlbumDeleteQuery
+
+	// Decode body
+	if err := c.Bind(&query); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	collection, err := GetCollection(c.Param("collection"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	albumName := c.Param("album")
+
+	// Fetch album with photos
+	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Delete photos
+	err = album.DeletePhotos(collection, query.Photos...)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+}
+
 func saveToPseudo(c echo.Context) error {
 	var query PseudoAlbumSaveQuery
 
@@ -199,9 +266,6 @@ func saveToPseudo(c echo.Context) error {
 
 	if !album.IsPseudo {
 		return echo.NewHTTPError(http.StatusBadRequest, "album must be of type pseudo")
-	}
-	if !album.IsPseudo {
-		return errors.New("album must be of type pseudo")
 	}
 
 	switch c.Request().Method {
@@ -299,6 +363,9 @@ func main() {
 	api.GET("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/info", info)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
+	// api.POST("/collection/:collection/album/:album/photos", upload)
+	api.PUT("/collection/:collection/album/:album/photos/move", move)
+	api.DELETE("/collection/:collection/album/:album/photos", delete)
 	api.PUT("/collections/:collection/albums/:album/pseudos", saveToPseudo)
 	api.DELETE("/collections/:collection/albums/:album/pseudos", saveToPseudo)
 	api.GET("/health", func(c echo.Context) error {
