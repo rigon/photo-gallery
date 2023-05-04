@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useRef, MouseEvent, FC } from 'react';
 import { useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 
 import Uploady, {
     useUploady,
@@ -12,7 +13,8 @@ import Uploady, {
     useItemFinalizeListener,
     useItemFinishListener,
     useItemProgressListener,
-    useItemStartListener
+    useItemStartListener,
+    useBatchFinalizeListener,
 } from '@rpldy/uploady';
 import UploadPreview, {
     PreviewComponentProps,
@@ -38,6 +40,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
+import api from './services/api';
 
 const StyledCircularProgress = styled(CircularProgress)({
     position: 'absolute',
@@ -100,12 +103,17 @@ const UploadEntry = ({ type, url, id, name, size }: PreviewComponentProps) => {
                     {isError && <StyledIcon><ErrorOutlineIcon color="error" /></StyledIcon>}
                 </Box>
             </ListItemAvatar>
-            <ListItemText primary={name} secondary={item.state + " - " + type + " (" + size + " bytes)"} />
+            <ListItemText primary={name} secondary={type + " (" + size + " bytes)"} />
         </ListItem>
     );
 }
-const PreviewsWithClear = () => {
+const PreviewsWithClear = ({collection, album}: {collection: string, album: string}) => {
+    const dispatch = useDispatch();
     const previewMethodsRef = useRef<PreviewMethods>(null);
+
+    useBatchFinalizeListener((batch) => {
+        dispatch(api.util.invalidateTags([{ type: 'Album', id: `${collection}-${album}` }]));
+    });
 
     const onClear = useCallback(() => {
         if (previewMethodsRef.current?.clear) {
@@ -141,8 +149,11 @@ const Upload: FC = () => {
         setAnchorEl(null);
     };
 
+    if(!collection || !album)
+        return null;
+
     return (
-        <Uploady destination={{ url: `/collection/${collection}/album/${album}` }}>
+        <Uploady destination={{ url: `/api/collection/${collection}/album/${album}/photos` }}>
             <ButtonGroup variant="text" aria-label="split button" onClick={handleOpenMenu}>
                 <UploadButton />
                 <Button
@@ -169,7 +180,7 @@ const Upload: FC = () => {
                     role: 'listbox',
                 }}
             >
-                <PreviewsWithClear />
+                <PreviewsWithClear collection={collection} album={album} />
             </Menu>
         </Uploady>);
 }

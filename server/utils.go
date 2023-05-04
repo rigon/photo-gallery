@@ -1,5 +1,62 @@
 package main
 
+import (
+	"io"
+	"mime/multipart"
+	"os"
+)
+
+// Taken from https://github.com/valyala/fasthttp/blob/0d0bbfee5a8dd12a82e442d3cbb11e56726dd06e/server.go#L1048
+// SaveMultipartFile saves multipart file fh under the given filename path.
+func SaveMultipartFile(fh *multipart.FileHeader, path string) (err error) {
+	var (
+		f  multipart.File
+		ff *os.File
+	)
+	f, err = fh.Open()
+	if err != nil {
+		return
+	}
+
+	var ok bool
+	if ff, ok = f.(*os.File); ok {
+		// Windows can't rename files that are opened.
+		if err = f.Close(); err != nil {
+			return
+		}
+
+		// If renaming fails we try the normal copying method.
+		// Renaming could fail if the files are on different devices.
+		if os.Rename(ff.Name(), path) == nil {
+			return nil
+		}
+
+		// Reopen f for the code below.
+		if f, err = fh.Open(); err != nil {
+			return
+		}
+	}
+
+	defer func() {
+		e := f.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+
+	if ff, err = os.Create(path); err != nil {
+		return
+	}
+	defer func() {
+		e := ff.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+	_, err = io.Copy(ff, f)
+	return
+}
+
 /**
  * Source: https://elliotchance.medium.com/batch-a-channel-by-size-or-time-in-go-92fa3098f65
  */

@@ -58,7 +58,7 @@ Main features:
 - [X] Metadata extraction from photos (EXIF)
 - [X] Show photo location in a map
 - [ ] Organize photos in bulk:
-  - [ ] Upload new photos
+  - [X] Upload new photos
   - [X] Move photos
   - [X] Delete photos
   - [X] Save favorites

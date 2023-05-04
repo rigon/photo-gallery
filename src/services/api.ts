@@ -112,3 +112,5 @@ export const {
     useGetPhotoInfoQuery,
     useSavePhotoToPseudoMutation,
 } = api;
+
+export default api;
