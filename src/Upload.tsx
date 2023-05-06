@@ -15,11 +15,16 @@ import Uploady, {
     useItemProgressListener,
     useItemStartListener,
     useBatchFinalizeListener,
+    useBatchAddListener,
+    useAbortAll,
 } from '@rpldy/uploady';
 import UploadPreview, {
     PreviewComponentProps,
+    PreviewItem,
     PreviewMethods
 } from "@rpldy/upload-preview";
+import UploadDropZone from "@rpldy/upload-drop-zone";
+import withPasteUpload from "@rpldy/upload-paste";
 
 import { styled } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -29,6 +34,7 @@ import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import CircularProgress from '@mui/material/CircularProgress';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
+import DangerousIcon from '@mui/icons-material/Dangerous';
 import DoneIcon from '@mui/icons-material/Done';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
@@ -41,6 +47,8 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
 import api from './services/api';
+
+const PasteUploadDropZone = withPasteUpload(UploadDropZone);
 
 const StyledCircularProgress = styled(CircularProgress)({
     position: 'absolute',
@@ -107,54 +115,54 @@ const UploadEntry = ({ type, url, id, name, size }: PreviewComponentProps) => {
         </ListItem>
     );
 }
-const PreviewsWithClear = ({collection, album}: {collection: string, album: string}) => {
-    const dispatch = useDispatch();
-    const previewMethodsRef = useRef<PreviewMethods>(null);
 
+export const Upload: FC = () => {
+    const { collection, album } = useParams();
+    const dispatch = useDispatch();
+    const abortAll = useAbortAll();
+    const dropdownRef = useRef(null);
+    const previewMethodsRef = useRef<PreviewMethods>(null);
+    const [open, setOpen] = useState<boolean>(false);
+    const [inProgress, setInProgress] = useState<boolean>(false);
+    const [isEmpty, setIsEmpty] = useState<boolean>(false);
+
+    // Open menu when new uploads are added
+    useBatchAddListener((batch, options) => {
+        setOpen(true);
+        setInProgress(true);
+    });
+    // Reload album after uploading
     useBatchFinalizeListener((batch) => {
         dispatch(api.util.invalidateTags([{ type: 'Album', id: `${collection}-${album}` }]));
+        setInProgress(false);
     });
 
-    const onClear = useCallback(() => {
-        if (previewMethodsRef.current?.clear) {
-            previewMethodsRef.current.clear();
-        }
-    }, [previewMethodsRef]);
-
-    return <>
-        <UploadPreview
-            rememberPreviousBatches
-            PreviewComponent={UploadEntry}
-            previewMethodsRef={previewMethodsRef}
-        />
-        <MenuItem onClick={onClear}>
-            <ListItemIcon>
-                <ClearAllIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Cancel and Clear All</ListItemText>
-        </MenuItem>
-    </>;
-};
-
-const Upload: FC = () => {
-    const { collection, album } = useParams();
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-
     const handleOpenMenu = (event: MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
+        setOpen(true);
     };
 
     const handleCloseMenu = () => {
-        setAnchorEl(null);
+        setOpen(false);
     };
 
+    const onAbortOrClear = () => {
+        if(inProgress)
+            abortAll();
+        else
+            previewMethodsRef.current?.clear();
+    };
+    
+    const onPreviewsChanged = (items: PreviewItem[]) => {
+        setIsEmpty(items.length === 0);
+    };
+
+    // Do not add the upload button when not in a album
     if(!collection || !album)
         return null;
 
     return (
-        <Uploady destination={{ url: `/api/collection/${collection}/album/${album}/photos` }}>
-            <ButtonGroup variant="text" aria-label="split button" onClick={handleOpenMenu}>
+        <>
+            <ButtonGroup ref={dropdownRef} variant="text" aria-label="split button" onClick={handleOpenMenu}>
                 <UploadButton />
                 <Button
                     size="small"
@@ -170,7 +178,7 @@ const Upload: FC = () => {
 
             <Menu
                 open={open}
-                anchorEl={anchorEl}
+                anchorEl={dropdownRef.current}
                 onClose={handleCloseMenu}
                 keepMounted={true}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
@@ -180,9 +188,50 @@ const Upload: FC = () => {
                     role: 'listbox',
                 }}
             >
-                <PreviewsWithClear collection={collection} album={album} />
+                {isEmpty &&
+                    <ListItem>
+                        <ListItemText
+                            primary={<em>No items for uploading</em>}
+                            secondary={<em>Use the upload button or drag & drop the files here</em>} />
+                    </ListItem>}
+
+                {!isEmpty &&
+                    <MenuItem onClick={onAbortOrClear}>
+                        <ListItemIcon>
+                            {inProgress && <DangerousIcon />}
+                            {!inProgress && <ClearAllIcon />}
+                        </ListItemIcon>
+                        <ListItemText>
+                            {inProgress && <>Stop current uploads</>}
+                            {!inProgress && <>Clear all</>}
+                        </ListItemText>
+                    </MenuItem>}
+                
+                <UploadPreview
+                    rememberPreviousBatches
+                    PreviewComponent={UploadEntry}
+                    previewMethodsRef={previewMethodsRef}
+                    onPreviewsChanged={onPreviewsChanged}
+                />
             </Menu>
-        </Uploady>);
+        </>);
 }
 
-export default Upload;
+interface UploadProviderProps {
+    children?: JSX.Element | JSX.Element[];
+}
+
+export const UploadProvider: FC<UploadProviderProps> = ({children}) => {
+    const { collection, album } = useParams();
+    
+    const uploadUrl = (!collection || !album) ? undefined :
+        `/api/collections/${collection}/albums/${album}/photos`;
+
+    return (
+        <Uploady destination={{ url: uploadUrl }}>
+            <PasteUploadDropZone id="upload-drop-zone">
+                {children}
+            </PasteUploadDropZone>
+        </Uploady>
+    );
+};

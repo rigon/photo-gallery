@@ -27,6 +27,7 @@ import Storage from './Storage';
 import ThemeMenu from './ThemeMenu';
 
 import { increaseZoom, decreaseZoom } from "./services/app";
+import { UploadProvider, Upload } from './Upload';
 
 const drawerWidth = 300;
 
@@ -81,82 +82,87 @@ const Layout: FC = () => {
   );
   
   return (
-    <Box sx={{ display: "flex" }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+    <UploadProvider>
+      <Box sx={{ display: "flex" }}>
+        <CssBaseline />
+        <AppBar
+          position="fixed"
+          sx={{
+            width: { sm: `calc(100% - ${drawerWidth}px)` },
+            ml: { sm: `${drawerWidth}px` },
+          }}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { sm: 'none' } }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <AlbumTitle />
+
+            <Box sx={{ flexGrow: 1 }} />
+            
+            <Upload />
+            <NewAlbum />
+            <FavoriteMenu />
+            <ThemeMenu />
+
+            <Tooltip title="Increase Zoom" enterDelay={300}>
+              <IconButton onClick={zoomIn} aria-label="zoom in" color="inherit">
+                  <ZoomInIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Decrease Zoom" enterDelay={300}>
+              <IconButton onClick={zoomOut} aria-label="zoom out" color="inherit">
+                  <ZoomOutIcon />
+              </IconButton>
+            </Tooltip>
+          </Toolbar>
+        </AppBar>
+        <Box
+          component="nav"
+          sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        >
+          {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{
+              keepMounted: true, // Better open performance on mobile.
+            }}
+            sx={{
+              display: { xs: 'block', sm: 'none' },
+              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: "90%" },
+            }}
           >
-            <MenuIcon />
-          </IconButton>
-          <AlbumTitle />
-          <Box sx={{ flexGrow: 1 }} />
-          <NewAlbum />
-          <FavoriteMenu />
-          <ThemeMenu />
-
-          <Tooltip title="Increase Zoom" enterDelay={300}>
-            <IconButton onClick={zoomIn} aria-label="zoom in" color="inherit">
-                <ZoomInIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Decrease Zoom" enterDelay={300}>
-            <IconButton onClick={zoomOut} aria-label="zoom out" color="inherit">
-                <ZoomOutIcon />
-            </IconButton>
-          </Tooltip>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
-        {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: "90%" },
-          }}
+            {drawer}
+          </Drawer>
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: 'none', sm: 'block' },
+              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            }}
+            open
+          >
+            {drawer}
+          </Drawer>
+        </Box>
+        <Box
+          component="main"
+          sx={{ flexGrow: 1, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
         >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
-      >
-        <Toolbar />
+          <Toolbar />
 
-        <Outlet />
+          <Outlet />
+        </Box>
       </Box>
-    </Box>
+    </UploadProvider>
   );
 }
 

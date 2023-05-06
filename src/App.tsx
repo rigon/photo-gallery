@@ -6,10 +6,12 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { SnackbarProvider } from 'notistack';
 import { ThemeOptions } from '@mui/material/styles';
 import "@fontsource/pt-sans";
+import "./App.css";
 
 // layouts
 import Layout from './Layout';
 import Gallery from './Gallery';
+
 import { selectTheme } from "./services/app";
 
 function Home() {
