@@ -48,7 +48,9 @@ import MenuItem from '@mui/material/MenuItem';
 
 import api from './services/api';
 
-const PasteUploadDropZone = withPasteUpload(UploadDropZone);
+const PasteUploadDropZone = withPasteUpload(styled(UploadDropZone)({
+    height: "100vh"
+}));
 
 const StyledCircularProgress = styled(CircularProgress)({
     position: 'absolute',
@@ -160,61 +162,60 @@ export const Upload: FC = () => {
     if(!collection || !album)
         return null;
 
-    return (
-        <>
-            <ButtonGroup ref={dropdownRef} variant="text" aria-label="split button" onClick={handleOpenMenu}>
-                <UploadButton />
-                <Button
-                    size="small"
-                    color="inherit"
-                    aria-controls={open ? 'split-button-menu' : undefined}
-                    aria-expanded={open ? 'true' : undefined}
-                    aria-label="select merge strategy"
-                    aria-haspopup="menu"
-                >
-                    <ArrowDropDownIcon />
-                </Button>
-            </ButtonGroup>
-
-            <Menu
-                open={open}
-                anchorEl={dropdownRef.current}
-                onClose={handleCloseMenu}
-                keepMounted={true}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-                MenuListProps={{
-                    'aria-labelledby': 'lock-button',
-                    role: 'listbox',
-                }}
+    return (<>
+        <ButtonGroup ref={dropdownRef} variant="text" aria-label="split button" onClick={handleOpenMenu}>
+            <UploadButton />
+            <Button
+                size="small"
+                color="inherit"
+                aria-controls={open ? 'split-button-menu' : undefined}
+                aria-expanded={open ? 'true' : undefined}
+                aria-label="select merge strategy"
+                aria-haspopup="menu"
             >
-                {isEmpty &&
-                    <ListItem>
-                        <ListItemText
-                            primary={<em>No items for uploading</em>}
-                            secondary={<em>Use the upload button or drag & drop the files here</em>} />
-                    </ListItem>}
+                <ArrowDropDownIcon />
+            </Button>
+        </ButtonGroup>
 
-                {!isEmpty &&
-                    <MenuItem onClick={onAbortOrClear}>
-                        <ListItemIcon>
-                            {inProgress && <DangerousIcon />}
-                            {!inProgress && <ClearAllIcon />}
-                        </ListItemIcon>
-                        <ListItemText>
-                            {inProgress && <>Stop current uploads</>}
-                            {!inProgress && <>Clear all</>}
-                        </ListItemText>
-                    </MenuItem>}
-                
-                <UploadPreview
-                    rememberPreviousBatches
-                    PreviewComponent={UploadEntry}
-                    previewMethodsRef={previewMethodsRef}
-                    onPreviewsChanged={onPreviewsChanged}
-                />
-            </Menu>
-        </>);
+        <Menu
+            open={open}
+            anchorEl={dropdownRef.current}
+            onClose={handleCloseMenu}
+            keepMounted={true}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+            MenuListProps={{
+                'aria-labelledby': 'lock-button',
+                role: 'listbox',
+            }}
+        >
+            {isEmpty &&
+                <ListItem>
+                    <ListItemText
+                        primary={<em>No items for uploading</em>}
+                        secondary={<em>Use the Upload button <b>or</b> drag & drop files here</em>} />
+                </ListItem>}
+
+            {!isEmpty &&
+                <MenuItem onClick={onAbortOrClear}>
+                    <ListItemIcon>
+                        {inProgress && <DangerousIcon />}
+                        {!inProgress && <ClearAllIcon />}
+                    </ListItemIcon>
+                    <ListItemText>
+                        {inProgress && <>Stop current uploads</>}
+                        {!inProgress && <>Clear all</>}
+                    </ListItemText>
+                </MenuItem>}
+            
+            <UploadPreview
+                rememberPreviousBatches
+                PreviewComponent={UploadEntry}
+                previewMethodsRef={previewMethodsRef}
+                onPreviewsChanged={onPreviewsChanged}
+            />
+        </Menu>
+    </>);
 }
 
 interface UploadProviderProps {
@@ -229,7 +230,7 @@ export const UploadProvider: FC<UploadProviderProps> = ({children}) => {
 
     return (
         <Uploady destination={{ url: uploadUrl }}>
-            <PasteUploadDropZone id="upload-drop-zone">
+            <PasteUploadDropZone>
                 {children}
             </PasteUploadDropZone>
         </Uploady>
