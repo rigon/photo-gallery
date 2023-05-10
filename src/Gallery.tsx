@@ -25,12 +25,25 @@ import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import useFavorite from "./favoriteHook";
 import useNotification from "./Notification";
+import { Selectable, SelectionContext } from "./Selection";
 import { PhotoType, urls } from "./types";
 import { useGetAlbumQuery, useSavePhotoToPseudoMutation } from "./services/api";
 import { selectZoom } from "./services/app";
 
 type Photo = PhotoType & Image;
 
+const boxStyle: SxProps<Theme> = {
+    position: "relative",
+    color: "white",
+    backgroundColor: "action.hover",
+    cursor: "pointer",
+};
+const selectedStyle: SxProps<Theme> = {
+    outline: "5px solid dodgerblue",
+    outlineOffset: "-5px",
+    // border: "5px solid dodgerblue",
+    // boxSizing: "border-box",
+};
 const iconsStyle: CSSProperties = {
     WebkitFilter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
     filter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
@@ -115,38 +128,23 @@ const Gallery: FC = () => {
     const handleSubAlbum = (selected: string) => () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
     }
-    
-    const [selecting, setSelecting] = useState<boolean>(false);
-    const [selection, setSelection] = useState<boolean[]>([]);
-    const [selectionFirstMove, setSelectionFirstMove] = useState<boolean>(true);
-    const [selectionSelect, setSelectionSelect] = useState<boolean>(true);
-    const [selectionStart, setSelectionStart] = useState<number>(0);
-    const cancelSelection = () => {
-        console.log("cancelSelection");
-        setSelection([]);
-        setSelecting(false);
-        setSelectionFirstMove(true);
-    }
-    useEffect(() => cancelSelection(), [photos]);
 
+    let photoIndex = 0;
     const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<Photo>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
+        const [selected, setSelected] = useState<boolean>(false);
         const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
         const selFavorite = favorite.get();
 
 
         const mouseEnter = () => {
             setMouseOver(true);
-            print("onMouseEnter");
         }
         const mouseLeave = () => {
             setMouseOver(false);
-            print("onMouseLeave");
         }
         const openLightbox = () => {
             setLightboxIndex(layout.index);
-            //cancelSelection();
-            print("onClick");
         }
         const saveFavorite = (event: { stopPropagation: () => void; }) => {
             event.stopPropagation();
@@ -156,7 +154,7 @@ const Gallery: FC = () => {
             event.stopPropagation();
             setInfoPhotoIndex(layout.index);
         }
-
+        
 
         const favoriteTooltip = isFavorite ?
             <>
@@ -200,83 +198,23 @@ const Gallery: FC = () => {
                 </BoxBar>
             }
         </>);
-        // Selection
-
-        const startSelection = () => {
-            console.log("startSelection");
-            setSelecting(true);
-            setSelectionStart(layout.index);
-            setSelectionSelect(!selection[layout.index]);
-        }
-        const stopSelection = () => {
-            console.log("stopSelection");
-            console.log(selection);
-            setSelecting(false);
-        }
-        const select = () => {
-            if(!selecting)
-                return;
-            if(selectionFirstMove) {
-                setSelectionFirstMove(false)
-                return;
-            }
-            
-            console.log("select");
-            
-            let newSelection = selection.slice();   // Copy the array
-            const min = Math.min(selectionStart, layout.index);
-            const max = Math.max(selectionStart, layout.index);
-            for(let i = min; i<=max; i++)
-                newSelection[i] = selectionSelect;
-            
-            setSelection(newSelection);
-        }
-        const print = (arg: string) => {
-            console.log(arg, photo.title);
-        }
-
-        const boxStyle: SxProps<Theme> = {
-            position: "relative",
-            color: "white",
-            backgroundColor: "action.hover",
-            cursor: "pointer",
-        };
-        const selectedStyle: SxProps<Theme> =
-            selection[layout.index] === true ? {
-                border: "5px solid dodgerblue",
-                boxSizing: "border-box",
-            } : {};
-        
         return (
-            <Box
-                sx={{ ...wrapperStyle, ...boxStyle, ...selectedStyle }}
-                onMouseEnter={mouseEnter}
-                onMouseLeave={mouseLeave}
-                onClick={openLightbox}
-                onDoubleClick={saveFavorite}
-                
-                // onTouchCancel={()=>print("onTouchCancel")}
-                onMouseDown={(e)=>{print("onMouseDown"); startSelection();}}
-                onMouseMove={()=>{print("onMouseMove"); select();}}
-                onMouseUp={(e)=>{print("onMouseUp"); stopSelection();}}
-                onTouchStartCapture={(e)=>{print("onTouchStart"); startSelection();}}
-                onTouchMove={(e)=>{print("onTouchMove"); select();}}
-                onTouchEnd={(e)=>{print("onTouchEnd"); stopSelection();}}
-                // onMouseOut={()=>print("onMouseOut")} 
-                // onMouseOver={()=>print("onMouseOver")}
-                // onMouseUp={()=>print("onMouseUp")}
-                // onDragStart={()=>false}
-                // onDragCapture={(e)=>e.preventDefault()}
-                // draggable={false}
-                >
+            <Selectable index={photoIndex++} onChange={setSelected}>
+                <Box
+                    sx={{ ...wrapperStyle, ...boxStyle, ...(selected ? selectedStyle : {}) }}
+                    onMouseEnter={mouseEnter}
+                    onMouseLeave={mouseLeave}
+                    onClick={openLightbox}
+                    onDoubleClick={saveFavorite}>
                     {renderDefaultPhoto({ wrapped: true })}
                     {zoom >= 100 && icons}
-            </Box>
+                </Box>
+            </Selectable>
         );
     }
     
     const gallery = (
-        <div onTouchMove={e => e.preventDefault()}>
+        <>
             { subalbums.length > 0 &&
                 <Paper elevation={4} square>
                     <Stack direction="row" p={1.5} spacing={1} useFlexGap flexWrap="wrap">
@@ -284,13 +222,14 @@ const Gallery: FC = () => {
                     </Stack>
                 </Paper>
             }
-            <PhotoAlbum
-                photos={photos}
-                layout="rows"
-                targetRowHeight={zoom}
-                spacing={1}
-                componentsProps={{imageProps: { draggable: false }}}
-                renderPhoto={RenderPhoto} />
+            <SelectionContext>
+                <PhotoAlbum
+                    photos={photos}
+                    layout="rows"
+                    targetRowHeight={zoom}
+                    spacing={1}
+                    renderPhoto={RenderPhoto} />
+            </SelectionContext>
             <Lightbox
                 photos={photos}
                 selected={lightboxIndex}
@@ -301,7 +240,7 @@ const Gallery: FC = () => {
                 photos={photos}
                 selected={infoPhotoIndex}
                 onClose={closeInfoPhoto} />
-        </div>);
+      </>);
     
     const loading = (
         <Box sx={{ width: '100%' }}>
