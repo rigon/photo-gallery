@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef, MouseEvent, FC } from 'react';
+import { useState, useRef, MouseEvent, FC } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
@@ -163,9 +163,10 @@ export const Upload: FC = () => {
         return null;
 
     return (<>
-        <ButtonGroup ref={dropdownRef} variant="text" aria-label="split button" onClick={handleOpenMenu}>
+        <ButtonGroup ref={dropdownRef} variant="text" aria-label="split button">
             <UploadButton />
             <Button
+                onClick={handleOpenMenu}
                 size="small"
                 color="inherit"
                 aria-controls={open ? 'split-button-menu' : undefined}
