@@ -23,6 +23,7 @@ import AlbumTitle from './AlbumTitle';
 import CollectionList from './CollectionList';
 import FavoriteMenu from './FavoriteMenu';
 import NewAlbum from './NewAlbum';
+import Organize from './Organize';
 import Storage from './Storage';
 import ThemeMenu from './ThemeMenu';
 
@@ -106,6 +107,7 @@ const Layout: FC = () => {
 
             <Box sx={{ flexGrow: 1 }} />
             
+            <Organize />
             <Upload />
             <NewAlbum />
             <FavoriteMenu />

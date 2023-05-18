@@ -23,6 +23,24 @@ export interface QueryPhoto {
     photo?: string;
 }
 
+export interface QueryMovePhotos {
+    collection: CollectionType["name"];
+    album: AlbumType["name"];
+    target: {
+        collection: CollectionType["name"];
+        album: AlbumType["name"];
+        photos: PhotoType["title"][];
+    }
+}
+
+export interface QueryDeletePhotos {
+    collection: CollectionType["name"];
+    album: AlbumType["name"];
+    target: {
+        photos: PhotoType["title"][];
+    }
+}
+
 export interface QuerySaveFavorite {
     collection: CollectionType["name"];
     album: AlbumType["name"];
@@ -67,6 +85,27 @@ export const api = createApi({
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
+        movePhotos: builder.mutation<void, QueryMovePhotos>({
+            query: ({ collection, album, target }) => ({
+                url: `/collections/${collection}/albums/${album}/photos/move`,
+                method: 'PUT',
+                body: target,
+            }),
+            invalidatesTags: (result, error, arg) => [
+                { type: 'Album', id: `${arg.collection}-${arg.album}` },
+                { type: 'Album', id: `${arg.target.collection}-${arg.target.album}` }
+            ],
+        }),
+        deletePhotos: builder.mutation<void, QueryDeletePhotos>({
+            query: ({ collection, album, target }) => ({
+                url: `/collections/${collection}/albums/${album}/photos`,
+                method: 'DELETE',
+                body: target,
+            }),
+            invalidatesTags: (result, error, arg) => [
+                { type: 'Album', id: `${arg.collection}-${arg.album}` },
+            ],
+        }),
         getPhotoInfo: builder.query<any[], PhotoType>({
             query: ({collection, album, id }) => `/collections/${collection}/albums/${album}/photos/${id}/info`,
         }),
@@ -109,6 +148,8 @@ export const {
     useGetAlbumsQuery,
     useGetAlbumQuery,
     useAddAlbumMutation,
+    useMovePhotosMutation,
+    useDeletePhotosMutation,
     useGetPhotoInfoQuery,
     useSavePhotoToPseudoMutation,
 } = api;
