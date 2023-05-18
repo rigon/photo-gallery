@@ -55,7 +55,7 @@ const NewAlbum: FC = () => {
     };
 
     const handleSave = async () => {
-        const trimmedFormData = {
+        const trimmedFormData: QueryAddAlbum = {
             ...formData,
             name: formData.name.trim()
         }

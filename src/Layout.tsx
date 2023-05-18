@@ -19,6 +19,7 @@ import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
 
 import AlbumList from './AlbumList';
+import AlbumTitle from './AlbumTitle';
 import CollectionList from './CollectionList';
 import FavoriteMenu from './FavoriteMenu';
 import NewAlbum from './NewAlbum';
@@ -26,7 +27,6 @@ import Storage from './Storage';
 import ThemeMenu from './ThemeMenu';
 
 import { increaseZoom, decreaseZoom } from "./services/app";
-import AlbumTitle from './AlbumTitle';
 
 const drawerWidth = 300;
 
@@ -43,6 +43,13 @@ const Layout: FC = () => {
     setMobileOpen(false);
   };
 
+  const zoomIn = () => {
+    dispatch(increaseZoom())
+  }
+  const zoomOut = () => {
+    dispatch(decreaseZoom())
+  }
+
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Toolbar sx={{ color: "secondary.contrastText", backgroundColor: "secondary.main" }}>
@@ -54,7 +61,7 @@ const Layout: FC = () => {
       </Toolbar>
       <Divider />
       <CollectionList />
-      <Box sx={{ flex: '1 1 auto', overflow: 'auto' }}>
+      <Box sx={{ flex: '1 1 auto', overflow: 'hidden' }}>
         <AlbumList onClick={handleDrawerClose} />
       </Box>
       <Box sx={{ flex: 'none' }}>
@@ -100,12 +107,12 @@ const Layout: FC = () => {
           <ThemeMenu />
 
           <Tooltip title="Increase Zoom" enterDelay={300}>
-            <IconButton onClick={() => dispatch(increaseZoom())} aria-label="zoom in" color="inherit">
+            <IconButton onClick={zoomIn} aria-label="zoom in" color="inherit">
                 <ZoomInIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Decrease Zoom" enterDelay={300}>
-            <IconButton onClick={() => dispatch(decreaseZoom())} aria-label="zoom out" color="inherit">
+            <IconButton onClick={zoomOut} aria-label="zoom out" color="inherit">
                 <ZoomOutIcon />
             </IconButton>
           </Tooltip>
