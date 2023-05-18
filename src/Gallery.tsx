@@ -128,8 +128,7 @@ const Gallery: FC = () => {
     const handleSubAlbum = (selected: string) => () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
     }
-
-    let photoIndex = 0;
+    
     const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<Photo>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
         const [selected, setSelected] = useState<boolean>(false);
@@ -199,13 +198,14 @@ const Gallery: FC = () => {
             }
         </>);
         return (
-            <Selectable index={photoIndex++} onChange={setSelected}>
+            <Selectable item={photo} onChange={setSelected}>
                 <Box
                     sx={{ ...wrapperStyle, ...boxStyle, ...(selected ? selectedStyle : {}) }}
                     onMouseEnter={mouseEnter}
                     onMouseLeave={mouseLeave}
                     onClick={openLightbox}
-                    onDoubleClick={saveFavorite}>
+                    //onDoubleClick={saveFavorite}
+                    >
                     {renderDefaultPhoto({ wrapped: true })}
                     {zoom >= 100 && icons}
                 </Box>
@@ -222,7 +222,7 @@ const Gallery: FC = () => {
                     </Stack>
                 </Paper>
             }
-            <SelectionContext>
+            <SelectionContext<PhotoType> transformItemToId={item => item.title}>
                 <PhotoAlbum
                     photos={photos}
                     layout="rows"
