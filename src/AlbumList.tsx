@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
@@ -25,11 +25,15 @@ interface AlbumListProps {
 
 const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     const { collection, album } = useParams();
-    const { data: albums = [], isFetching } = useGetAlbumsQuery({collection}, {skip: collection === undefined});
+    const { data = [], isFetching } = useGetAlbumsQuery({collection}, {skip: collection === undefined});
     const [ searchTerm, setSearchTerm ] = useState<string>("");
+    
+    const albums = useMemo(() => searchTerm.length < 1 ? data :
+            data.filter((album) => album.name.toLowerCase().includes(searchTerm)),
+            [searchTerm, data]);
 
     const onSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(event.target.value);
+        setSearchTerm(event.target.value.toLowerCase());
     };
     const clearSearch = () => {
         setSearchTerm("");
@@ -57,7 +61,7 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     
 
     const list = albums.length < 1 ?
-        <ListItem><em>Nothing to show</em></ListItem> :
+        <ListItem><ListItemText><em>Nothing to show</em></ListItemText></ListItem> :
         <AutoSizer>
             {({ height, width }) => 
                 <FixedSizeList
