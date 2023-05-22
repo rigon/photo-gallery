@@ -1,4 +1,4 @@
-import { FC, useState, useMemo, useEffect } from "react";
+import { FC, useState, useMemo, useEffect, CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from 'react-redux';
 
@@ -23,6 +23,11 @@ import { PhotoType } from "./types";
 import useNotification from "./Notification";
 import { useGetAlbumQuery, useSavePhotoToPseudoMutation } from "./services/api";
 import { selectZoom, selectFavorite } from "./services/app";
+
+const iconsStyle: CSSProperties = {
+    WebkitFilter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
+    filter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
+};
 
 const Gallery: FC = () => {
     const { collection, album } = useParams();
@@ -118,7 +123,7 @@ const Gallery: FC = () => {
                     {renderDefaultPhoto({ wrapped: true })}
                     {photo.type === "live" && (
                         <BoxBar top left>
-                            <LivePhotoIcon fontSize="small" />
+                            <LivePhotoIcon fontSize="small" style={iconsStyle} />
                         </BoxBar>
                     )}
                     {photo.type === "video" &&
@@ -129,13 +134,13 @@ const Gallery: FC = () => {
                     {(mouseOver) && (
                         <BoxBar top right>
                             <IconButton color="inherit" onClick={showInfo}>
-                                <InfoIcon/>
+                                <InfoIcon style={iconsStyle} />
                             </IconButton>
                         </BoxBar>
                     )}
                     {(photo.favorite || mouseOver) && (
                         <BoxBar bottom right>
-                            <IconButton color="inherit" onClick={saveFavorite}>
+                            <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle}>
                                 {photo.favorite? <FavoriteIcon/> : <NotFavoriteIcon/>}
                             </IconButton>
                         </BoxBar>
