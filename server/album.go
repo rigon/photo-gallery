@@ -116,7 +116,7 @@ func (album Album) MarshalJSON() ([]byte, error) {
 
 	// Sort photos by date (ascending), by title if not possible
 	sort.Slice(photos, func(i, j int) bool {
-		if photos[i].Date.IsZero() || photos[j].Date.IsZero() {
+		if photos[i].Date.IsZero() || photos[j].Date.IsZero() || photos[i].Date.Equal(photos[j].Date) {
 			return photos[i].Title < photos[j].Title
 		}
 		return photos[i].Date.Sub(photos[j].Date) < 0
