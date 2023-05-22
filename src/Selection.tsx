@@ -92,25 +92,34 @@ export function SelectionContext<ItemType>({ name, children, onSelection, transf
         }
 
         // No changes in selection
-        if(prevIndex === index)
+        if(prevIndex === index) {
+            // Special case for startIndex, select it if not selected
+            if(index === startIndex && selection[index] !== value) {
+                selection[index] = value;
+                if(cbs[index])
+                    cbs[index](value);
+            }
             return;
+        }
 
-        // Indicates if selection is increasing or decreasing
-        const cond = (index < startIndex && prevIndex > index) ||
-                     (index >= startIndex && prevIndex < index);
-        console.log(cond ? "INCREASING" : "DECREASING");
+        // Side of startIndex, right (true) or left (false)
+        const side = (index >= startIndex);
+        // Indicates if selection is increasing (true) or decreasing (false)
+        const dir = (!side && prevIndex > index) ||
+                    ( side && prevIndex < index);
         // Indicates if selection delta crosses the starting point
-        const mid = (index <= startIndex && prevIndex >= startIndex) ||
-                    (index >=  startIndex && prevIndex <= startIndex);
-        mid && console.log("CROSSED");
-        const offs = cond ? 0 : 1;
+        const cross = (!side && prevIndex >= startIndex) ||
+                      ( side && prevIndex <= startIndex);
         // Interval of items that are changing
-        const min = Math.min(prevIndex, index) + (cond ? 0 : 0);
-        const max = Math.max(prevIndex, index) + (cond ? 0 : 0);
-        console.log("Min:", min, "Max:", max);
-        for(let i = min + offs; i <= max ; i++) {
-            const midVal = mid ? index < startIndex ? i <= startIndex : i >= startIndex : value;
-            const newVal = cond ? midVal : !midVal;
+        const offsetmin =  side && !cross ? 1 : 0;
+        const offsetmax = !side && !cross ? 1 : 0;
+        const min = Math.min(prevIndex, index) + offsetmin;
+        const max = Math.max(prevIndex, index) - offsetmax;
+        // Iterate over changing items
+        for(let i = min; i <= max ; i++) {
+            const hasCrossed = (!side && i > startIndex) ||
+                               ( side && i < startIndex);
+            const newVal = (hasCrossed ? !dir : dir) === value;
             // Trigger event on the component
             if(selection[i] !== newVal && cbs[i])
                 cbs[i](newVal);
