@@ -4,21 +4,19 @@ import "./selection.scss";
 type MapKeyType = string | number | symbol;
 
 interface ContextProps {
+    name?: string;
     onEvent: (name: string, index: number) => () => void;
     register: (item: any, setSelected: React.Dispatch<React.SetStateAction<boolean>>) => number;
-    cancel: () => void;
-    get: () => any[];
 }
 
 interface SelectionContextProps<ItemType> {
     name?: string;
     children?: React.ReactNode;
-    onSelection?: (selected: ItemType[]) => void;
     transformItemToId?: (item: ItemType) => MapKeyType;
 }
 
-interface SelectableProps {
-    item: any;
+interface SelectableProps<ItemType> {
+    item: ItemType;
     children?: React.ReactNode;
     onChange?: (selected: boolean, index: number) => void;
 }
@@ -27,54 +25,90 @@ interface SelectableProps {
 const SelectContext = React.createContext<ContextProps>({
     onEvent: () => () => {},
     register: () => 0,
-    cancel: () => {},
-    get: () => [],
 });
 
-// List of contexts created
-const ctxs: {[key: string]: ContextProps} = {};
+interface Ctx {
+    // Counter for added items
+    count: number;
+    // List of items, used in the result of selection
+    items: any[];
+    // Map between items and indexes
+    keyMap: {[key: MapKeyType]: number};
+    // Callbacks of registered children
+    cbs: React.Dispatch<React.SetStateAction<boolean>>[];
+    // Current selected items
+    selection: boolean[];
+}
 
-// Hooks
+// List of contexts
+const ctxs: {[key: string]: Ctx} = {};
 
 function getName(name?: string) {
     return name === undefined ? "__default__" : name;
 }
-// Registers the reference to the context to be used by hooks
-// (internal use only)
-function Hooks({name}: {name?: string}) {
-    ctxs[getName(name)] = useContext(SelectContext);
-    return null;
-}
 
 export function useSelectionContext(contextName?: string) {
+    const cancel = () => {
+        const ctx = ctxs[getName(contextName)];
+        // For each item selected, call the callback deselected
+        ctx.cbs.forEach((cb, i) => {
+            if(ctx.selection[i])
+                cb(false);
+        });
+        // Clear selection
+        ctx.selection.fill(false);
+    };
+    const get = () => {
+        const ctx = ctxs[getName(contextName)];
+        
+        let selected: any[] = [];
+        for(let i=0; i<ctx.selection.length; i++)
+            if(ctx.selection[i])
+                selected.push(ctx.items[i]);
+        
+        return selected;
+    };
+    
     return {
+        get,
+        cancel,
         isSelecting: true,
-        cancel: () => ctxs[getName(contextName)].cancel(),
-        get: () => ctxs[getName(contextName)].get(),
     }
 }
 
+
 // Context and Consumers
 
-export function SelectionContext<ItemType>({ name, children, onSelection, transformItemToId }: SelectionContextProps<ItemType>) {
-    // Counter for added items
-    let count = 0;
-    // List of items, used in the result of selection
-    const items: ItemType[] = [];
-    // Map between items and indexes
-    const keyMap: {[key: MapKeyType]: number} = {};
-    // Callbacks of registered children
-    const cbs: React.Dispatch<React.SetStateAction<boolean>>[] = [];
-
+export function SelectionContext<ItemType>({ name, children, transformItemToId }: SelectionContextProps<ItemType>) {
+    // Selection
     let selecting = false;
     let startIndex = 0;
     let prevIndex = 0;
     let value = false;
     let firstsMoves = 0;
-    let selection: boolean[] = [];
+
+    useEffect(() => {
+        // On ComponentMount
+        // Create context if doesn't exist
+        if(ctxs[getName(name)] === undefined) {
+            ctxs[getName()] = {
+                count: 0,
+                items: [],
+                keyMap: {},
+                cbs: [],
+                selection: [],
+            };
+        }
+        
+        // On ComponentWillUnmount
+        return () => {
+            delete ctxs[getName()];
+        }
+    });
 
     const start = (index: number) => {
-        value = !selection[index];
+        const ctx = ctxs[getName(name)];
+        value = !ctx.selection[index];
         selecting = true;
         startIndex = index;
         prevIndex = index;
@@ -93,11 +127,12 @@ export function SelectionContext<ItemType>({ name, children, onSelection, transf
 
         // No changes in selection
         if(prevIndex === index) {
+            const ctx = ctxs[getName(name)];
             // Special case for startIndex, select it if not selected
-            if(index === startIndex && selection[index] !== value) {
-                selection[index] = value;
-                if(cbs[index])
-                    cbs[index](value);
+            if(index === startIndex && ctx.selection[index] !== value) {
+                ctx.selection[index] = value;
+                if(ctx.cbs[index])
+                    ctx.cbs[index](value);
             }
             return;
         }
@@ -116,45 +151,24 @@ export function SelectionContext<ItemType>({ name, children, onSelection, transf
         const min = Math.min(prevIndex, index) + offsetmin;
         const max = Math.max(prevIndex, index) - offsetmax;
         // Iterate over changing items
+        const ctx = ctxs[getName()];
         for(let i = min; i <= max ; i++) {
             const hasCrossed = (!side && i > startIndex) ||
                                ( side && i < startIndex);
             const newVal = (hasCrossed ? !dir : dir) === value;
             // Trigger event on the component
-            if(selection[i] !== newVal && cbs[i])
-                cbs[i](newVal);
+            if(ctx.selection[i] !== newVal && ctx.cbs[i])
+                ctx.cbs[i](newVal);
             // Select or deselect
-            selection[i] = newVal;
+            ctx.selection[i] = newVal;
         }
         prevIndex = index;
     };
     const stop = () => {
         selecting = false;
-        // Trigger event with selected elements
-        if(onSelection)
-            onSelection(get());
-    };
-    const cancel = () => {
-        // For each item selected, call the callback deselected
-        cbs.forEach((cb, i) => {
-            if(selection[i])
-                cb(false);
-        });
-        // Clear selection
-        selection.fill(false);
-    };
-    const get = () => {
-        let selected: ItemType[] = [];
-        for(let i=0; i<selection.length; i++)
-            if(selection[i])
-                selected.push(items[i]);
-        
-        return selected;
     };
     
     const onEvent = (name:string, index:number) => () => {
-        //console.log("Event:", name, index);
-
         switch(name) {
             // case "onClick": openLightbox(); break;
             // case "onDoubleClick": saveFavorite(); break;
@@ -170,35 +184,34 @@ export function SelectionContext<ItemType>({ name, children, onSelection, transf
     }
 
     const register: ContextProps["register"] = (item: ItemType, setSelected) => {
+        const ctx = ctxs[getName(name)];
         const key = transformItemToId ? transformItemToId(item) : item as MapKeyType;
-        
-        if(!keyMap[key]) {
-            keyMap[key] = count;
-            count++;
+        if(ctx.keyMap[key] === undefined) {
+            ctx.keyMap[key] = ctx.count;
+            ctx.count++;
         }
 
-        const index = keyMap[key];
-        items[index] = item;
-        cbs[index] = setSelected;
+        const index = ctx.keyMap[key];
+        ctx.items[index] = item;
+        ctx.cbs[index] = setSelected;
         return index;
     }
 
     return (
-        <SelectContext.Provider value={{onEvent, register, cancel, get}}>
-            <Hooks name={name} />
-            <div className="not-draggable">
+        <SelectContext.Provider value={{name, onEvent, register}}>
+            <div className="selection__not-draggable">
                 {children}
             </div>
         </SelectContext.Provider>
     );
 }
 
-export function Selectable({ item, children, onChange }: SelectableProps) {
+export function Selectable<ItemType>({ item, children, onChange }: SelectableProps<ItemType>) {
     const ctx = useContext(SelectContext);
     const [selected, setSelected] = useState(false);
-    const index = ctx.register(item, setSelected);
-    const logEvent = ctx.onEvent;
+    const [index] = useState(() => ctx.register(item, setSelected));
 
+    const logEvent = ctx.onEvent;
     // Trigger onChange event when selected
     useEffect(() => {
         if(onChange)
@@ -234,7 +247,7 @@ export function Selectable({ item, children, onChange }: SelectableProps) {
             onTouchMove={logEvent("onTouchMove", index)}
             onTouchStart={logEvent("onTouchStart", index)}
             >
-            {children}
+                {children}
         </ div>
     );
 }

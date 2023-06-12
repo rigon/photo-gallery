@@ -222,7 +222,7 @@ const Gallery: FC = () => {
                     </Stack>
                 </Paper>
             }
-            <SelectionContext<PhotoType> transformItemToId={item => item.title}>
+            <SelectionContext<PhotoType> key={`${collection}:${album}`} transformItemToId={item => item.title}>
                 <PhotoAlbum
                     photos={photos}
                     layout="rows"
