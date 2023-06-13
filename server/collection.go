@@ -71,10 +71,11 @@ func (c *Collection) Info() CollectionInfo {
 
 // Lists all albums, however photos are not loaded together.
 // For that use Album.GetPhotos()
-func (c *Collection) GetAlbums() (albums []*Album, err error) {
+func (c *Collection) GetAlbums() ([]*Album, error) {
+	albums := make([]*Album, 0)
 	files, err := ioutil.ReadDir(c.PhotosPath)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	for _, file := range files {
@@ -85,7 +86,7 @@ func (c *Collection) GetAlbums() (albums []*Album, err error) {
 	}
 	// Save to cache in background
 	c.cache.SetListAlbums(albums...)
-	return
+	return albums, nil
 }
 
 func (c *Collection) IsAlbum(albumName string) bool {
