@@ -44,35 +44,65 @@ interface DialogProps {
     onClose: () => void;
 }
 
+const isValidAlbumName = (function () {
+    var rg1 = /^[^\\/:*?"<>|]+$/; // forbidden characters \ / : * ? " < > |
+    var rg2 = /^\./; // cannot start with dot (.)
+    var rg3 = /^(nul|prn|con|lpt[0-9]|com[0-9])(\.|$)/i; // forbidden file names
+    return (fname: string) => rg1.test(fname) && !rg2.test(fname) && !rg3.test(fname);
+})();
+
+function mostCommon(arr: string[]): string {
+    const dist: {[key: string]: number} = {};
+    let best = "";
+    arr.forEach((v) => {
+        dist[v] = (dist[v] || 0) + 1;
+        if(dist[v] > (dist[best] || 0))
+            best = v;
+    });
+    return best;
+}
+
 /* Dialog for move action */
 const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose}) => {
     const [movePhotos] = useMovePhotosMutation();
     const [addAlbum] = useAddAlbumMutation();
     const [targetCollection, setTargetCollection] = useState<string>(collection);
-    const [targetAlbum, setTargetAlbum] = useState<string>(album);
+    const [targetAlbum, setTargetAlbum] = useState<string>("");
     const [isNewAlbum, setIsNewAlbum] = useState<boolean>(false);
     const [errorName, setErrorName] = useState<boolean>(false);
+    const [processingAction, setProcessingAction] = useState<boolean>(false);
 
     const { successNotification, errorNotification } = useNotification();
     const { data: collections = [], isFetching } = useGetCollectionsQuery();
     const { data: tmpAlbums = [] } = useGetAlbumsQuery({ collection: targetCollection }, { skip: isFetching });
-    const albums = tmpAlbums.filter(album => !album.pseudo);
+    const albums = tmpAlbums.filter(v => !v.pseudo && v.name !== album);
 
-    useEffect(() => setIsNewAlbum(albums.find(a => a.name === targetAlbum) === undefined), [albums, targetAlbum, setIsNewAlbum]);
-    
-    const changeCollection = (event: SelectChangeEvent<string>) => {
-        setTargetCollection(event.target.value);
-        setTargetAlbum("");
-    };
-    
-    const changeAlbum = (event: React.SyntheticEvent, value: string | null) => {
-        if(!value || !value?.trim()) {
+    // Find out if it is a new album
+    useEffect(() => {
+        // Check if is not moving for the same album or it is a valid name
+        if((targetCollection === collection && targetAlbum === album) || !isValidAlbumName(targetAlbum)) {
             setErrorName(true);
             return;
         }
-
+        // all good
         setErrorName(false);
-        setTargetAlbum(value.trim());
+        setIsNewAlbum(albums.find(a => a.name === targetAlbum) === undefined);
+    }, [collection, targetCollection, album, albums, targetAlbum, setIsNewAlbum]);
+
+    // Initial album name
+    useEffect(() => {
+        const dates = photos
+            .filter(v => !v.date.startsWith("0001-01-01"))
+            .map(v => v.date.slice(0, v.date.lastIndexOf('T')));
+        setTargetAlbum(mostCommon(dates));
+    }, [open, photos, setTargetAlbum]);
+    
+    const changeCollection = (event: SelectChangeEvent<string>) => {
+        setTargetCollection(event.target.value);
+    };
+    
+    const changeAlbum = (event: React.SyntheticEvent, value: string | null) => {
+        setTargetAlbum(value?.trim() || "");
     };
 
     const handleMove = async () => {
@@ -87,11 +117,13 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
             if(!addAlbumData.name)
                 return;
             
+            setProcessingAction(true);
             try {
                 await addAlbum(addAlbumData).unwrap();
                 successNotification(`Album created with name ${addAlbumData.name}`);
             }
             catch(error) {
+                setProcessingAction(false);
                 errorNotification(`Could not create album named ${addAlbumData.name}!`);
                 console.log(error);
                 return;
@@ -103,11 +135,12 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
             album,
             target: {
                 collection: targetCollection,
-                album: targetAlbum,
+                album: targetAlbum.trim(),
                 photos: photos.map(photo => photo.title),
             }
         };
         
+        setProcessingAction(true);
         try {
             await movePhotos(query).unwrap();
             successNotification(`${photos.length} photos were moved successfully to ${album}`);
@@ -117,6 +150,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
             errorNotification("An error occured while moving photos!");
             console.log(error);
         }
+        setProcessingAction(false);
     }
 
     return (
@@ -144,8 +178,9 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
                         renderInput={(params) =>
                             <TextField {...params} label="Album" variant="filled" error={errorName} />}
                         />
-                    {isNewAlbum && !errorName && <FormHelperText>"{targetAlbum}" does not exist, a regular album will be created</FormHelperText>}
-                    {errorName && <FormHelperText error>Invalid album name</FormHelperText>}
+                    {errorName && <FormHelperText error>"{targetAlbum}" is an invalid album name</FormHelperText>}
+                    {!errorName && isNewAlbum && <FormHelperText>"{targetAlbum}" does not exist, a regular album will be created</FormHelperText>}
+                    {!errorName && !isNewAlbum && <FormHelperText>Photos will moved into the album "{targetAlbum}"</FormHelperText>}
                 </FormControl>
 
                 <FormControl variant="filled" fullWidth margin="normal">
@@ -161,16 +196,18 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} color='inherit'>Cancel</Button>
-                <Button onClick={handleMove} color='warning' variant='contained' disableElevation>Move</Button>
+                <Button onClick={handleMove} color='warning' variant='contained' disabled={processingAction || errorName} disableElevation>Move</Button>
             </DialogActions>
         </Dialog>);
 }
 
 /* Dialog for delete action */
 const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose}) => {
-    const [ deletePhotos ] = useDeletePhotosMutation();
+    const [deletePhotos] = useDeletePhotosMutation();
+    const [answer, setAnswer] = useState<string>();
+    const [processingAction, setProcessingAction] = useState<boolean>(false);
+
     const { successNotification, errorNotification } = useNotification();
-    const [ answer, setAnswer ] = useState<string>();
 
     const answerOk = (answer === "yes");
 
@@ -191,6 +228,7 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
             }
         };
         
+        setProcessingAction(true);
         try {
             await deletePhotos(query).unwrap();
             successNotification(`${photos.length} photos were deleted`);
@@ -200,6 +238,7 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
             errorNotification("An error occured while deleting photos!");
             console.log(error);
         }
+        setProcessingAction(false);
     }
 
     return (
@@ -232,7 +271,7 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose} color='inherit'>Cancel</Button>
-                <Button onClick={handleDelete} disabled={!answerOk} color='error' variant='contained' disableElevation>Delete</Button>
+                <Button onClick={handleDelete} disabled={!answerOk || processingAction} color='error' variant='contained' disableElevation>Delete</Button>
             </DialogActions>
         </Dialog>
     )
@@ -241,7 +280,7 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
 
 const Organize: FC = () => {
     const { collection, album } = useParams();
-    const {isSelecting, cancel, get} = useSelectionContext();
+    const { isSelecting, cancel, get } = useSelectionContext();
     const [movePhotos, setMovePhotos] = useState<PhotoType[]>();
     const [deletePhotos, setDeletePhotos] = useState<PhotoType[]>();
 

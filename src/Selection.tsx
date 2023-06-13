@@ -104,7 +104,7 @@ export function SelectionContext<ItemType>({ name, children, transformItemToId }
         return () => {
             delete ctxs[getName()];
         }
-    });
+    }, [name]);
 
     const start = (index: number) => {
         const ctx = ctxs[getName(name)];
