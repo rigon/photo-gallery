@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -30,7 +31,8 @@ type Photo struct {
 
 // Returns the path location for the thumbnail
 func (photo *Photo) ThumbnailPath(collection *Collection, album *Album) string {
-	hash := sha256.Sum256([]byte(album.Name + photo.Title))
+	name := strings.Join([]string{collection.Name, album.Name, photo.Id}, ":")
+	hash := sha256.Sum256([]byte(name))
 	encoded := hex.EncodeToString(hash[:])
 	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
 }
