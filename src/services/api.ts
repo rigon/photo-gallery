@@ -47,11 +47,11 @@ export const api = createApi({
             },
         }),
         getAlbums: builder.query<AlbumType[], QueryAlbums>({
-            query: ({ collection }) => `collection/${collection}/albums`,
+            query: ({ collection }) => `/collection/${collection}/albums`,
             providesTags: ['Albums'],
         }),
         getAlbum: builder.query<AlbumType, QueryAlbum>({
-            query: ({ collection, album }) => `collection/${collection}/album/${album}`,
+            query: ({ collection, album }) => `/collection/${collection}/album/${album}`,
             providesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}-${arg.album}` }],
         }),
         addAlbum: builder.mutation<void, QueryAddAlbum>({
@@ -62,8 +62,8 @@ export const api = createApi({
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
-        getPhotoInfo: builder.query<any, QueryPhoto>({
-            query: ({ collection, album, photo }) => `collection/${collection}/album/${album}/photo/${photo}/info`,
+        getPhotoInfo: builder.query<any, string>({
+            query: (infoUrl) => infoUrl,
         }),
         savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
             query: ({ collection, album, photo, favorite, saveTo }) => ({

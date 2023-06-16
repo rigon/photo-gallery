@@ -14,9 +14,12 @@ import (
 )
 
 type Photo struct {
+	Id       string      `json:"id"`
 	Thumb    string      `json:"src"`
 	Title    string      `json:"title"`
 	Type     string      `json:"type"`
+	Info     string      `json:"info"`
+	SubAlbum string      `json:"subalbum"`
 	Favorite bool        `json:"favorite"`
 	Width    int         `json:"width"`
 	Height   int         `json:"height"`
@@ -73,6 +76,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		if selected == nil {
 			return errors.New("is not a photo")
 		}
+		log.Printf("Creating thumbnail for [%s] %s", album.Name, photo.Title)
 		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
 			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
@@ -92,7 +96,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 	return nil
 }
 
-func (photo *Photo) Info() error {
+func (photo *Photo) FillInfo() error {
 	var countImages = 0
 	var countVideos = 0
 	// Extract info for each file

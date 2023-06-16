@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"sort"
@@ -18,6 +18,7 @@ type Album struct {
 	Count     int               `json:"count"`
 	Date      string            `json:"title"`
 	IsPseudo  bool              `json:"pseudo"`
+	SubAlbums []string          `json:"subalbums"`
 	Photos    []*Photo          `json:"photos"` // used only when marshaling
 	photosMap map[string]*Photo `json:"-"`      // actual place where photos are stored
 }
@@ -49,6 +50,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 			photo := new(Photo)
 			photo.Title = pseudo.Photo
 			photo.Thumb = path.Join("/api/collection", pseudo.Collection, "album", pseudo.Album, "photo", pseudo.Photo, "thumb")
+			photo.Info = path.Join("/collection", collection.Name, "album", album.Name, "photo", pseudo.Photo, "info")
 			photo.Width = 200  // Default width
 			photo.Height = 200 // Default height
 			photo.Files = targetPhoto.Files
@@ -56,35 +58,51 @@ func (album *Album) GetPhotos(collection *Collection) error {
 			album.photosMap[pseudo.Photo] = photo
 		}
 	} else {
+		subalbums := make(map[string]bool)
 		// Read album (or folder) contents
-		files, err := ioutil.ReadDir(filepath.Join(collection.PhotosPath, album.Name))
-		if err != nil {
-			return err
-		}
-
-		// Iterate over folder items
-		for _, file := range files {
+		dir := filepath.Join(collection.PhotosPath, album.Name)
+		err := filepath.Walk(dir, func(fileDir string, file os.FileInfo, err error) error {
+			// Iterate over folder items
+			if err != nil {
+				return err
+			}
 			if !file.IsDir() {
-				fileExt := path.Ext(file.Name())
-				fileName := strings.ToLower(strings.TrimSuffix(file.Name(), fileExt))
+				removedDir := strings.TrimPrefix(fileDir, dir+string(filepath.Separator))
+				fileId := strings.ToLower(strings.ReplaceAll(strings.TrimSuffix(removedDir, path.Ext(file.Name())), string(filepath.Separator), "|"))
 
-				photo, photoExists := album.photosMap[fileName]
+				photo, photoExists := album.photosMap[fileId]
 				if !photoExists {
 					photo = new(Photo)
-					photo.Title = fileName
-					photo.Thumb = path.Join("/api/collection", collection.Name, "album", album.Name, "photo", fileName, "thumb")
+					photo.Id = fileId
+					photo.Title = strings.TrimSuffix(file.Name(), path.Ext(file.Name()))
+					photo.SubAlbum = strings.TrimSuffix(strings.TrimSuffix(removedDir, file.Name()), string(filepath.Separator))
+					photo.Thumb = path.Join("/api/collection", collection.Name, "album", album.Name, "photo", fileId, "thumb")
+					photo.Info = path.Join("/collection", collection.Name, "album", album.Name, "photo", fileId, "info")
 					photo.Width = 200  // Default width
 					photo.Height = 200 // Default height
 					photo.Favorite = false
-					album.photosMap[fileName] = photo
+					album.photosMap[fileId] = photo
+					// Map of sub-albums
+					if photo.SubAlbum != "" {
+						subalbums[photo.SubAlbum] = true
+					}
 				}
 				photoFile := &File{
-					Path: filepath.Join(collection.PhotosPath, album.Name, file.Name()),
-					Url:  path.Join("/api/collection", collection.Name, "album", album.Name, "photo", fileName, "file", strconv.Itoa(len(photo.Files)))}
+					Path: fileDir,
+					Url:  path.Join("/api/collection", collection.Name, "album", album.Name, "photo", fileId, "file", strconv.Itoa(len(photo.Files)))}
 
 				photo.Files = append(photo.Files, photoFile)
 			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
+		// List of sub-albums
+		for key := range subalbums {
+			album.SubAlbums = append(album.SubAlbums, key)
+		}
+		sort.Strings(album.SubAlbums)
 	}
 
 	return nil

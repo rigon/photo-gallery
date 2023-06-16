@@ -1,14 +1,17 @@
-import { FC, useState } from "react";
+import { FC, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from 'react-redux';
 
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import NotFavoriteIcon from '@mui/icons-material/FavoriteBorder';
 import IconButton from '@mui/material/IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import LinearProgress from '@mui/material/LinearProgress';
+import Paper from "@mui/material/Paper";
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
+import Stack from "@mui/material/Stack";
 
 import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
 
@@ -26,12 +29,18 @@ const Gallery: FC = () => {
     const { data, isFetching } = useGetAlbumQuery({collection, album});
     const [ lightboxIndex, setLightboxIndex ] = useState<number>(-1);
     const [ infoPhotoIndex, setInfoPhotoIndex ] = useState<number>(-1);
+    const [ subAlbum, setSubAlbum ] = useState<string>("");
     const [ saveFavorite ] = useSavePhotoToPseudoMutation();
     const { infoNotification, errorNotification } = useNotification();
     const zoom = useSelector(selectZoom);
     const favorite = useSelector(selectFavorite);
 
-    const photos = data?.photos || [];
+    const subalbums = data?.subalbums || [];
+    const photos = useMemo(() => {
+        const photos = data?.photos || [];
+        return subAlbum.length < 1 ? photos :
+            photos.filter(v => subAlbum === v.subalbum);
+    }, [data, subAlbum]);
 
     const toggleFavorite = async (index: number) => {
         if(favorite === undefined) {
@@ -48,7 +57,7 @@ const Gallery: FC = () => {
             await saveFavorite({
                 collection: collection,
                 album: album,
-                photo: photos[index].title,
+                photo: photos[index].id,
                 photoIndex: index,
                 saveTo: favorite,
                 favorite: isFavorite,
@@ -71,7 +80,10 @@ const Gallery: FC = () => {
     const closeInfoPhoto = () => {
         setInfoPhotoIndex(-1);
     }
-
+    const handleSubAlbum = (selected: string) => () => {
+        setSubAlbum(selected === subAlbum ? "" : selected);
+    }
+    
     const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoType>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
 
@@ -131,6 +143,13 @@ const Gallery: FC = () => {
     
     const gallery = (
         <>
+            { subalbums.length > 0 &&
+                <Paper elevation={4} square>
+                    <Stack direction="row" p={1.5} spacing={1} useFlexGap flexWrap="wrap">
+                        {subalbums.map(v => <Chip key={v} label={v} variant={subAlbum === v ? "filled" : "outlined"} onClick={handleSubAlbum(v)} />)}
+                    </Stack>
+                </Paper>
+            }
             <PhotoAlbum
                 photos={photos}
                 layout="rows"
