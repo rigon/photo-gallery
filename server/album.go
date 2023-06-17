@@ -24,6 +24,7 @@ type Album struct {
 }
 
 func (album *Album) GetPhotos(collection *Collection) error {
+	subAlbums := make(map[string]bool)
 	album.photosMap = make(map[string]*Photo)
 
 	if album.IsPseudo {
@@ -46,19 +47,27 @@ func (album *Album) GetPhotos(collection *Collection) error {
 				return err
 			}
 
+			// Sub album name for filtering
+			subAlbum := targetAlbum.Name
+			if collection.Name != targetCollection.Name {
+				subAlbum = targetCollection.Name + ": " + targetAlbum.Name
+			}
+
 			// Create a new photo
 			photo := new(Photo)
-			photo.Title = pseudo.Photo
-			photo.Thumb = path.Join("/api/collection", pseudo.Collection, "album", pseudo.Album, "photo", pseudo.Photo, "thumb")
-			photo.Info = path.Join("/collection", collection.Name, "album", album.Name, "photo", pseudo.Photo, "info")
-			photo.Width = 200  // Default width
-			photo.Height = 200 // Default height
-			photo.Files = targetPhoto.Files
+			photo.Id = targetPhoto.Id
+			photo.Title = targetPhoto.Title
+			photo.SubAlbum = subAlbum
+			photo.Thumb = targetPhoto.Thumb
+			photo.Info = targetPhoto.Info
+			photo.Width = targetPhoto.Width
+			photo.Height = targetPhoto.Height
+			photo.Favorite = false
 
-			album.photosMap[pseudo.Photo] = photo
+			album.photosMap[targetPhoto.Id] = photo
+			subAlbums[photo.SubAlbum] = true
 		}
 	} else {
-		subalbums := make(map[string]bool)
 		// Read album (or folder) contents
 		dir := filepath.Join(collection.PhotosPath, album.Name)
 		err := filepath.Walk(dir, func(fileDir string, file os.FileInfo, err error) error {
@@ -84,7 +93,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 					album.photosMap[fileId] = photo
 					// Map of sub-albums
 					if photo.SubAlbum != "" {
-						subalbums[photo.SubAlbum] = true
+						subAlbums[photo.SubAlbum] = true
 					}
 				}
 				photoFile := &File{
@@ -98,12 +107,13 @@ func (album *Album) GetPhotos(collection *Collection) error {
 		if err != nil {
 			return err
 		}
-		// List of sub-albums
-		for key := range subalbums {
-			album.SubAlbums = append(album.SubAlbums, key)
-		}
-		sort.Strings(album.SubAlbums)
 	}
+
+	// List of sub-albums
+	for key := range subAlbums {
+		album.SubAlbums = append(album.SubAlbums, key)
+	}
+	sort.Strings(album.SubAlbums)
 
 	return nil
 }
