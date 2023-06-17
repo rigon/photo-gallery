@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"os"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"sort"
@@ -68,9 +68,9 @@ func (album *Album) GetPhotos(collection *Collection) error {
 			subAlbums[photo.SubAlbum] = true
 		}
 	} else {
-		// Read album (or folder) contents
+		// Read album (i.e. folder) contents
 		dir := filepath.Join(collection.PhotosPath, album.Name)
-		err := filepath.Walk(dir, func(fileDir string, file os.FileInfo, err error) error {
+		err := filepath.WalkDir(dir, func(fileDir string, file fs.DirEntry, err error) error {
 			// Iterate over folder items
 			if err != nil {
 				return err
