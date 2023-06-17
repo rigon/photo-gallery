@@ -47,8 +47,11 @@ func AddWorkPhoto(collection *Collection, album *Album, photo *Photo, writer io.
 }
 
 func AddWorkPhotos(collection *Collection, album *Album) {
+	size := len(album.photosMap)
+	count := 0
 	for _, photo := range album.photosMap {
-		log.Printf("Background Thumb [%s] %s\n", album.Name, photo.Title)
+		count++
+		log.Printf("Background thumbnail %s[%s] %d/%d: %s %s\n", collection.Name, album.Name, count, size, photo.Title, photo.SubAlbum)
 		wg.Add(1)
 		w := new(Work)
 		w.collection = collection

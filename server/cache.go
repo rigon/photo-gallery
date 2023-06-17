@@ -122,19 +122,22 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 
 	// Get photos that are in cache
 	err = c.store.Bolt().View(func(tx *bolt.Tx) error {
+		size := len(album.photosMap)
+		count := 0
 		for _, photo := range album.photosMap {
 			var data Photo
-			key := album.Name + ":" + photo.Title
+			count++
+			key := album.Name + ":" + photo.Id
 			err := c.store.TxGet(tx, key, &data)
 			// Does not require update
-			if err == nil && data.Title == photo.Title && data.Thumb == photo.Thumb &&
+			if err == nil && data.Id == photo.Id && data.Thumb == photo.Thumb &&
 				len(data.Files) == len(photo.Files) { // Validate some fields
 
 				*photo = data
 				continue
 			}
 
-			log.Printf("caching photo [%s] %s", album.Name, photo.Title)
+			log.Printf("Caching photo info [%s] %d/%d: %s %s\n", album.Name, count, size, photo.Title, photo.SubAlbum)
 			photo.FillInfo()
 			update = append(update, photo)
 		}
@@ -149,7 +152,7 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 	// Update missing entries
 	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
 		for _, photo := range update {
-			key := album.Name + ":" + photo.Title
+			key := album.Name + ":" + photo.Id
 			err := c.store.TxUpsert(tx, key, photo)
 			if err != nil {
 				log.Println(err)
