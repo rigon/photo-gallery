@@ -1,4 +1,4 @@
-import { FC, useState, useMemo } from "react";
+import { FC, useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from 'react-redux';
 
@@ -41,6 +41,9 @@ const Gallery: FC = () => {
         return subAlbum.length < 1 ? photos :
             photos.filter(v => subAlbum === v.subalbum);
     }, [data, subAlbum]);
+
+    // Clear sub-album selection when album changed
+    useEffect(() => setSubAlbum(""), [collection, album, setSubAlbum]);
 
     const toggleFavorite = async (index: number) => {
         if(favorite === undefined) {

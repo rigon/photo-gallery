@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"log"
 	"path"
 	"path/filepath"
 	"sort"
@@ -62,6 +63,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 			photo.Info = targetPhoto.Info
 			photo.Width = targetPhoto.Width
 			photo.Height = targetPhoto.Height
+			photo.Files = targetPhoto.Files
 			photo.Favorite = false
 
 			album.photosMap[targetPhoto.Id] = photo
@@ -69,6 +71,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 		}
 	} else {
 		// Read album (i.e. folder) contents
+		log.Printf("Scanning folder for album %s[%s]...", collection.Name, album.Name)
 		dir := filepath.Join(collection.PhotosPath, album.Name)
 		err := filepath.WalkDir(dir, func(fileDir string, file fs.DirEntry, err error) error {
 			// Iterate over folder items

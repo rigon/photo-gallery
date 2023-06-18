@@ -151,7 +151,10 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 
 	// Update missing entries
 	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
-		for _, photo := range update {
+		for i, photo := range update {
+			if i%100 == 0 {
+				log.Printf("Updating cache info %s (%d/%d)", album.Name, i, len(update))
+			}
 			key := album.Name + ":" + photo.Id
 			err := c.store.TxUpsert(tx, key, photo)
 			if err != nil {
