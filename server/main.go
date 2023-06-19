@@ -224,6 +224,7 @@ func main() {
 			for _, c := range config.collections {
 				c.CreateThumbnails()
 			}
+			log.Println("Background thumbnail generation complete!")
 		}()
 	}
 

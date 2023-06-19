@@ -54,20 +54,26 @@ func (album *Album) GetPhotos(collection *Collection) error {
 				subAlbum = targetCollection.Name + ": " + targetAlbum.Name
 			}
 
-			// Create a new photo
-			photo := new(Photo)
-			photo.Id = targetPhoto.Id
-			photo.Title = targetPhoto.Title
-			photo.SubAlbum = subAlbum
-			photo.Thumb = targetPhoto.Thumb
-			photo.Info = targetPhoto.Info
-			photo.Width = targetPhoto.Width
-			photo.Height = targetPhoto.Height
-			photo.Files = targetPhoto.Files
-			photo.Favorite = false
+			// Create a new photo (making a copy of targetPhoto)
+			photo := &Photo{
+				// Changed fields
+				SubAlbum: subAlbum,
+				Favorite: false,
+				// Copy the remainder
+				Id:       targetPhoto.Id,
+				Thumb:    targetPhoto.Thumb,
+				Title:    targetPhoto.Title,
+				Type:     targetPhoto.Type,
+				Info:     targetPhoto.Info,
+				Width:    targetPhoto.Width,
+				Height:   targetPhoto.Height,
+				Date:     targetPhoto.Date,
+				Location: targetPhoto.Location,
+				Files:    targetPhoto.Files,
+			}
 
 			album.photosMap[targetPhoto.Id] = photo
-			subAlbums[photo.SubAlbum] = true
+			subAlbums[subAlbum] = true
 		}
 	} else {
 		// Read album (i.e. folder) contents

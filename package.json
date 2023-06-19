@@ -1,7 +1,7 @@
 {
   "name": "photo-gallery",
   "private": true,
-  "version": "1.3.2",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "start": "vite",
