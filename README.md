@@ -126,6 +126,26 @@ The following example illustrates a case where you have two folders mounted with
     -c "name=Photos,path=/photos,thumbs=/thumbs" \
     -c "name=Recent,path=/recent,thumbs=/thumbs"
 
+If you prefer Docker Compose, here is the same example:
+
+    version: "3"
+
+    volumes:
+      photo-gallery_data:
+
+    services:
+      photo-gallery:
+        image: rigon/photo-gallery
+        volumes:
+          - photo-gallery_data:/thumbs
+          - /media/data/photos/:/photos/:ro
+          - /media/data/recent/:/recent/:rw
+        ports:
+          - 3080:3080
+        command:
+          - "-cname=Photos,path=/photos,thumbs=/thumbs"
+          - "-cname=Recent,path=/recent,thumbs=/thumbs"
+
 `photo-gallery_data` can be safely deleted, however cached data must be regenerated.
 
 ### Port forwarding on Terminus under iOS
