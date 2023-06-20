@@ -118,33 +118,37 @@ This project is distributed docker ([Photo Gallery Docker Hub page](https://hub.
 
 The following example illustrates a case where you have two folders mounted with volumes, one with the collection of photos that is read-only and a recent folder with your still unorganized photos that is writable.
 
-    docker run -d -p 3080:3080 --restart=always --name photo-gallery \
-    -v photo-gallery_data:/thumbs \
-    -v /media/data/photos/:/photos/:ro \
-    -v /media/data/recent/:/recent/:rw \
-    rigon/photo-gallery \
-    -c "name=Photos,path=/photos,thumbs=/thumbs" \
-    -c "name=Recent,path=/recent,thumbs=/thumbs"
+```sh
+docker run -d -p 3080:3080 --restart=always --name photo-gallery \
+-v photo-gallery_data:/thumbs \
+-v /media/data/photos/:/photos/:ro \
+-v /media/data/recent/:/recent/:rw \
+rigon/photo-gallery \
+-c "name=Photos,path=/photos,thumbs=/thumbs" \
+-c "name=Recent,path=/recent,thumbs=/thumbs"
+```
 
 If you prefer Docker Compose, here is the same example:
 
-    version: "3"
+```yml
+version: "3"
 
+volumes:
+  photo-gallery_data:
+
+services:
+  photo-gallery:
+    image: rigon/photo-gallery
     volumes:
-      photo-gallery_data:
-
-    services:
-      photo-gallery:
-        image: rigon/photo-gallery
-        volumes:
-          - photo-gallery_data:/thumbs
-          - /media/data/photos/:/photos/:ro
-          - /media/data/recent/:/recent/:rw
-        ports:
-          - 3080:3080
-        command:
-          - "-cname=Photos,path=/photos,thumbs=/thumbs"
-          - "-cname=Recent,path=/recent,thumbs=/thumbs"
+      - photo-gallery_data:/thumbs
+      - /media/data/photos/:/photos/:ro
+      - /media/data/recent/:/recent/:rw
+    ports:
+      - 3080:3080
+    command:
+      - "-cname=Photos,path=/photos,thumbs=/thumbs"
+      - "-cname=Recent,path=/recent,thumbs=/thumbs"
+```
 
 `photo-gallery_data` can be safely deleted, however cached data must be regenerated.
 
