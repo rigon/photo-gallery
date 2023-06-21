@@ -200,6 +200,9 @@ func saveToPseudo(c echo.Context) error {
 	if !album.IsPseudo {
 		return echo.NewHTTPError(http.StatusBadRequest, "album must be of type pseudo")
 	}
+	if !album.IsPseudo {
+		return errors.New("album must be of type pseudo")
+	}
 
 	switch c.Request().Method {
 	case "PUT":
