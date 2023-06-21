@@ -31,7 +31,7 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	// Disk cache
 	var err error
 	filename := filepath.Join(collection.ThumbsPath, collection.Name+DB_NAME_SUFFIX)
-	c.store, err = bolthold.Open(filename, 0600, nil)
+	c.store, err = bolthold.Open(filename, 0600, &bolthold.Options{Options: &bolt.Options{Timeout: 1}})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,10 +150,16 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 	}
 
 	// Update missing entries
+	return c.AddPhotoInfo(album, update...)
+}
+
+// Add info for photos
+func (c Cache) AddPhotoInfo(album *Album, photos ...*Photo) error {
+	// Update entries
 	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
-		for i, photo := range update {
-			if i%100 == 0 || i == len(update)-1 {
-				log.Printf("Updating cache info %s (%d/%d)", album.Name, i+1, len(update))
+		for i, photo := range photos {
+			if i%100 == 0 || i == len(photos)-1 {
+				log.Printf("Updating cache info %s (%d/%d)", album.Name, i+1, len(photos))
 			}
 			key := album.Name + ":" + photo.Id
 			err := c.store.TxUpsert(tx, key, photo)

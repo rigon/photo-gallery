@@ -195,6 +195,9 @@ func saveToPseudo(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if !album.IsPseudo {
+		return errors.New("album must be of type pseudo")
+	}
 
 	// Add photo to pseudo album
 	if c.Method() == "PUT" {
@@ -204,6 +207,7 @@ func saveToPseudo(c *fiber.Ctx) error {
 	if c.Method() == "DELETE" {
 		album.RemovePhotoFromPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
 	}
+
 	return c.JSON(map[string]bool{"ok": true})
 }
 

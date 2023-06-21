@@ -12,8 +12,6 @@ import (
 	"strings"
 )
 
-type Pipi []*Photo
-
 type Album struct {
 	Name      string            `json:"name"`
 	Count     int               `json:"count"`
