@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -188,6 +189,113 @@ func file(c echo.Context) error {
 	return c.File(file.Path)
 }
 
+func upload(c echo.Context) error {
+	collection, err := GetCollection(c.Param("collection"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	albumName := c.Param("album")
+
+	// Fetch photo from cache
+	album, err := collection.GetAlbum(albumName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Parse the multipart form
+	form, err := c.MultipartForm()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Get all files from "file" key
+	files := form.File["file"]
+
+	// Loop through files
+	for _, file := range files {
+		// Check if file already exists in album
+		p := filepath.Join(collection.PhotosPath, album.Name, file.Filename)
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
+			return echo.NewHTTPError(http.StatusConflict, "file already exits")
+		}
+
+		// Save file to album
+		err := SaveMultipartFile(file, p)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+}
+
+func move(c echo.Context) error {
+	var query AlbumMoveQuery
+
+	// Decode body
+	if err := c.Bind(&query); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	srcCollection, err := GetCollection(c.Param("collection"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	dstCollection, err := GetCollection(query.Collection)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	albumName := c.Param("album")
+
+	// Fetch album with photos
+	srcAlbum, err := srcCollection.GetAlbumWithPhotos(albumName, false, false)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	dstAlbum, err := dstCollection.GetAlbum(query.Album)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Move photos
+	stats, err := srcAlbum.MovePhotos(query.Mode, srcCollection, dstCollection, dstAlbum, query.Photos...)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, stats)
+}
+
+func delete(c echo.Context) error {
+	var query AlbumDeleteQuery
+
+	// Decode body
+	if err := c.Bind(&query); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	collection, err := GetCollection(c.Param("collection"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	albumName := c.Param("album")
+
+	// Fetch album with photos
+	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Delete photos
+	err = album.DeletePhotos(collection, query.Photos...)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+}
+
 func saveToPseudo(c echo.Context) error {
 	var query PseudoAlbumSaveQuery
 
@@ -319,6 +427,9 @@ func main() {
 	api.GET("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/info", info)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
+	api.POST("/collections/:collection/albums/:album/photos", upload)
+	api.PUT("/collections/:collection/albums/:album/photos/move", move)
+	api.DELETE("/collections/:collection/albums/:album/photos", delete)
 	api.PUT("/collections/:collection/albums/:album/pseudos", saveToPseudo)
 	api.DELETE("/collections/:collection/albums/:album/pseudos", saveToPseudo)
 	api.GET("/health", func(c echo.Context) error {

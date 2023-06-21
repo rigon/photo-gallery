@@ -1,6 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CollectionType, PseudoAlbumType, AlbumType, PhotoType } from "../types";
+import { CollectionType, PseudoAlbumType, AlbumType, PhotoType, MoveConflictMode } from "../types";
 import { changeFavorite } from "./app";
+
+export interface ResponseError {
+    message: string;
+}
 
 export interface QueryAlbums {
     collection?: string;
@@ -21,6 +25,32 @@ export interface QueryPhoto {
     collection?: string;
     album?: string;
     photo?: string;
+}
+
+export interface QueryMovePhotos {
+    collection: CollectionType["name"];
+    album: AlbumType["name"];
+    target: {
+        mode: MoveConflictMode;
+        collection: CollectionType["name"];
+        album: AlbumType["name"];
+        photos: PhotoType["title"][];
+    }
+}
+
+export interface ResponseMovePhotos {
+    moved_photos: number;
+    moved_files: number;
+    skipped: number;
+    renamed: number;
+}
+
+export interface QueryDeletePhotos {
+    collection: CollectionType["name"];
+    album: AlbumType["name"];
+    target: {
+        photos: PhotoType["title"][];
+    }
 }
 
 export interface QuerySaveFavorite {
@@ -67,6 +97,27 @@ export const api = createApi({
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
+        movePhotos: builder.mutation<ResponseMovePhotos, QueryMovePhotos>({
+            query: ({ collection, album, target }) => ({
+                url: `/collections/${collection}/albums/${album}/photos/move`,
+                method: 'PUT',
+                body: target,
+            }),
+            invalidatesTags: (_result, _error, arg) => [
+                { type: 'Album', id: albumId(arg) },
+                { type: 'Album', id: albumId(arg.target) }
+            ],
+        }),
+        deletePhotos: builder.mutation<void, QueryDeletePhotos>({
+            query: ({ collection, album, target }) => ({
+                url: `/collections/${collection}/albums/${album}/photos`,
+                method: 'DELETE',
+                body: target,
+            }),
+            invalidatesTags: (_result, _error, arg) => [
+                { type: 'Album', id: albumId(arg) },
+            ],
+        }),
         getPhotoInfo: builder.query<any[], PhotoType>({
             query: ({collection, album, id }) => `/collections/${collection}/albums/${album}/photos/${id}/info`,
         }),
@@ -109,6 +160,10 @@ export const {
     useGetAlbumsQuery,
     useGetAlbumQuery,
     useAddAlbumMutation,
+    useMovePhotosMutation,
+    useDeletePhotosMutation,
     useGetPhotoInfoQuery,
     useSavePhotoToPseudoMutation,
 } = api;
+
+export default api;

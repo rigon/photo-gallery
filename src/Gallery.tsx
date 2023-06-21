@@ -14,7 +14,8 @@ import Typography from "@mui/material/Typography";
 import PhotoAlbum from "react-photo-album";
 
 import Thumb from "./Thumb";
-import { PhotoImageType, urls, AlbumType } from "./types";
+import { SelectionContext } from "./Selection";
+import { PhotoType, PhotoImageType, urls, AlbumType } from "./types";
 import { useGetAlbumQuery } from "./services/api";
 import { selectZoom } from "./services/app";
 
@@ -92,13 +93,15 @@ const Gallery: FC = () => {
 
     return (<>
         {hasSubAlbums && subAlbumsComponent}
-        <PhotoAlbum
-            photos={photos}
-            layout="rows"
-            targetRowHeight={zoom}
-            rowConstraints={{ singleRowMaxHeight: zoom*2 }}
-            spacing={1}
-            renderPhoto={RenderPhoto} />
+        <SelectionContext<PhotoType> key={`${collection}:${album}`} transformItemToId={item => item.id}>
+            <PhotoAlbum
+                photos={photos}
+                layout="rows"
+                targetRowHeight={zoom}
+                rowConstraints={{ singleRowMaxHeight: zoom*2 }}
+                spacing={1}
+                renderPhoto={RenderPhoto} />
+        </SelectionContext>
     </>);
 }
 
