@@ -13,7 +13,7 @@ import (
 const DB_NAME_SUFFIX = "-cache.db"
 
 var dbInfo = DbInfo{
-	Version: 5,
+	Version: 6,
 }
 
 type DbInfo struct {
@@ -122,20 +122,23 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 
 	// Get photos that are in cache
 	err = c.store.Bolt().View(func(tx *bolt.Tx) error {
+		size := len(album.photosMap)
+		count := 0
 		for _, photo := range album.photosMap {
 			var data Photo
-			key := album.Name + ":" + photo.Title
+			count++
+			key := album.Name + ":" + photo.Id
 			err := c.store.TxGet(tx, key, &data)
 			// Does not require update
-			if err == nil && data.Title == photo.Title && data.Thumb == photo.Thumb &&
+			if err == nil && data.Id == photo.Id && data.Thumb == photo.Thumb &&
 				len(data.Files) == len(photo.Files) { // Validate some fields
 
 				*photo = data
 				continue
 			}
 
-			log.Printf("caching photo [%s] %s", album.Name, photo.Title)
-			photo.Info()
+			log.Printf("Caching photo info [%s] %d/%d: %s %s\n", album.Name, count, size, photo.Title, photo.SubAlbum)
+			photo.FillInfo()
 			update = append(update, photo)
 		}
 		return nil
@@ -148,8 +151,11 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 
 	// Update missing entries
 	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
-		for _, photo := range update {
-			key := album.Name + ":" + photo.Title
+		for i, photo := range update {
+			if i%100 == 0 || i == len(update)-1 {
+				log.Printf("Updating cache info %s (%d/%d)", album.Name, i+1, len(update))
+			}
+			key := album.Name + ":" + photo.Id
 			err := c.store.TxUpsert(tx, key, photo)
 			if err != nil {
 				log.Println(err)

@@ -20,15 +20,21 @@ export interface AlbumType {
     /** Name of the album */
     name: string;
     photos: PhotoType[];
+    subalbums: string[];
+    pseudo: boolean;
 }
 
 export interface PhotoType {
+    id: string;
     src: string;    // thumbnail
     title: string;
     type: "image" | "video" | "live";
+    subalbum: string;
     favorite: boolean;
     width: number;
     height: number;
+    date: string;
+    info: string;
     files: FileType[];
 }
 

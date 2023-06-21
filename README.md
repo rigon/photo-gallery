@@ -67,6 +67,7 @@ Main features:
   - [ ] Save favorites
 - [ ] Authentication
 - [ ] Search for duplicates
+- [ ] Tool for renaming files
 - [ ] Image resizing according with screen
 - [ ] Photos timeline with virtual scroll
 

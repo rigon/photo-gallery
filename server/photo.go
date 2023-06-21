@@ -10,13 +10,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type Photo struct {
+	Id       string      `json:"id"`
 	Thumb    string      `json:"src"`
 	Title    string      `json:"title"`
 	Type     string      `json:"type"`
+	Info     string      `json:"info"`
+	SubAlbum string      `json:"subalbum"`
 	Favorite bool        `json:"favorite"`
 	Width    int         `json:"width"`
 	Height   int         `json:"height"`
@@ -27,7 +31,8 @@ type Photo struct {
 
 // Returns the path location for the thumbnail
 func (photo *Photo) ThumbnailPath(collection *Collection, album *Album) string {
-	hash := sha256.Sum256([]byte(album.Name + photo.Title))
+	name := strings.Join([]string{collection.Name, album.Name, photo.Id}, ":")
+	hash := sha256.Sum256([]byte(name))
 	encoded := hex.EncodeToString(hash[:])
 	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
 }
@@ -92,7 +97,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 	return nil
 }
 
-func (photo *Photo) Info() error {
+func (photo *Photo) FillInfo() error {
 	var countImages = 0
 	var countVideos = 0
 	// Extract info for each file

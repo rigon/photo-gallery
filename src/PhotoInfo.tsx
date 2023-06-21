@@ -1,5 +1,4 @@
 import React, { FC } from "react";
-import { useParams } from 'react-router-dom';
 import { styled, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -52,10 +51,9 @@ const StyledList = styled("dl")({
 const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-    const { collection, album } = useParams();
     const [ index, setIndex ] = React.useState(selected);
-    const { title: photo, src: thumb } = photos[index] || {};
-    const { data = [], isFetching } = useGetPhotoInfoQuery({collection, album, photo }, {skip: photo === undefined});
+    const { title, src: thumb, info } = photos[index] || {};
+    const { data = [], isFetching } = useGetPhotoInfoQuery(info, {skip: info === undefined});
 
     React.useEffect(() => setIndex(selected), [setIndex, selected]);
 
@@ -106,7 +104,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
             fullWidth
         >
             <DialogTitle id="photo-info-title">
-                {photo}
+                {title}
                 <Box sx={{ position: 'absolute', right: 8, top: 8 }}>
                     {isFetching && <CircularProgress size="1rem" sx={{ mr: 1 }}/>}
                     <IconButton onClick={handleBefore} disabled={!hasBefore} sx={{ ml: 1 }} aria-label="before">
@@ -124,7 +122,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
 
                 <Grid container spacing={2}>
                     <Grid item xs={4}>
-                        <img src={thumb} alt={photo} style={{ width: "100%", height: "200px", objectFit: "cover" }} />
+                        <img src={thumb} alt={title} style={{ width: "100%", height: "200px", objectFit: "cover" }} />
                     </Grid>
                     <Grid item xs={8}>
                         {mapLocation?.present && <Map height="200px" mark={mapLocation} />}
