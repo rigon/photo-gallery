@@ -21,7 +21,7 @@ const Storage: FC = () => {
         {size: "N/A", free: "N/A", used: "N/A", percentage: 100};
     
     return (
-        <Card>
+        <Card square>
           <CardHeader
             avatar={<CloudIcon />}
             // action={

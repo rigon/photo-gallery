@@ -30,7 +30,7 @@ type PseudoAlbumSaveQuery struct {
 	Photos     []string `json:"photos"`
 }
 
-func readPseudoAlbum(collection *Collection, album Album) ([]PseudoAlbumEntry, error) {
+func readPseudoAlbum(collection *Collection, album *Album) ([]PseudoAlbumEntry, error) {
 	if !album.IsPseudo {
 		return nil, errors.New("the destination must be a pseudo album")
 	}
@@ -59,7 +59,7 @@ func readPseudoAlbum(collection *Collection, album Album) ([]PseudoAlbumEntry, e
 	return entries, nil
 }
 
-func writePseudoAlbum(collection *Collection, album Album, entries ...PseudoAlbumEntry) error {
+func writePseudoAlbum(collection *Collection, album *Album, entries ...PseudoAlbumEntry) error {
 	if !album.IsPseudo {
 		return errors.New("the destination must be a pseudo album")
 	}
@@ -94,12 +94,13 @@ func GetPseudoAlbums(collections map[string]*Collection) []PseudoAlbum {
 	return pseudos
 }
 
-func (album Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSaveQuery, isAdd bool) error {
+func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSaveQuery, isAdd bool) error {
 	entries, err := readPseudoAlbum(collection, album)
 	if err != nil {
 		return err
 	}
 
+	var updated []string
 	for _, photo := range query.Photos {
 		// Find entry already in the album
 		found := -1
@@ -116,12 +117,14 @@ func (album Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSave
 			}
 			// Add a new entry
 			entries = append(entries, PseudoAlbumEntry{Collection: query.Collection, Album: query.Album, Photo: photo})
+			updated = append(updated, photo)
 		} else {
 			if found < 0 {
 				return errors.New("entry could not be found")
 			}
 			// Remove the entry
 			entries = append(entries[:found], entries[found+1:]...)
+			updated = append(updated, photo)
 		}
 	}
 
@@ -130,6 +133,39 @@ func (album Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSave
 	if err != nil {
 		return err
 	}
+
+	// Update in background cached entries that were changed
+	go func() error {
+		fromCollection, err := GetCollection(query.Collection)
+		if err != nil {
+			return err
+		}
+		fromAlbum, err := fromCollection.GetAlbumWithPhotos(query.Album, false)
+		if err != nil {
+			return err
+		}
+
+		var photos []*Photo
+		for _, photo := range updated {
+			fromPhoto, err := fromAlbum.GetPhoto(photo)
+			if err != nil {
+				continue
+			}
+
+			result := false
+			if isAdd { // Add link to the album
+				result = fromPhoto.AddFavorite(collection, album)
+			} else { // Remove link to the album
+				result = fromPhoto.RemoveFavorite(collection, album)
+			}
+			if result {
+				photos = append(photos, fromPhoto)
+			}
+		}
+
+		// Update info about cached photos
+		return fromCollection.cache.AddPhotoInfo(fromAlbum, photos...)
+	}()
 
 	return nil
 }

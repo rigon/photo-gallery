@@ -31,7 +31,7 @@ export interface QuerySaveFavorite {
     saveData: {
         collection: CollectionType["name"];
         album: AlbumType["name"];
-        photos: PhotoType["title"][];
+        photos: PhotoType["id"][];
     }
 }
 
@@ -55,7 +55,7 @@ export const api = createApi({
         }),
         getAlbum: builder.query<AlbumType, QueryAlbum>({
             query: ({ collection, album }) => `/collection/${collection}/album/${album}`,
-            providesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}-${arg.album}` }],
+            providesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
         }),
         addAlbum: builder.mutation<void, QueryAddAlbum>({
             query: ({ collection, ...body }) => ({
@@ -74,14 +74,23 @@ export const api = createApi({
                 method: favorite ? 'PUT' : 'DELETE',
                 body: saveData,
             }),
-            invalidatesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}-${arg.album}` }],
-            async onQueryStarted({ saveData, photoIndex, favorite }, { dispatch, queryFulfilled }) {
+            invalidatesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
+            async onQueryStarted({ collection, album, saveData, photoIndex, favorite }, { dispatch, queryFulfilled }) {
                 const query: QueryAlbum = { collection: saveData.collection, album: saveData.album };
-                console.log("Optimistic Updates", query, photoIndex);
                 const patchResult = dispatch(
                     api.util.updateQueryData('getAlbum', query, draft => {
                         // Optimistic Updates
-                        photoIndex.forEach(i => draft.photos[i].favorite = favorite);
+                        photoIndex.forEach(i => {
+                            if(!draft.photos[i].favorite)
+                                draft.photos[i].favorite = [];
+                            
+                            const name = `${collection}:${album}`;
+                            const index = draft.photos[i].favorite.indexOf(name);
+                            if(favorite && index < 0)   // Add if not in the favorites list
+                                draft.photos[i].favorite.push(name);
+                            if(!favorite && index >= 0) // Remove if in the favorites list
+                                draft.photos[i].favorite.splice(index, 1);
+                        });
                     }));
                 // Undo if the request fails
                 queryFulfilled.catch(patchResult.undo);

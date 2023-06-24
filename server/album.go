@@ -27,7 +27,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 	album.photosMap = make(map[string]*Photo)
 
 	if album.IsPseudo {
-		pseudos, err := readPseudoAlbum(collection, *album)
+		pseudos, err := readPseudoAlbum(collection, album)
 		if err != nil {
 			return err
 		}
@@ -52,11 +52,16 @@ func (album *Album) GetPhotos(collection *Collection) error {
 				subAlbum = targetCollection.Name + ": " + targetAlbum.Name
 			}
 
+			// Update photo with favorite album
+			result := targetPhoto.AddFavorite(collection, album)
+			if result {
+				targetCollection.cache.AddPhotoInfo(targetAlbum, targetPhoto)
+			}
+
 			// Create a new photo (making a copy of targetPhoto)
 			photo := &Photo{
 				// Changed fields
 				SubAlbum: subAlbum,
-				Favorite: false,
 				// Copy the remainder
 				Id:       targetPhoto.Id,
 				Thumb:    targetPhoto.Thumb,
@@ -67,6 +72,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 				Height:   targetPhoto.Height,
 				Date:     targetPhoto.Date,
 				Location: targetPhoto.Location,
+				Favorite: targetPhoto.Favorite,
 				Files:    targetPhoto.Files,
 			}
 
@@ -96,7 +102,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 					photo.Info = path.Join("/collection", collection.Name, "album", album.Name, "photo", fileId, "info")
 					photo.Width = 200  // Default width
 					photo.Height = 200 // Default height
-					photo.Favorite = false
+					photo.Favorite = []string{}
 					album.photosMap[fileId] = photo
 					// Map of sub-albums
 					if photo.SubAlbum != "" {

@@ -4,14 +4,17 @@ import { useSelector } from 'react-redux';
 
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
+import Divider from "@mui/material/Divider";
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import NotFavoriteIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteTwoToneIcon from '@mui/icons-material/FavoriteTwoTone';
 import IconButton from '@mui/material/IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import LinearProgress from '@mui/material/LinearProgress';
 import Paper from "@mui/material/Paper";
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Stack from "@mui/material/Stack";
+import Tooltip from "@mui/material/Tooltip";
 
 import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
 
@@ -19,10 +22,11 @@ import BoxBar from "./BoxBar";
 import PhotoInfo from "./PhotoInfo";
 import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
-import { PhotoType } from "./types";
+import useFavorite from "./favoriteHook";
 import useNotification from "./Notification";
+import { PhotoType } from "./types";
 import { useGetAlbumQuery, useSavePhotoToPseudoMutation } from "./services/api";
-import { selectZoom, selectFavorite } from "./services/app";
+import { selectZoom } from "./services/app";
 
 const iconsStyle: CSSProperties = {
     WebkitFilter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
@@ -38,7 +42,7 @@ const Gallery: FC = () => {
     const [ saveFavorite ] = useSavePhotoToPseudoMutation();
     const { infoNotification, errorNotification } = useNotification();
     const zoom = useSelector(selectZoom);
-    const favorite = useSelector(selectFavorite);
+    const favorite = useFavorite();
 
     const subalbums = data?.subalbums || [];
     const photos = useMemo(() => {
@@ -51,7 +55,8 @@ const Gallery: FC = () => {
     useEffect(() => setSubAlbum(""), [collection, album, setSubAlbum]);
 
     const toggleFavorite = async (index: number) => {
-        if(favorite === undefined) {
+        const selected = favorite.get();
+        if(selected === undefined) {
             errorNotification("No favorite album is selected. Select first from the top toolbar.");
             return;
         }
@@ -60,25 +65,26 @@ const Gallery: FC = () => {
             return;
         }
 
-        const isFavorite = !(photos[index].favorite);
+        const photo = photos[index];
+        const isFavorite = !(favorite.photo(photo).isFavoriteThis);
         try {
             await saveFavorite({
-                collection: favorite.collection,
-                album: favorite.album,
+                collection: selected.collection,
+                album: selected.album,
                 favorite: isFavorite,
                 saveData: {
                     collection,
                     album,
-                    photos: [photos[index].id], // TODO: change here for bulk selection
+                    photos: [photo.id], // TODO: change here for bulk selection
                 },
                 photoIndex: [index], // TODO: change here for bulk selection
             }).unwrap();
             infoNotification(isFavorite ?
-                `Photo added as favorite to ${favorite.album}` :
-                `Photo removed as favorite from ${favorite.album}`);
+                `Photo added as favorite to ${selected.album}` :
+                `Photo removed as favorite from ${selected.album}`);
         }
         catch(error) {
-            errorNotification(`Could not set the photo as favorite in ${favorite.album}!`);
+            errorNotification(`Could not set the photo as favorite in ${selected.album}!`);
             console.log(error);
         }
     }
@@ -97,6 +103,17 @@ const Gallery: FC = () => {
     
     const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoType>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
+        const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
+        const selFavorite = favorite.get();
+
+        const favoriteTooltip = isFavorite ?
+            <>
+                <i><b>This photo is favorite in:</b><br/>
+                {photo.favorite?.map(s => <>&bull; {s}<br/></>)}</i>
+                <Divider/>
+                Press to {isFavoriteThis ? "remove from" : "add to"} {selFavorite?.album}
+            </> :
+            <>Add as favorite to {selFavorite?.album}</>;
 
         const mouseEnter = () => {
             setMouseOver(true);
@@ -124,30 +141,34 @@ const Gallery: FC = () => {
                 onClick={openLightbox}
                 onDoubleClick={saveFavorite}>
                     {renderDefaultPhoto({ wrapped: true })}
-                    {photo.type === "live" && (
+                    {photo.type === "live" &&
                         <BoxBar top left>
                             <LivePhotoIcon fontSize="small" style={iconsStyle} />
                         </BoxBar>
-                    )}
+                    }
                     {photo.type === "video" &&
                         <BoxBar middle center>
                             <PlayIcon style={{width: "100%", height: "100%"}}/>
                         </BoxBar>
                     }
-                    {(mouseOver) && (
+                    {mouseOver &&
                         <BoxBar top right>
                             <IconButton color="inherit" onClick={showInfo}>
                                 <InfoIcon style={iconsStyle} />
                             </IconButton>
                         </BoxBar>
-                    )}
-                    {(photo.favorite || mouseOver) && (
+                    }
+                    {(isFavorite || mouseOver) &&
                         <BoxBar bottom right>
-                            <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle}>
-                                {photo.favorite? <FavoriteIcon/> : <NotFavoriteIcon/>}
-                            </IconButton>
+                            <Tooltip title={favoriteTooltip} arrow>
+                                <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle}>
+                                    {!isFavorite && <FavoriteBorderIcon/>}
+                                    {isFavoriteThis && <FavoriteIcon/>}
+                                    {isFavoriteAnother && <FavoriteTwoToneIcon/>}
+                                </IconButton>
+                            </Tooltip>
                         </BoxBar>
-                    )}
+                    }
             </Box>
         );
     }
