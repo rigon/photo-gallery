@@ -217,6 +217,23 @@ func (collection *Collection) StorageUsage() (*CollectionStorage, error) {
 	}, nil
 }
 
+// Cache info about all albums in the collection
+func (collection *Collection) CacheAlbums() {
+	albums, err := collection.GetAlbums()
+	if err != nil {
+		log.Println(err)
+	}
+
+	for _, album := range albums {
+		WaitBackgroundWork()
+		_, err := collection.GetAlbumWithPhotos(album.Name, false)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+// Create thumbnails for all photos in the collection
 func (collection *Collection) CreateThumbnails() {
 	albums, err := collection.GetAlbums()
 	if err != nil {
@@ -224,11 +241,12 @@ func (collection *Collection) CreateThumbnails() {
 	}
 
 	for _, album := range albums {
+		WaitBackgroundWork()
 		album, err := collection.GetAlbumWithPhotos(album.Name, false)
-		if err != nil {
-			log.Fatal(err)
+		if err == nil {
+			album.GenerateThumbnails(collection)
+		} else {
+			log.Println(err)
 		}
-
-		album.GenerateThumbnails(collection)
 	}
 }

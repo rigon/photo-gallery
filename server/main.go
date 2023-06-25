@@ -100,7 +100,7 @@ func thumb(c *fiber.Ctx) error {
 	}
 
 	c.Set("Content-Type", "image/jpeg")
-	AddWorkPhoto(collection, album, photo, c.Response().BodyWriter())
+	AddWorkForeground(collection, album, photo, c.Response().BodyWriter())
 	return nil
 }
 
@@ -222,10 +222,15 @@ func main() {
 		defer collection.cache.End()
 	}
 
-	// Cache thumbnails in background
+	// Cache albums and thumbnails in background
 	if config.cacheThumbnails {
 		log.Println("Generating thumbnails in background...")
 		go func() {
+			// First cache all albums
+			for _, c := range config.collections {
+				c.CacheAlbums()
+			}
+			// Then create thumbnails
 			for _, c := range config.collections {
 				c.CreateThumbnails()
 			}
@@ -244,6 +249,12 @@ func main() {
 	app.Use(logger.New(logger.Config{
 		Format: "[${latency}] ${status} - ${method} ${path}\n",
 	}))
+
+	app.Use(func(c *fiber.Ctx) error {
+		defer ResumeBackgroundWork()
+		SuspendBackgroundWork()
+		return c.Next()
+	})
 
 	// API
 	api := app.Group("/api")

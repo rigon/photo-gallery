@@ -140,7 +140,7 @@ func (album *Album) GetPhoto(photoName string) (photo *Photo, err error) {
 }
 
 func (album *Album) GenerateThumbnails(collection *Collection) {
-	AddWorkPhotos(collection, album)
+	AddWorkBackground(collection, album)
 }
 
 // Custom marshaler in order to transform photo map into a slice
