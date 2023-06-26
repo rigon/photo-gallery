@@ -148,7 +148,7 @@ const Gallery: FC = () => {
                     }
                     {photo.type === "video" &&
                         <BoxBar middle center>
-                            <PlayIcon style={{width: "100%", height: "100%"}}/>
+                            <PlayIcon style={{...iconsStyle, width: "100%", height: "100%"}}/>
                         </BoxBar>
                     }
                     {mouseOver &&
