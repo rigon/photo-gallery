@@ -14,7 +14,7 @@ import FavoriteTwoToneIcon from "@mui/icons-material/FavoriteTwoTone";
 import useFavorite from "../../favoriteHook";
 
 const defaultProps = {
-    onChange: () => { },
+    onChange: () => {/* do nothing*/},
 };
 
 export const FavoriteButton: React.FC = () => {

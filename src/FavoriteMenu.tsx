@@ -5,7 +5,7 @@ import Button from '@mui/material/Button';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
+import Menu, { MenuProps } from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 
@@ -22,13 +22,13 @@ const FavoriteMenu: FC = () => {
     const dispatch = useDispatch();
     const favoriteSelected = useSelector(selectFavorite);
     const { data = [], isFetching } = useGetPseudoAlbumsQuery();
-    const [anchorEl, setAnchorEl] = useState(null);
+    const [anchorEl, setAnchorEl] = useState<MenuProps["anchorEl"]>(null);
     
-    const handleClickListItem = (event: any) => {
+    const handleClickListItem = (event: React.SyntheticEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
     };
 
-    const handleMenuItemClick = (event: React.MouseEvent<HTMLElement>, index: number) => {
+    const handleMenuItemClick = (index: number) => {
         dispatch(changeFavorite(data[index]))
         setAnchorEl(null);
     };
@@ -44,7 +44,7 @@ const FavoriteMenu: FC = () => {
             key={`favorite-${item.collection}-${item.album}`}
             value={item.album}
             selected={favoriteSelected?.collection === item.collection && favoriteSelected?.album === item.album}
-            onClick={(event) => handleMenuItemClick(event, index)}>
+            onClick={() => handleMenuItemClick(index)}>
                 <ListItemText primary={item.album} secondary={item.collection} />
         </MenuItem>
     ));

@@ -1,6 +1,4 @@
-import * as React from "react";
-
-import { PluginProps, Slide, SlideLivePhoto } from "yet-another-react-lightbox/types";
+import { PluginProps } from "yet-another-react-lightbox";
 import { LivePhotoSlide } from "./LivePhotoSlide";
 
 export const defaultVideoProps = {
@@ -8,16 +6,12 @@ export const defaultVideoProps = {
     playsInline: true,
 };
 
-function isLivePhotoSlide(slide: Slide): slide is SlideLivePhoto {
-    return slide.type === "live";
-}
-
 /** LivePhoto plugin */
 export function LivePhoto({ augment }: PluginProps) {
     augment(({ render: { slide: renderSlide, ...restRender }, video: originalVideo, ...restProps }) => ({
         render: {
             slide: ({slide, offset, rect}) => {
-                if (isLivePhotoSlide(slide)) {
+                if (slide.type === "live") {
                     return (
                         <LivePhotoSlide
                             //key={`${slide.sources.map((source) => source.src).join(" ")}`}

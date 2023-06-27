@@ -1,6 +1,4 @@
-import * as React from "react";
-
-import { Plugin, PluginProps } from "yet-another-react-lightbox/types";
+import { Plugin, PluginProps } from "yet-another-react-lightbox";
 import { FavoriteButton } from "./FavoriteButton";
 
 /** Favorite plugin */

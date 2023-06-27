@@ -4,7 +4,7 @@ import { useTheme } from '@mui/material/styles';
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 
 import { Lightbox as YARL, Render, RenderThumbnailProps } from "yet-another-react-lightbox";
-import { Slide } from "yet-another-react-lightbox/types";
+import { Slide } from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import {
     cssClass,

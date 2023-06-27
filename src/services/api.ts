@@ -45,7 +45,7 @@ export const api = createApi({
         getPseudoAlbums: builder.query<PseudoAlbumType[], void>({
             query: () => "pseudos",
             providesTags: ['Pseudo'],
-            async onCacheEntryAdded(arg, { dispatch, cacheDataLoaded }) {
+            async onCacheEntryAdded(_arg, { dispatch, cacheDataLoaded }) {
                 dispatch(changeFavorite((await cacheDataLoaded).data[0]));
             },
         }),
@@ -55,7 +55,7 @@ export const api = createApi({
         }),
         getAlbum: builder.query<AlbumType, QueryAlbum>({
             query: ({ collection, album }) => `/collection/${collection}/album/${album}`,
-            providesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
+            providesTags: (_result, _error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
         }),
         addAlbum: builder.mutation<void, QueryAddAlbum>({
             query: ({ collection, ...body }) => ({
@@ -74,7 +74,7 @@ export const api = createApi({
                 method: favorite ? 'PUT' : 'DELETE',
                 body: saveData,
             }),
-            invalidatesTags: (result, error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
+            invalidatesTags: (_result, _error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
             async onQueryStarted({ collection, album, saveData, photoIndex, favorite }, { dispatch, queryFulfilled }) {
                 const query: QueryAlbum = { collection: saveData.collection, album: saveData.album };
                 const patchResult = dispatch(

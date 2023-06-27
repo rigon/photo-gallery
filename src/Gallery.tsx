@@ -121,7 +121,7 @@ const Gallery: FC = () => {
         const mouseLeave = () => {
             setMouseOver(false);
         }
-        const openLightbox = (event: any) => {
+        const openLightbox = () => {
             setLightboxIndex(layout.index);
         }
         const saveFavorite = (event: { stopPropagation: () => void; }) => {

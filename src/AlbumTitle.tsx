@@ -8,10 +8,7 @@ import Typography from '@mui/material/Typography';
 
 import { useGetAlbumsQuery } from "./services/api";
 
-interface AlbumListProps {
-}
-
-const AlbumTitle: FC<AlbumListProps> = () => {
+const AlbumTitle: FC = () => {
     const { collection, album } = useParams();
     const { data = [], isFetching } = useGetAlbumsQuery({ collection }, { skip: collection === undefined });
     

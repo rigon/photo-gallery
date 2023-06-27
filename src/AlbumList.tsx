@@ -1,7 +1,7 @@
 import { FC, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import AutoSizer, { Size } from 'react-virtualized-auto-sizer';
 
 import Box from '@mui/material/Box';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -63,10 +63,10 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     const list = albums.length < 1 ?
         <ListItem><ListItemText><em>Nothing to show</em></ListItemText></ListItem> :
         <AutoSizer>
-            {({ height, width }) => 
+            {({ height, width }: Size) =>
                 <FixedSizeList
-                    height={height as number - 48}
-                    width={width as number}
+                    height={height - 48}
+                    width={width}
                     itemSize={48}
                     itemCount={albums.length}
                     overscanCount={5}>

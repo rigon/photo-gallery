@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import IconButton from '@mui/material/IconButton';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import Menu from '@mui/material/Menu';
+import Menu, { MenuProps } from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -21,13 +21,13 @@ const options = {
 const ThemeMenu: FC = () => {
     const dispatch = useDispatch();
     const themeSelected = useSelector(selectTheme);
-    const [anchorEl, setAnchorEl] = useState(null);
+    const [anchorEl, setAnchorEl] = useState<MenuProps["anchorEl"]>(null);
     
-    const handleClickListItem = (event: any) => {
+    const handleClickListItem = (event: React.SyntheticEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
     };
 
-    const handleMenuItemClick = (event: React.MouseEvent<HTMLElement>, key: typeof themeSelected) => {
+    const handleMenuItemClick = (_event: React.MouseEvent<HTMLElement>, key: typeof themeSelected) => {
         dispatch(changeTheme(key));
         //setAnchorEl(null);
     };

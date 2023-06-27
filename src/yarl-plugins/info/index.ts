@@ -1,6 +1,6 @@
 import { Info } from "./Info";
 
-declare module "yet-another-react-lightbox/types" {
+declare module "yet-another-react-lightbox" {
     interface LightboxProps {
         /** Slideshow plugin settings */
         info?: {

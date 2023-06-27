@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import { FC, useEffect, useState } from "react";
 import { styled, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -51,11 +51,11 @@ const StyledList = styled("dl")({
 const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-    const [ index, setIndex ] = React.useState(selected);
+    const [ index, setIndex ] = useState(selected);
     const { title, src: thumb, info } = photos[index] || {};
     const { data = [], isFetching } = useGetPhotoInfoQuery(info, {skip: info === undefined});
 
-    React.useEffect(() => setIndex(selected), [setIndex, selected]);
+    useEffect(() => setIndex(selected), [setIndex, selected]);
 
     const hasBefore = index > 0;
     const hasNext = index < photos.length - 1;
