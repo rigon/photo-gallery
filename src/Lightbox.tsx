@@ -1,9 +1,9 @@
-import { FC, useMemo } from "react";
+import { FC, useEffect, useMemo, useState } from "react";
 import { useTheme } from '@mui/material/styles';
 
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 
-import { Lightbox as YARL, Render } from "yet-another-react-lightbox";
+import { Lightbox as YARL, Render, RenderThumbnailProps } from "yet-another-react-lightbox";
 import { Slide } from "yet-another-react-lightbox/types";
 import "yet-another-react-lightbox/styles.css";
 import {
@@ -43,7 +43,7 @@ interface LightboxProps {
 const thumbnailImageClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_image`);
 const thumbnailIconClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_${ELEMENT_ICON}`);
 
-const renderThumbnail: Render["thumbnail"] = ({ slide }) => {
+const renderThumbnail: Render["thumbnail"] = ({ slide }: RenderThumbnailProps) => {
     let src, alt;
     if("poster" in slide)
         src = slide.poster;
@@ -63,14 +63,17 @@ const renderThumbnail: Render["thumbnail"] = ({ slide }) => {
 };
 
 const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onInfo}) => {
+    const [index, setIndex] = useState(selected)
     const theme = useTheme();
     const slides = useMemo(() => photosToSlides(photos), [photos]);
+
+    useEffect(() => setIndex(selected), [selected]);
 
     return (
         <YARL
             slides={slides}
-            open={selected >= 0}
-            index={selected}
+            open={index >= 0}
+            index={index}
             animation={{ swipe: 0 }}
             close={onClose}
             // Fix lightbox over snackbar
@@ -79,6 +82,9 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onI
             plugins={[Captions, Fullscreen, Slideshow, Info, Favorite, LivePhoto, Video, Thumbnails, Zoom]}
             render={{
                 thumbnail: renderThumbnail
+            }}
+            on={{
+                view: ({ index: currentIndex }) => setIndex(currentIndex),
             }}
             carousel={{
                 finite: true,
