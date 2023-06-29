@@ -35,15 +35,18 @@ func (album *Album) GetPhotos(collection *Collection) error {
 		for _, pseudo := range pseudos {
 			targetCollection, err := GetCollection(pseudo.Collection)
 			if err != nil {
-				return err
+				log.Println(err)
+				continue
 			}
 			targetAlbum, err := targetCollection.GetAlbumWithPhotos(pseudo.Album, false)
 			if err != nil {
-				return err
+				log.Println(err)
+				continue
 			}
 			targetPhoto, err := targetAlbum.GetPhoto(pseudo.Photo)
 			if err != nil {
-				return err
+				log.Println(err)
+				continue
 			}
 
 			// Sub album name for filtering
