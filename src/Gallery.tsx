@@ -113,7 +113,7 @@ const Gallery: FC = () => {
                 <Divider/>
                 Press to {isFavoriteThis ? "remove from" : "add to"} {selFavorite?.album}
             </> :
-            <>Add as favorite to {selFavorite?.album}</>;
+            <>Add as favorite in album {selFavorite?.album}</>;
 
         const mouseEnter = () => {
             setMouseOver(true);

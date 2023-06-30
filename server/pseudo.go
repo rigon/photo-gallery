@@ -30,6 +30,26 @@ type PseudoAlbumSaveQuery struct {
 	Photos     []string `json:"photos"`
 }
 
+// Create a new copy photo to use in pseudo albums
+func (photo *Photo) CopyForPseudoAlbum(targetCollection *Collection, targetAlbum *Album) *Photo {
+	return &Photo{
+		// Changed fields
+		SubAlbum: targetAlbum.Name,
+		// Copy the remainder
+		Id:       photo.Id,
+		Thumb:    photo.Thumb,
+		Title:    photo.Title,
+		Type:     photo.Type,
+		Info:     photo.Info,
+		Width:    photo.Width,
+		Height:   photo.Height,
+		Date:     photo.Date,
+		Location: photo.Location,
+		Favorite: photo.Favorite,
+		Files:    photo.Files,
+	}
+}
+
 func readPseudoAlbum(collection *Collection, album *Album) ([]PseudoAlbumEntry, error) {
 	if !album.IsPseudo {
 		return nil, errors.New("the destination must be a pseudo album")
@@ -193,6 +213,8 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 
 	// Update in background cached entries that were changed
 	go func() {
+		var photos []*Photo
+
 		for _, entry := range updated {
 			fromCollection, err := GetCollection(entry.Collection)
 			if err != nil {
@@ -205,7 +227,7 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 				continue
 			}
 
-			var photos []*Photo
+			var fromPhotos []*Photo
 			for _, photo := range entry.Photos {
 				fromPhoto, err := fromAlbum.GetPhoto(photo)
 				if err != nil {
@@ -219,14 +241,22 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 					result = fromPhoto.RemoveFavorite(collection, album)
 				}
 				if result {
-					photos = append(photos, fromPhoto)
+					fromPhotos = append(fromPhotos, fromPhoto)
 				}
+				photos = append(photos, fromPhoto.CopyForPseudoAlbum(fromCollection, fromAlbum))
 			}
 			// Update info about cached photos
-			err = fromCollection.cache.AddPhotoInfo(fromAlbum, photos...)
+			err = fromCollection.cache.AddPhotoInfo(fromAlbum, fromPhotos...)
 			if err != nil {
 				log.Println(err)
 			}
+		}
+
+		// Add or remove updated entries from cache of the pseudo album
+		if isAdd {
+			collection.cache.AddPhotoInfo(album, photos...)
+		} else {
+			collection.cache.RemovePhotoInfo(album, photos...)
 		}
 	}()
 

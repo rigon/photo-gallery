@@ -14,6 +14,7 @@ const chunks = {
 function renderChunks(deps: string[]) {
     const ret = {};
     
+    // Get dependencies as set in chunks
     for (const [key, regs] of Object.entries(chunks))
         ret[key] = regs.flatMap(reg => deps.filter(dep => new RegExp("^"+reg+"$").test(dep)));
     
@@ -22,7 +23,6 @@ function renderChunks(deps: string[]) {
     const remaining = deps.filter(dep => !regs.find(reg => reg.test(dep)));
     remaining.forEach(dep => ret[dep] = [dep]);
 
-    console.log(ret);
     return ret;
 }
 

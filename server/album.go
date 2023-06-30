@@ -49,38 +49,15 @@ func (album *Album) GetPhotos(collection *Collection) error {
 				continue
 			}
 
-			// Sub album name for filtering
-			subAlbum := targetAlbum.Name
-			if collection.Name != targetCollection.Name {
-				subAlbum = targetCollection.Name + ": " + targetAlbum.Name
-			}
-
 			// Update photo with favorite album
 			result := targetPhoto.AddFavorite(collection, album)
 			if result {
-				targetCollection.cache.AddPhotoInfo(targetAlbum, targetPhoto)
+				go targetCollection.cache.AddPhotoInfo(targetAlbum, targetPhoto)
 			}
 
-			// Create a new photo (making a copy of targetPhoto)
-			photo := &Photo{
-				// Changed fields
-				SubAlbum: subAlbum,
-				// Copy the remainder
-				Id:       targetPhoto.Id,
-				Thumb:    targetPhoto.Thumb,
-				Title:    targetPhoto.Title,
-				Type:     targetPhoto.Type,
-				Info:     targetPhoto.Info,
-				Width:    targetPhoto.Width,
-				Height:   targetPhoto.Height,
-				Date:     targetPhoto.Date,
-				Location: targetPhoto.Location,
-				Favorite: targetPhoto.Favorite,
-				Files:    targetPhoto.Files,
-			}
-
+			photo := targetPhoto.CopyForPseudoAlbum(targetCollection, targetAlbum)
 			album.photosMap[targetPhoto.Id] = photo
-			subAlbums[subAlbum] = true
+			subAlbums[photo.SubAlbum] = true
 		}
 	} else {
 		// Read album (i.e. folder) contents
