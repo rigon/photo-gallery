@@ -13,7 +13,7 @@ import (
 const DB_NAME_SUFFIX = "-cache.db"
 
 var dbInfo = DbInfo{
-	Version: 6,
+	Version: 7,
 }
 
 type DbInfo struct {
@@ -153,9 +153,8 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 	return c.AddPhotoInfo(album, update...)
 }
 
-// Add info for photos
+// Add or update info for photos
 func (c Cache) AddPhotoInfo(album *Album, photos ...*Photo) error {
-	// Update entries
 	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
 		for i, photo := range photos {
 			if i%100 == 0 || i == len(photos)-1 {
@@ -163,6 +162,23 @@ func (c Cache) AddPhotoInfo(album *Album, photos ...*Photo) error {
 			}
 			key := album.Name + ":" + photo.Id
 			err := c.store.TxUpsert(tx, key, photo)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		return nil
+	})
+}
+
+// Remove photo info
+func (c Cache) RemovePhotoInfo(album *Album, photos ...*Photo) error {
+	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
+		for i, photo := range photos {
+			if i%100 == 0 || i == len(photos)-1 {
+				log.Printf("Removing cache info %s (%d/%d)", album.Name, i+1, len(photos))
+			}
+			key := album.Name + ":" + photo.Id
+			err := c.store.TxDelete(tx, key, photo)
 			if err != nil {
 				log.Println(err)
 			}

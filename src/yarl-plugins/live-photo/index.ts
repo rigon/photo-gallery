@@ -1,7 +1,7 @@
-import { GenericSlide, SlideImage, SlideVideo } from "yet-another-react-lightbox/types";
+import { SlideImage } from "yet-another-react-lightbox";
 import { LivePhoto } from "./LivePhoto";
 
-declare module "yet-another-react-lightbox/types" {
+declare module "yet-another-react-lightbox" {
     // noinspection JSUnusedGlobalSymbols
     interface SlideTypes {
         /** live photo slide type */

@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { useTheme, styled } from '@mui/material/styles';
 
-import leaflet, { LatLngExpression } from "leaflet";
+import { LatLngExpression, icon as LeafletIcon } from "leaflet";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import markerIconUrl from "leaflet/dist/images/marker-icon.png?url";
@@ -20,7 +20,7 @@ const DarkMapContainer = styled(MapContainer)({
     }
 });
 
-const makerIcon = leaflet.icon({
+const makerIcon = LeafletIcon({
     iconUrl: markerIconUrl,
     iconRetinaUrl: markerIconRetinaUrl,
     shadowUrl: markerShadowUrl,

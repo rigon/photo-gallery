@@ -17,8 +17,7 @@ export interface PseudoAlbumType {
 }
 
 export interface AlbumType {
-    /** Name of the album */
-    name: string;
+    name: string;   // Name of the album
     photos: PhotoType[];
     subalbums: string[];
     pseudo: boolean;
@@ -30,7 +29,7 @@ export interface PhotoType {
     title: string;
     type: "image" | "video" | "live";
     subalbum: string;
-    favorite: boolean;
+    favorite: string[];
     width: number;
     height: number;
     date: string;

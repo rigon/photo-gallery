@@ -21,12 +21,38 @@ type Photo struct {
 	Type     string      `json:"type"`
 	Info     string      `json:"info"`
 	SubAlbum string      `json:"subalbum"`
-	Favorite bool        `json:"favorite"`
+	Favorite []string    `json:"favorite"`
 	Width    int         `json:"width"`
 	Height   int         `json:"height"`
 	Date     time.Time   `json:"date" boltholdIndex:"date"`
 	Location GPSLocation `json:"location" boltholdIndex:"location"`
 	Files    []*File     `json:"files"`
+}
+
+// Add pseudo album to the favorites list
+func (photo *Photo) AddFavorite(srcCollection *Collection, srcAlbum *Album) bool {
+	name := srcCollection.Name + ":" + srcAlbum.Name
+	// Find out if it is already in favorite list
+	for _, favorite := range photo.Favorite {
+		if name == favorite {
+			return false
+		}
+	}
+	// Is not, let's add
+	photo.Favorite = append(photo.Favorite, name)
+	return true
+}
+
+// Remove pseudo album from the favorite list
+func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) bool {
+	name := srcCollection.Name + ":" + srcAlbum.Name
+	for i, favorite := range photo.Favorite {
+		if name == favorite {
+			photo.Favorite = append(photo.Favorite[:i], photo.Favorite[i+1:]...)
+			return true
+		}
+	}
+	return false
 }
 
 // Returns the path location for the thumbnail

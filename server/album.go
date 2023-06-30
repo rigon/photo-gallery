@@ -27,7 +27,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 	album.photosMap = make(map[string]*Photo)
 
 	if album.IsPseudo {
-		pseudos, err := readPseudoAlbum(*album, collection)
+		pseudos, err := readPseudoAlbum(collection, album)
 		if err != nil {
 			return err
 		}
@@ -35,43 +35,29 @@ func (album *Album) GetPhotos(collection *Collection) error {
 		for _, pseudo := range pseudos {
 			targetCollection, err := GetCollection(pseudo.Collection)
 			if err != nil {
-				return err
+				log.Println(err)
+				continue
 			}
 			targetAlbum, err := targetCollection.GetAlbumWithPhotos(pseudo.Album, false)
 			if err != nil {
-				return err
+				log.Println(err)
+				continue
 			}
 			targetPhoto, err := targetAlbum.GetPhoto(pseudo.Photo)
 			if err != nil {
-				return err
+				log.Println(err)
+				continue
 			}
 
-			// Sub album name for filtering
-			subAlbum := targetAlbum.Name
-			if collection.Name != targetCollection.Name {
-				subAlbum = targetCollection.Name + ": " + targetAlbum.Name
+			// Update photo with favorite album
+			result := targetPhoto.AddFavorite(collection, album)
+			if result {
+				go targetCollection.cache.AddPhotoInfo(targetAlbum, targetPhoto)
 			}
 
-			// Create a new photo (making a copy of targetPhoto)
-			photo := &Photo{
-				// Changed fields
-				SubAlbum: subAlbum,
-				Favorite: false,
-				// Copy the remainder
-				Id:       targetPhoto.Id,
-				Thumb:    targetPhoto.Thumb,
-				Title:    targetPhoto.Title,
-				Type:     targetPhoto.Type,
-				Info:     targetPhoto.Info,
-				Width:    targetPhoto.Width,
-				Height:   targetPhoto.Height,
-				Date:     targetPhoto.Date,
-				Location: targetPhoto.Location,
-				Files:    targetPhoto.Files,
-			}
-
+			photo := targetPhoto.CopyForPseudoAlbum(targetCollection, targetAlbum)
 			album.photosMap[targetPhoto.Id] = photo
-			subAlbums[subAlbum] = true
+			subAlbums[photo.SubAlbum] = true
 		}
 	} else {
 		// Read album (i.e. folder) contents
@@ -96,7 +82,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 					photo.Info = path.Join("/collection", collection.Name, "album", album.Name, "photo", fileId, "info")
 					photo.Width = 200  // Default width
 					photo.Height = 200 // Default height
-					photo.Favorite = false
+					photo.Favorite = []string{}
 					album.photosMap[fileId] = photo
 					// Map of sub-albums
 					if photo.SubAlbum != "" {
@@ -134,7 +120,7 @@ func (album *Album) GetPhoto(photoName string) (photo *Photo, err error) {
 }
 
 func (album *Album) GenerateThumbnails(collection *Collection) {
-	AddWorkPhotos(collection, album)
+	AddWorkBackground(collection, album)
 }
 
 // Custom marshaler in order to transform photo map into a slice

@@ -1,20 +1,20 @@
 import * as React from "react";
 
 import {
-    ACTIVE_SLIDE_COMPLETE,
-    cleanup,
     IconButton,
     label,
-    useEvents,
     useLightboxProps,
     useLightboxState,
 } from "yet-another-react-lightbox/core";
 
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import FavoriteTwoToneIcon from "@mui/icons-material/FavoriteTwoTone";
+
+import useFavorite from "../../favoriteHook";
 
 const defaultProps = {
-    onChange: ()=>{},
+    onChange: () => {/* do nothing*/},
 };
 
 export const FavoriteButton: React.FC = () => {
@@ -22,36 +22,24 @@ export const FavoriteButton: React.FC = () => {
         currentIndex,
         slides,
     } = useLightboxState();
-    const { subscribe } = useEvents();
 
     const {
         favorite: props,
         labels,
     } = useLightboxProps();
-    
-    const {onChange} = { ...defaultProps, ...props };
-    const [isFavorite, setFavorite] = React.useState(slides[currentIndex].favorite);
-    const [updateFavorite, setUpdateFavorite] = React.useState(false);
-    
-    if(updateFavorite) {
-        setFavorite(slides[currentIndex].favorite);
-        setUpdateFavorite(false);
-    };
 
-    React.useEffect(
-        () => cleanup(subscribe(ACTIVE_SLIDE_COMPLETE, () => setUpdateFavorite(true))),
-        [subscribe]);
+    const { onChange } = { ...defaultProps, ...props };
+    const { isFavorite, isFavoriteThis } = useFavorite().list(slides[currentIndex].favorite);
 
     const toggleFavorite = React.useCallback(() => {
-        setFavorite(() => !isFavorite);
-        onChange(currentIndex, !isFavorite, slides[currentIndex]);
-    }, [onChange, currentIndex, slides, isFavorite]);
+        onChange(currentIndex, !isFavoriteThis, slides[currentIndex]);
+    }, [onChange, currentIndex, slides, isFavoriteThis]);
 
 
     return (
         <IconButton
-            label={isFavorite ? label(labels, "Save to favorites") : label(labels, "Remove from favorites")}
-            icon={isFavorite ? FavoriteIcon : FavoriteBorderIcon}
+            label={isFavoriteThis ? label(labels, "Save to favorites") : label(labels, "Remove from favorites")}
+            icon={isFavorite ? isFavoriteThis ? FavoriteIcon : FavoriteTwoToneIcon : FavoriteBorderIcon}
             onClick={toggleFavorite}
         />
     );

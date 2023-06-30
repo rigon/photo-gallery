@@ -11,7 +11,7 @@ import {
     useEventCallback,
     useLightboxProps,
 } from "yet-another-react-lightbox/core";
-import { SlideVideo, LightboxProps } from "yet-another-react-lightbox/types";
+import { SlideVideo, LightboxProps } from "yet-another-react-lightbox";
 import { defaultVideoProps } from "./LivePhoto";
 import { PublishState } from "./LivePhotoSlide";
 
@@ -37,13 +37,13 @@ export function VideoSlide({ slide, offset, publish }: VideoSlideProps) {
         if (offset === 0 && videoRef.current && (slide.autoPlay || video.autoPlay)) {
             publish(ACTIVE_SLIDE_LOADING);
 
-            videoRef.current.play().catch(() => {});
+            videoRef.current.play().catch(() => {/* do nothing*/});
         }
     }, [offset, video.autoPlay, slide.autoPlay, publish]);
 
     const handleVideoRef = useEventCallback((node: HTMLVideoElement) => {
         if (offset === 0 && (video.autoPlay || slide.autoPlay) && node.paused) {
-            node.play().catch(() => {});
+            node.play().catch(() => {/* do nothing*/});
         }
     });
 
@@ -104,7 +104,6 @@ export function VideoSlide({ slide, offset, publish }: VideoSlideProps) {
                     className={clsx(cssClass("video_container"), cssClass(CLASS_FLEX_CENTER))}
                 >
                     {containerRect && (
-                        // eslint-disable-next-line jsx-a11y/media-has-caption
                         <video
                             ref={setVideoRef}
                             poster={poster}
@@ -127,7 +126,6 @@ export function VideoSlide({ slide, offset, publish }: VideoSlideProps) {
                             }}
                         >
                             {sources.map(({ src, type }, index) => (
-                                // eslint-disable-next-line react/no-array-index-key
                                 <source key={index} src={src} type={type} />
                             ))}
                         </video>

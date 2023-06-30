@@ -1,4 +1,4 @@
-import { Slide, SlideImage, SlideVideo, SlideLivePhoto } from "yet-another-react-lightbox/types";
+import { Slide, SlideImage, SlideVideo, SlideLivePhoto } from "yet-another-react-lightbox";
 import { FileType, PhotoType } from "./types";
 
 const breakpoints = [4320, 2160, 1080, 720, 640];
@@ -77,7 +77,6 @@ export function photoToSlideLivePhoto(photo: PhotoType): SlideLivePhoto {
 }
 
 export function photosToSlides(photos: PhotoType[]): Slide[] {
-    // eslint-disable-next-line array-callback-return
     return photos.map((photo) => {
         switch(photo.type) {
             case "image":

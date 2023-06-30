@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"golang.org/x/net/webdav"
 )
@@ -100,7 +100,7 @@ func thumb(c *fiber.Ctx) error {
 	}
 
 	c.Set("Content-Type", "image/jpeg")
-	AddWorkPhoto(collection, album, photo, c.Response().BodyWriter())
+	AddWorkForeground(collection, album, photo, c.Response().BodyWriter())
 	return nil
 }
 
@@ -175,37 +175,38 @@ func file(c *fiber.Ctx) error {
 	return c.SendFile(file.Path)
 }
 
-func saveToPseudo(c *fiber.Ctx) error {
-	var saveTo PseudoAlbum
+func saveToPseudo(c *fiber.Ctx) (err error) {
+	var query PseudoAlbumSaveQuery
 
-	fromCollection := c.Params("collection")
-	fromAlbum := c.Params("album")
-	fromPhoto := c.Params("photo")
 	// Decode body
-	if err := c.BodyParser(&saveTo); err != nil {
-		return err
+	if err = c.BodyParser(&query); err != nil {
+		return
 	}
 
-	collection, err := GetCollection(saveTo.Collection)
+	collection, err := GetCollection(c.Params("collection"))
+	if err != nil {
+		return
+	}
+
+	album, err := collection.GetAlbum(c.Params("album"))
 	if err != nil {
 		return err
 	}
 
-	album, err := collection.GetAlbum(saveTo.Album)
-	if err != nil {
-		return err
-	}
 	if !album.IsPseudo {
 		return errors.New("album must be of type pseudo")
 	}
 
-	// Add photo to pseudo album
-	if c.Method() == "PUT" {
-		album.SavePhotoToPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+	switch c.Method() {
+	case "PUT":
+		// Add photo to pseudo album
+		err = album.EditPseudoAlbum(collection, query, true)
+	case "DELETE":
+		// Remove photo from pseudo album
+		err = album.EditPseudoAlbum(collection, query, false)
 	}
-	// Remove photo from pseudo album
-	if c.Method() == "DELETE" {
-		album.RemovePhotoFromPseudoAlbum(fromCollection, fromAlbum, fromPhoto, collection)
+	if err != nil {
+		return
 	}
 
 	return c.JSON(map[string]bool{"ok": true})
@@ -221,10 +222,15 @@ func main() {
 		defer collection.cache.End()
 	}
 
-	// Cache thumbnails in background
+	// Cache albums and thumbnails in background
 	if config.cacheThumbnails {
 		log.Println("Generating thumbnails in background...")
 		go func() {
+			// First cache all albums
+			for _, c := range config.collections {
+				c.CacheAlbums()
+			}
+			// Then create thumbnails
 			for _, c := range config.collections {
 				c.CreateThumbnails()
 			}
@@ -244,6 +250,12 @@ func main() {
 		Format: "[${latency}] ${status} - ${method} ${path}\n",
 	}))
 
+	app.Use(func(c *fiber.Ctx) error {
+		defer ResumeBackgroundWork()
+		SuspendBackgroundWork()
+		return c.Next()
+	})
+
 	// API
 	api := app.Group("/api")
 	api.Get("/pseudos", pseudos)
@@ -254,8 +266,8 @@ func main() {
 	api.Get("/collection/:collection/album/:album/photo/:photo/thumb", thumb)
 	api.Get("/collection/:collection/album/:album/photo/:photo/info", info)
 	api.Get("/collection/:collection/album/:album/photo/:photo/file/:file", file)
-	api.Put("/collection/:collection/album/:album/photo/:photo/saveToPseudo", saveToPseudo)
-	api.Delete("/collection/:collection/album/:album/photo/:photo/saveToPseudo", saveToPseudo)
+	api.Put("/collection/:collection/album/:album/pseudo", saveToPseudo)
+	api.Delete("/collection/:collection/album/:album/pseudo", saveToPseudo)
 	api.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(map[string]bool{"ok": true})
 	})

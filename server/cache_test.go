@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/timshannon/bolthold"
@@ -25,10 +24,13 @@ func TestPrintPhotoInfoEntries(t *testing.T) {
 		fmt.Printf("- Title: %s\n", photo.Title)
 		fmt.Printf("- Thumb: %s\n", photo.Thumb)
 		fmt.Printf("- Type: %s\n", photo.Type)
-		fmt.Printf("- Favorite: %s\n", strconv.FormatBool(photo.Favorite))
 		fmt.Printf("- Dimension: %dx%d\n", photo.Width, photo.Height)
 		fmt.Printf("- Date: %s\n", photo.Date)
 		fmt.Printf("- Location: %s\n", photo.Date.Location())
+		fmt.Println("- Favorite:")
+		for i, fav := range photo.Favorite {
+			fmt.Printf(" %4d. %s\n", i, fav)
+		}
 		fmt.Println("- Files:")
 		for i, file := range photo.Files {
 			fmt.Printf(" %4d. %s - %s: %s\n", i, file.Type, file.MIME, file.Path)

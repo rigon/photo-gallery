@@ -1,5 +1,5 @@
-import React, { FC } from "react";
-import Box from "@mui/material/Box";
+import { FC, CSSProperties } from "react";
+import Box, { BoxProps } from "@mui/material/Box";
 
 interface BoxBarProps {
     /** Align vertically to the top */
@@ -16,11 +16,14 @@ interface BoxBarProps {
     right?: boolean;
     
     children?: React.ReactNode;
-    sx?: any;
+    sx?: BoxProps["sx"];
 }
 
 const BoxBar: FC<BoxBarProps> = (props) => {
-    let inset, transform, textAlign;
+    let inset: CSSProperties["inset"];
+    let transform: CSSProperties["transform"];
+    let textAlign: CSSProperties["textAlign"];
+    
     // Vertical align
     if(props.top === true)
         inset = "0 0 auto 0";

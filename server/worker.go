@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime"
 	"sync"
+	"time"
 )
 
 type Work struct {
@@ -19,6 +20,7 @@ var (
 	NT = runtime.NumCPU()
 	ch = make(chan *Work, NT)
 	wg sync.WaitGroup
+	fg sync.WaitGroup
 )
 
 func init() {
@@ -32,7 +34,21 @@ func init() {
 	}
 }
 
-func AddWorkPhoto(collection *Collection, album *Album, photo *Photo, writer io.Writer) {
+func SuspendBackgroundWork() {
+	fg.Add(1)
+}
+func WaitBackgroundWork() {
+	fg.Wait()
+}
+func ResumeBackgroundWork() {
+	go func() {
+		// Wait 10 secs before resuming background work
+		time.Sleep(time.Second * 10)
+		fg.Done()
+	}()
+}
+
+func AddWorkForeground(collection *Collection, album *Album, photo *Photo, writer io.Writer) {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 
@@ -46,7 +62,7 @@ func AddWorkPhoto(collection *Collection, album *Album, photo *Photo, writer io.
 	wg.Wait()
 }
 
-func AddWorkPhotos(collection *Collection, album *Album) {
+func AddWorkBackground(collection *Collection, album *Album) {
 	size := len(album.photosMap)
 	count := 0
 	for _, photo := range album.photosMap {
@@ -60,5 +76,7 @@ func AddWorkPhotos(collection *Collection, album *Album) {
 		w.writer = nil
 		w.wg = &wg
 		ch <- w
+		WaitBackgroundWork()
 	}
+	wg.Wait()
 }

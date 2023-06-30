@@ -1,5 +1,5 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 // local imports
 import App from './App';
@@ -15,5 +15,5 @@ root.render(
         <Provider store={store}>
             <App />
         </Provider>
-  </React.StrictMode >
+    </React.StrictMode >
 );

@@ -67,7 +67,7 @@ const Layout: FC = () => {
       <Box sx={{ flex: 'none' }}>
         {/* <Divider /> */}
         <Storage />
-        <Paper elevation={24}>
+        <Paper elevation={24} square>
           <Typography variant="body2" style={{padding: "10px", textAlign: 'justify'}} >
             <Link href="https://github.com/rigon/photo-gallery#contribute">
                 If you find this project useful, please consider supporting it.
