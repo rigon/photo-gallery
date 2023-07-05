@@ -7,8 +7,8 @@ export interface QueryAlbums {
 }
 
 export interface QueryAlbum {
-    collection?: string;
-    album?: string;
+    collection: string;
+    album: string;
 }
 
 export interface QueryAddAlbum {
@@ -35,6 +35,8 @@ export interface QuerySaveFavorite {
     }
 }
 
+const albumId = (arg: { collection: string, album: string }) => arg.collection + ":" + arg.album;
+
 export const api = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
     tagTypes: ['Album', 'Albums', 'Pseudo'],
@@ -55,11 +57,11 @@ export const api = createApi({
         }),
         getAlbum: builder.query<AlbumType, QueryAlbum>({
             query: ({ collection, album }) => `/collection/${collection}/album/${album}`,
-            providesTags: (_result, _error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
+            providesTags: (_result, _error, arg) => [{ type: 'Album', id: albumId(arg) }],
         }),
         addAlbum: builder.mutation<void, QueryAddAlbum>({
             query: ({ collection, ...body }) => ({
-                url: `/collection/${collection}/album`,
+                url: `/collection/${collection}/albums`,
                 method: 'PUT',
                 body,
             }),
@@ -74,7 +76,7 @@ export const api = createApi({
                 method: favorite ? 'PUT' : 'DELETE',
                 body: saveData,
             }),
-            invalidatesTags: (_result, _error, arg) => [{ type: 'Album', id: `${arg.collection}:${arg.album}` }],
+            invalidatesTags: (_result, _error, arg) => [{ type: 'Album', id: albumId(arg) }],
             async onQueryStarted({ collection, album, saveData, photoIndex, favorite }, { dispatch, queryFulfilled }) {
                 const query: QueryAlbum = { collection: saveData.collection, album: saveData.album };
                 const patchResult = dispatch(

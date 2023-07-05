@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"image"
 	"io"
@@ -196,7 +195,7 @@ func (file *File) RequiresConvertion() bool {
 	return false
 }
 
-func (file *File) Convert(w *bufio.Writer) error {
+func (file *File) Convert(w io.Writer) error {
 	switch file.Type {
 	case "image":
 		// Check for EXIF

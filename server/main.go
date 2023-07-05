@@ -170,8 +170,8 @@ func file(c *fiber.Ctx) error {
 		return nil
 	}
 
-	c.Set("Content-Type", file.Type)
-	c.Set("Content-Disposition", "attachment; filename=\""+file.Name()+"\"")
+	c.Set("Content-Type", file.MIME)
+	c.Set("Content-Disposition", "inline; filename=\""+file.Name()+"\"")
 	return c.SendFile(file.Path)
 }
 
@@ -261,7 +261,7 @@ func main() {
 	api.Get("/pseudos", pseudos)
 	api.Get("/collections", collections)
 	api.Get("/collection/:collection/albums", albums)
-	api.Put("/collection/:collection/album", addAlbum)
+	api.Put("/collection/:collection/albums", addAlbum)
 	api.Get("/collection/:collection/album/:album", album)
 	api.Get("/collection/:collection/album/:album/photo/:photo/thumb", thumb)
 	api.Get("/collection/:collection/album/:album/photo/:photo/info", info)

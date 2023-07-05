@@ -34,7 +34,7 @@ const iconsStyle: CSSProperties = {
 };
 
 const Gallery: FC = () => {
-    const { collection, album } = useParams();
+    const { collection = "", album = ""} = useParams();
     const { data, isFetching } = useGetAlbumQuery({collection, album});
     const [ lightboxIndex, setLightboxIndex ] = useState<number>(-1);
     const [ infoPhotoIndex, setInfoPhotoIndex ] = useState<number>(-1);
@@ -60,7 +60,7 @@ const Gallery: FC = () => {
             errorNotification("No favorite album is selected. Select first from the top toolbar.");
             return;
         }
-        if(collection === undefined || album === undefined || index >= photos.length) {
+        if(collection === "" || album === "" || index < 0 || index >= photos.length) {
             errorNotification("Select a collection and an album from the left menu.");
             return;
         }
