@@ -86,10 +86,11 @@ export const api = createApi({
                             if(!draft.photos[i].favorite)
                                 draft.photos[i].favorite = [];
                             
-                            const name = `${collection}:${album}`;
-                            const index = draft.photos[i].favorite.indexOf(name);
+                            const target: PseudoAlbumType = {collection, album};
+                            const index = draft.photos[i].favorite.findIndex(
+                                entry => entry.collection === target.collection && entry.album === target.album);
                             if(favorite && index < 0)   // Add if not in the favorites list
-                                draft.photos[i].favorite.push(name);
+                                draft.photos[i].favorite.push(target);
                             if(!favorite && index >= 0) // Remove if in the favorites list
                                 draft.photos[i].favorite.splice(index, 1);
                         });

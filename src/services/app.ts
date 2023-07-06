@@ -7,13 +7,17 @@ import { PseudoAlbumType } from '../types';
 interface AppState {
     theme: "system" | "light" | "dark";
     zoom: number;
-    favorite?: PseudoAlbumType;
+    favorite: PseudoAlbumType;
 }
 
 // Define the initial state using that type
 const initialState: AppState = {
     theme: "system",
     zoom: 150,
+    favorite: {
+        collection: '',
+        album: ''
+    }
 }
 
 export const appSettingsSlice = createSlice({

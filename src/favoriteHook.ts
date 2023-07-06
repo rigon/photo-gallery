@@ -1,15 +1,15 @@
 import { useSelector } from 'react-redux';
 import { selectFavorite } from "./services/app";
-import { PhotoType } from './types';
+import { PhotoType, PseudoAlbumType } from './types';
 
 const useFavorite = () => {
     const favorite = useSelector(selectFavorite);
-    const favoriteId = favorite ? favorite.collection + ":" + favorite.album : "";
 
-    const favoriteStatus = (favoriteList?: string[]) => {
-        const list = favoriteList && Array.isArray(favoriteList) ? favoriteList : [];
+    const favoriteStatus = (favorites: PseudoAlbumType[]) => {
+        const list = favorites && Array.isArray(favorites) ? favorites : [];
         const isFavorite = list.length > 0;
-        const isFavoriteThis = isFavorite && list.indexOf(favoriteId) >= 0;
+        const isFavoriteThis = isFavorite && list.find(
+            entry => entry.collection === favorite.collection && entry.album === favorite.album);
         const isFavoriteAnother = isFavorite && !isFavoriteThis;
 
         return {
@@ -21,7 +21,7 @@ const useFavorite = () => {
 
     return {
         get: () => favorite,
-        list: (favoriteList?: string[]) => favoriteStatus(favoriteList),
+        list: (favoriteList: PseudoAlbumType[]) => favoriteStatus(favoriteList),
         photo: (photo: PhotoType) => favoriteStatus(photo.favorite),
     };
 }

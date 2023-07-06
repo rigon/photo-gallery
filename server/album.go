@@ -82,7 +82,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 					photo.Info = path.Join("/collection", collection.Name, "album", album.Name, "photo", fileId, "info")
 					photo.Width = 200  // Default width
 					photo.Height = 200 // Default height
-					photo.Favorite = []string{}
+					photo.Favorite = []PseudoAlbum{}
 					album.photosMap[fileId] = photo
 					// Map of sub-albums
 					if photo.SubAlbum != "" {

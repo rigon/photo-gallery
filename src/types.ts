@@ -29,7 +29,7 @@ export interface PhotoType {
     title: string;
     type: "image" | "video" | "live";
     subalbum: string;
-    favorite: string[];
+    favorite: PseudoAlbumType[];
     width: number;
     height: number;
     date: string;

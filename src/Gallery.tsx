@@ -2,6 +2,7 @@ import { FC, useState, useMemo, useEffect, CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from 'react-redux';
 
+import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
@@ -32,6 +33,14 @@ const iconsStyle: CSSProperties = {
     WebkitFilter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
     filter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
 };
+const Badge = styled("span")({
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    borderRadius: "100px",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    padding: "0px 4px",
+    marginLeft: "3px",
+    lineHeight: 0,
+});
 
 const Gallery: FC = () => {
     const { collection = "", album = ""} = useParams();
@@ -108,8 +117,11 @@ const Gallery: FC = () => {
 
         const favoriteTooltip = isFavorite ?
             <>
-                <i><b>This photo is favorite in:</b><br/>
-                {photo.favorite?.map(s => <>&bull; {s}<br/></>)}</i>
+                <b>This photo is favorite in:</b><br />
+                {photo.favorite?.map(f => <>&bull; {f.album}
+                    {collection !== f.collection && <Badge>{f.collection}</Badge>}
+                    <br /></>
+                )}
                 <Divider/>
                 Press to {isFavoriteThis ? "remove from" : "add to"} {selFavorite?.album}
             </> :
