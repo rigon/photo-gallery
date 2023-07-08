@@ -10,8 +10,6 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-const DB_NAME_SUFFIX = "-cache.db"
-
 var dbInfo = DbInfo{
 	Version: 8,
 }
@@ -30,7 +28,19 @@ type Cache struct {
 func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	// Disk cache
 	var err error
-	filename := filepath.Join(collection.ThumbsPath, collection.Name+DB_NAME_SUFFIX)
+
+	// Find filename for cache
+	// if collection.DbPath is a filename it will be located in thumbnails directory
+	// Defaults something like /path/to/thumbs/collectionName-cache.db
+	filename := filepath.Join(collection.ThumbsPath, collection.Name+"-cache.db") // Default
+	if collection.DbPath != "" {
+		if filepath.Dir(collection.DbPath) == "." { // It is a filename, it will be located in thumbnails directory
+			filename = filepath.Join(collection.ThumbsPath, collection.DbPath)
+		} else {
+			filename = collection.DbPath
+		}
+	}
+
 	c.store, err = bolthold.Open(filename, 0600, &bolthold.Options{Options: &bolt.Options{Timeout: 1}})
 	if err != nil {
 		log.Fatal(err)

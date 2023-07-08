@@ -48,6 +48,8 @@ func parseCollectionOptions(collectionOption string, defaultIndex int) (collecti
 			collection.PhotosPath = kv[1]
 		case "thumbs":
 			collection.ThumbsPath = kv[1]
+		case "db":
+			collection.DbPath = kv[1]
 		case "rename":
 			collection.RenameOnReplace, err = strconv.ParseBool(kv[1])
 			if err != nil {
@@ -67,6 +69,12 @@ func parseCollectionOptions(collectionOption string, defaultIndex int) (collecti
 			return collection, errors.New(kv[0] + " option is not valid")
 		}
 	}
+
+	// Check required options
+	if collection.Name == "" || collection.PhotosPath == "" || collection.ThumbsPath == "" {
+		return nil, errors.New("name, path, thumbs options are required")
+	}
+
 	return
 }
 
@@ -78,6 +86,7 @@ index          Position in the collection list
 name           Name of the collection
 path           Path to load the albums from
 thumbs         Path to store the thumbnails
+db             Path to cache DB, if a filename is provided it will be located in thumbnails directory
 hide=false     Hide the collection from the list (does not affect webdav)
 rename=true    Rename files instead of overwriting them
 readonly=false`)

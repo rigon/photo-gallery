@@ -104,6 +104,7 @@ Server help:
                                      name           Name of the collection
                                      path           Path to load the albums from
                                      thumbs         Path to store the thumbnails
+                                     db             Path to cache DB, if a filename is provided it will be located in thumbnails directory
                                      hide=false     Hide the collection from the list (does not affect webdav)
                                      rename=true    Rename files instead of overwriting them
                                      readonly=false

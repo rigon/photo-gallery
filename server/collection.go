@@ -20,6 +20,7 @@ type Collection struct {
 	Name            string
 	PhotosPath      string
 	ThumbsPath      string
+	DbPath          string
 	Hide            bool
 	ReadOnly        bool
 	RenameOnReplace bool
