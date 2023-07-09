@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"log"
+	"net/http"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"golang.org/x/net/webdav"
 )
 
@@ -140,6 +143,25 @@ func (cs webDavCollections) Stat(ctx context.Context, name string) (os.FileInfo,
 	return dir.Stat(ctx, name)
 }
 
-func CreateWebDavFS(collections map[string]*Collection) webdav.FileSystem {
-	return webDavCollections(collections)
+func WebDAVWithConfig(prefix string, collections map[string]*Collection) echo.MiddlewareFunc {
+	wd := webdav.Handler{
+		Prefix:     prefix,
+		FileSystem: webDavCollections(collections),
+		LockSystem: webdav.NewMemLS(),
+		Logger: func(r *http.Request, err error) {
+			if err != nil {
+				log.Printf("WebDAV %s: %s, ERROR: %s\n", r.Method, r.URL, err)
+			}
+		},
+	}
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if strings.HasPrefix(c.Request().URL.Path, wd.Prefix) {
+				wd.ServeHTTP(c.Response(), c.Request())
+				return nil
+			}
+			return next(c)
+		}
+	}
 }
