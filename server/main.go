@@ -1,17 +1,15 @@
 package main
 
 import (
-	"bufio"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/adaptor"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"golang.org/x/net/webdav"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var config CmdArgs
@@ -24,180 +22,189 @@ func GetCollection(collection string) (*Collection, error) {
 	return val, nil
 }
 
-func collections(c *fiber.Ctx) error {
-	return c.JSON(GetCollections(config.collections))
+func collections(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetCollections(config.collections))
 }
 
-func pseudos(c *fiber.Ctx) error {
-	return c.JSON(GetPseudoAlbums(config.collections))
+func pseudos(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetPseudoAlbums(config.collections))
 }
 
-func albums(c *fiber.Ctx) error {
-	collection, err := GetCollection(c.Params("collection"))
+func albums(c echo.Context) error {
+	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	// Get all albums from the disk
 	albums, err := collection.GetAlbums()
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(albums)
+	return c.JSON(http.StatusOK, albums)
 }
 
-func album(c *fiber.Ctx) error {
-	collection, err := GetCollection(c.Params("collection"))
+func album(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+
+	collection, err := GetCollection(collectionName)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
-	albumName := c.Params("album")
 
 	// Fetch album from disk
 	album, err := collection.GetAlbumWithPhotos(albumName, true)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(album)
+	return c.JSON(http.StatusOK, album)
 }
 
-func addAlbum(c *fiber.Ctx) error {
+func addAlbum(c echo.Context) error {
 	var albumQuery AddAlbumQuery
 
-	collection, err := GetCollection(c.Params("collection"))
+	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 	// Decode body
-	if err := c.BodyParser(&albumQuery); err != nil {
-		return err
+	if err := c.Bind(&albumQuery); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	// Add album
-	return collection.AddAlbum(albumQuery)
+	err = collection.AddAlbum(albumQuery)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusConflict, err.Error())
+	}
+	return c.JSON(http.StatusCreated, map[string]bool{"ok": true})
 }
 
-func thumb(c *fiber.Ctx) error {
-	collection, err := GetCollection(c.Params("collection"))
+func thumb(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+	photoName := c.Param("photo")
+
+	collection, err := GetCollection(collectionName)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
-	albumName := c.Params("album")
-	photoName := c.Params("photo")
 
 	// Fetch album with photos including info
 	album, err := collection.GetAlbumWithPhotos(albumName, false)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	// Find photo
 	photo, err := album.GetPhoto(photoName)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	c.Set("Content-Type", "image/jpeg")
-	AddWorkForeground(collection, album, photo, c.Response().BodyWriter())
+	AddWorkForeground(collection, album, photo, c.Response())
 	return nil
 }
 
-func info(c *fiber.Ctx) error {
-	collection, err := GetCollection(c.Params("collection"))
+func info(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+	photoName := c.Param("photo")
+
+	collection, err := GetCollection(collectionName)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
-	albumName := c.Params("album")
-	photoName := c.Params("photo")
 
 	// Fetch album with photos including info
 	album, err := collection.GetAlbumWithPhotos(albumName, false)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	// Find photo
 	photo, err := album.GetPhoto(photoName)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	info, err := photo.GetExtendedInfo()
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(info)
+	return c.JSON(http.StatusOK, info)
 }
 
-func file(c *fiber.Ctx) error {
-	collection, err := GetCollection(c.Params("collection"))
+func file(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+	photoName := c.Param("photo")
+	fileNumber, err := strconv.Atoi(c.Param("file"))
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	albumName := c.Params("album")
-	photoName := c.Params("photo")
-	fileNumber, err := strconv.Atoi(c.Params("file"))
+
+	collection, err := GetCollection(collectionName)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	// Fetch photo from cache
 	album, err := collection.GetAlbumWithPhotos(albumName, false)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	// Find photo
 	photo, err := album.GetPhoto(photoName)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	// Get file
 	file, err := photo.GetFile(fileNumber)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	// Convert files that require conversion
 	if file.RequiresConvertion() {
-		c.Response().SetBodyStreamWriter(func(w *bufio.Writer) {
-			file.Convert(w)
-		})
-		return nil
+		return file.Convert(c.Response())
 	}
 
-	c.Set("Content-Type", file.MIME)
-	c.Set("Content-Disposition", "inline; filename=\""+file.Name()+"\"")
-	return c.SendFile(file.Path)
+	c.Response().Header().Set(echo.HeaderContentType, file.MIME)
+	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename=\""+file.Name()+"\"")
+	return c.File(file.Path)
 }
 
-func saveToPseudo(c *fiber.Ctx) (err error) {
+func saveToPseudo(c echo.Context) error {
 	var query PseudoAlbumSaveQuery
 
 	// Decode body
-	if err = c.BodyParser(&query); err != nil {
-		return
+	if err := c.Bind(&query); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	collection, err := GetCollection(c.Params("collection"))
+	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
-		return
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	album, err := collection.GetAlbum(c.Params("album"))
+	album, err := collection.GetAlbum(c.Param("album"))
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	if !album.IsPseudo {
-		return errors.New("album must be of type pseudo")
+		return echo.NewHTTPError(http.StatusBadRequest, "album must be of type pseudo")
 	}
 
-	switch c.Method() {
+	switch c.Request().Method {
 	case "PUT":
 		// Add photo to pseudo album
 		err = album.EditPseudoAlbum(collection, query, true)
@@ -206,10 +213,10 @@ func saveToPseudo(c *fiber.Ctx) (err error) {
 		err = album.EditPseudoAlbum(collection, query, false)
 	}
 	if err != nil {
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(map[string]bool{"ok": true})
+	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
 }
 
 func main() {
@@ -239,77 +246,81 @@ func main() {
 	}
 
 	// Server
-	app := fiber.New(fiber.Config{
-		RequestMethods:    mergeWithoutDuplicates(fiber.DefaultMethods, WebDAVMethods),
-		UnescapePath:      true,
-		StreamRequestBody: true, // For requests > BodyLimit(4MB), body is streamed
-	})
+	e := echo.New()
 
-	// Middlewares
-	app.Use(logger.New(logger.Config{
-		Format: "[${latency}] ${status} - ${method} ${path}\n",
+	// Middleware
+	e.Use(middleware.Gzip())
+	e.Use(middleware.Recover())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		CustomTimeFormat: "2006/01/02 15:04:05",
+		Format:           "${time_custom} ${status} ${method} ${latency_human} ${path} (${remote_ip})\n",
+		Output:           e.Logger.Output(),
 	}))
-
-	app.Use(func(c *fiber.Ctx) error {
-		defer ResumeBackgroundWork()
-		SuspendBackgroundWork()
-		return c.Next()
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			defer ResumeBackgroundWork()
+			SuspendBackgroundWork()
+			return next(c)
+		}
+	})
+	// URL decode parameters
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			vs := c.ParamValues()
+			ws := make([]string, len(vs))
+			for i, v := range vs {
+				w, err := url.PathUnescape(v)
+				if err != nil {
+					e.Logger.Error(err)
+				} else {
+					ws[i] = w
+				}
+			}
+			c.SetParamValues(ws...)
+			return next(c)
+		}
 	})
 
 	// API
-	api := app.Group("/api")
-	api.Get("/pseudos", pseudos)
-	api.Get("/collections", collections)
-	api.Get("/collections/:collection/albums", albums)
-	api.Put("/collections/:collection/albums", addAlbum)
-	api.Get("/collections/:collection/albums/:album", album)
-	api.Get("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
-	api.Get("/collections/:collection/albums/:album/photos/:photo/info", info)
-	api.Get("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
-	api.Put("/collections/:collection/albums/:album/pseudos", saveToPseudo)
-	api.Delete("/collections/:collection/albums/:album/pseudos", saveToPseudo)
-	api.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(map[string]bool{"ok": true})
+	api := e.Group("/api")
+	api.GET("/pseudos", pseudos)
+	api.GET("/collections", collections)
+	api.GET("/collections/:collection/albums", albums)
+	api.PUT("/collections/:collection/albums", addAlbum)
+	api.GET("/collections/:collection/albums/:album", album)
+	api.GET("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
+	api.GET("/collections/:collection/albums/:album/photos/:photo/info", info)
+	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
+	api.PUT("/collections/:collection/albums/:album/pseudos", saveToPseudo)
+	api.DELETE("/collections/:collection/albums/:album/pseudos", saveToPseudo)
+	api.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]bool{"ok": true})
 	})
 	// Create a catch-all route for /api/*
-	// Add handlers only for HTTP (TODO: fiber v3 should fix)
-	for _, method := range fiber.DefaultMethods {
-		api.Add(method, "/*", func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusNotFound).SendString("Not found")
-		})
-	}
+	api.Any("/*", func(c echo.Context) error {
+		return c.String(http.StatusNotFound, "not found")
+	})
 
 	// WebDAV
 	if !config.webdavDisabled {
-		webdavHandler := &webdav.Handler{
-			Prefix:     "/webdav",
-			FileSystem: CreateWebDavFS(config.collections),
-			LockSystem: webdav.NewMemLS(),
-			Logger: func(r *http.Request, err error) {
-				if err != nil {
-					fmt.Printf("WebDAV %s: %s, ERROR: %s\n", r.Method, r.URL, err)
-				}
-			},
-		}
-		// Add handlers only for methods required by WebDAV (TODO: fiber v3 should fix)
-		webdav := app.Group("/webdav")
-		for _, method := range WebDAVMethods {
-			webdav.Add(method, "*", adaptor.HTTPHandler(webdavHandler))
-		}
+		e.Use(WebDAVWithConfig("/webdav", config.collections))
 		log.Println("WebDAV will be available at http://" + serverAddr + "/webdav")
 	}
 
 	// Frontend
 	// serve Single Page application on "/"
 	// assume static file at ../build folder
-	app.Static("/", "../build", fiber.Static{ByteRange: true, Next: func(c *fiber.Ctx) bool {
-		return false
-	}})
-	app.Get("/*", func(ctx *fiber.Ctx) error {
-		return ctx.SendFile("../build/index.html")
-	})
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:  "../build",   // This is the path to your SPA build folder, the folder that is created from running "npm build"
+		Index: "index.html", // This is the default html page for your SPA
+		HTML5: true,
+		Skipper: func(c echo.Context) bool {
+			return strings.HasPrefix(c.Path(), "/api") ||
+				strings.HasPrefix(c.Path(), "/webdav")
+		},
+	}))
 
 	// Start server
 	log.Println("Starting server: http://" + serverAddr)
-	log.Fatal(app.Listen(serverAddr))
+	e.Logger.Fatal(e.Start(serverAddr))
 }
