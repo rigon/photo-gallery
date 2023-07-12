@@ -36,17 +36,17 @@ func (photo *Photo) CopyForPseudoAlbum(targetCollection *Collection, targetAlbum
 		// Changed fields
 		SubAlbum: targetAlbum.Name,
 		// Copy the remainder
-		Id:       photo.Id,
-		Thumb:    photo.Thumb,
-		Title:    photo.Title,
-		Type:     photo.Type,
-		Info:     photo.Info,
-		Width:    photo.Width,
-		Height:   photo.Height,
-		Date:     photo.Date,
-		Location: photo.Location,
-		Favorite: photo.Favorite,
-		Files:    photo.Files,
+		Id:         photo.Id,
+		Title:      photo.Title,
+		Type:       photo.Type,
+		Collection: photo.Collection,
+		Album:      photo.Album,
+		Width:      photo.Width,
+		Height:     photo.Height,
+		Date:       photo.Date,
+		Location:   photo.Location,
+		Favorite:   photo.Favorite,
+		Files:      photo.Files,
 	}
 }
 

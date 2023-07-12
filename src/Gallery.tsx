@@ -17,7 +17,7 @@ import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 
-import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
+import PhotoAlbum, { RenderPhotoProps, Image } from "react-photo-album";
 
 import BoxBar from "./BoxBar";
 import PhotoInfo from "./PhotoInfo";
@@ -25,9 +25,11 @@ import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import useFavorite from "./favoriteHook";
 import useNotification from "./Notification";
-import { PhotoType } from "./types";
+import { PhotoType, urls } from "./types";
 import { useGetAlbumQuery, useSavePhotoToPseudoMutation } from "./services/api";
 import { selectZoom } from "./services/app";
+
+type Photo = PhotoType & Image;
 
 const iconsStyle: CSSProperties = {
     WebkitFilter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
@@ -54,10 +56,14 @@ const Gallery: FC = () => {
     const favorite = useFavorite();
 
     const subalbums = data?.subalbums || [];
-    const photos = useMemo(() => {
-        const photos = data?.photos || [];
-        return subAlbum.length < 1 ? photos :
-            photos.filter(v => subAlbum === v.subalbum);
+
+    const photos = useMemo((): Photo[] => {
+        let l = data?.photos || [];
+        // Filter photos by subalbum
+        if(subAlbum !== "")
+            l = l.filter(v => subAlbum === v.subalbum);
+        // Create urls for thumbnails
+        return l.map(v => ({...v, src: urls.thumb(v)}));
     }, [data, subAlbum]);
 
     // Clear sub-album selection when album changed
@@ -110,7 +116,7 @@ const Gallery: FC = () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
     }
     
-    const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoType>) => {
+    const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<Photo>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
         const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
         const selFavorite = favorite.get();

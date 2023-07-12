@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { FC, Suspense, lazy, useEffect, useState } from "react";
 import { styled, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -21,10 +21,10 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import Typography from "@mui/material/Typography";
 
-import { PhotoType } from "./types";
+import { PhotoType, urls } from "./types";
 import { useGetPhotoInfoQuery } from "./services/api";
 
-import Map from "./Map";
+const Map = lazy(() => import("./Map"));
 
 interface InfoPanelProps {
     photos: PhotoType[];
@@ -52,15 +52,20 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const [ index, setIndex ] = useState(selected);
-    const { title, src: thumb, info } = photos[index] || {};
-    const { data = [], isFetching } = useGetPhotoInfoQuery(info, {skip: info === undefined});
+    const photo = photos[index];
+    const { data, isFetching } = useGetPhotoInfoQuery(photo, {skip: photo === undefined});
+    //console.log(photo, data);
 
     useEffect(() => setIndex(selected), [setIndex, selected]);
+
+    // Do not render if is not valid
+    if(photo === undefined || data === undefined)
+        return null;
 
     const hasBefore = index > 0;
     const hasNext = index < photos.length - 1;
 
-    const mapLocation = data[0]?.imageinfo?.location;
+    const mapLocation = data.findIndex(f => f?.imageinfo?.location?.present);
 
     const handleClose = () => {
         setIndex(-1);
@@ -104,7 +109,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
             fullWidth
         >
             <DialogTitle id="photo-info-title">
-                {title}
+                {photo.title}
                 <Box sx={{ position: 'absolute', right: 8, top: 8 }}>
                     {isFetching && <CircularProgress size="1rem" sx={{ mr: 1 }}/>}
                     <IconButton onClick={handleBefore} disabled={!hasBefore} sx={{ ml: 1 }} aria-label="before">
@@ -119,13 +124,12 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
-
                 <Grid container spacing={2}>
                     <Grid item xs={4}>
-                        <img src={thumb} alt={title} style={{ width: "100%", height: "200px", objectFit: "cover" }} />
+                        <img src={urls.thumb(photo)} alt={photo.title} style={{ width: "100%", height: "200px", objectFit: "cover" }} />
                     </Grid>
                     <Grid item xs={8}>
-                        {mapLocation?.present && <Map height="200px" mark={mapLocation} />}
+                        {mapLocation >= 0 && <Suspense><Map height="200px" mark={data[mapLocation].imageinfo.location} /></Suspense>}
                     </Grid>
                 </Grid>
                 {data.map((file: any) => (
@@ -139,7 +143,6 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                             <StyledList>
                                 <dt>Type</dt><dd>{file.type}</dd>
                                 <dt>MIME</dt><dd>{file.mime}</dd>
-                                {/* <dt>Url</dt><dd><a href={file.url}>{file.url}</a></dd> */}
                                 {file.imageinfo && (<>
                                     <dt>Format</dt><dd>{file.imageinfo.format.toUpperCase()}</dd>
                                     <dt>Width</dt><dd>{file.imageinfo.width}px</dd>

@@ -140,8 +140,8 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 			key := album.Name + ":" + photo.Id
 			err := c.store.TxGet(tx, key, &data)
 			// Does not require update
-			if err == nil && data.Id == photo.Id && data.Thumb == photo.Thumb &&
-				len(data.Files) == len(photo.Files) { // Validate some fields
+			if err == nil && data.Id == photo.Id && data.Collection == photo.Collection &&
+				data.Album == photo.Album && len(data.Files) == len(photo.Files) { // Validate some fields
 
 				*photo = data
 				continue

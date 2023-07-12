@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -77,9 +76,9 @@ func (album *Album) GetPhotos(collection *Collection) error {
 					photo = new(Photo)
 					photo.Id = fileId
 					photo.Title = strings.TrimSuffix(file.Name(), path.Ext(file.Name()))
+					photo.Collection = collection.Name
+					photo.Album = album.Name
 					photo.SubAlbum = strings.TrimSuffix(strings.TrimSuffix(removedDir, file.Name()), string(filepath.Separator))
-					photo.Thumb = path.Join("/api/collection", collection.Name, "album", album.Name, "photo", fileId, "thumb")
-					photo.Info = path.Join("/collection", collection.Name, "album", album.Name, "photo", fileId, "info")
 					photo.Width = 200  // Default width
 					photo.Height = 200 // Default height
 					photo.Favorite = []PseudoAlbum{}
@@ -91,7 +90,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 				}
 				photoFile := &File{
 					Path: fileDir,
-					Url:  path.Join("/api/collection", collection.Name, "album", album.Name, "photo", fileId, "file", strconv.Itoa(len(photo.Files)))}
+					Id:   len(photo.Files)}
 
 				photo.Files = append(photo.Files, photoFile)
 			}
