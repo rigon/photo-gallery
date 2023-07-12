@@ -15,18 +15,18 @@ import (
 )
 
 type Photo struct {
-	Id       string        `json:"id"`
-	Thumb    string        `json:"src"`
-	Title    string        `json:"title"`
-	Type     string        `json:"type"`
-	Info     string        `json:"info"`
-	SubAlbum string        `json:"subalbum"`
-	Favorite []PseudoAlbum `json:"favorite"`
-	Width    int           `json:"width"`
-	Height   int           `json:"height"`
-	Date     time.Time     `json:"date" boltholdIndex:"date"`
-	Location GPSLocation   `json:"location" boltholdIndex:"location"`
-	Files    []*File       `json:"files"`
+	Id         string        `json:"id"`
+	Title      string        `json:"title"`
+	Type       string        `json:"type"`
+	Collection string        `json:"collection"`
+	Album      string        `json:"album"`
+	SubAlbum   string        `json:"subalbum"`
+	Favorite   []PseudoAlbum `json:"favorite"`
+	Width      int           `json:"width"`
+	Height     int           `json:"height"`
+	Date       time.Time     `json:"date" boltholdIndex:"date"`
+	Location   GPSLocation   `json:"location" boltholdIndex:"location"`
+	Files      []*File       `json:"files"`
 }
 
 // Add pseudo album to the favorites list

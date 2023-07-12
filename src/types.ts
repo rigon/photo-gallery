@@ -25,10 +25,11 @@ export interface AlbumType {
 
 export interface PhotoType {
     id: string;
-    src: string;    // thumbnail
     title: string;
     type: "image" | "video" | "live";
     subalbum: string;
+    collection: CollectionType["name"];
+    album: AlbumType["name"];
     favorite: PseudoAlbumType[];
     width: number;
     height: number;
@@ -39,8 +40,13 @@ export interface PhotoType {
 
 export interface FileType {
     type: "image" | "video";
+    id: number;
     mime: string;
-    url: string;
     width: number;
     height: number;
+}
+
+export const urls = {
+    thumb: (photo: PhotoType) => `/api/collections/${photo.collection}/albums/${photo.album}/photos/${photo.id}/thumb`,
+    file: (photo: PhotoType, file: FileType) => `/api/collections/${photo.collection}/albums/${photo.album}/photos/${photo.id}/files/${file.id}`,
 }

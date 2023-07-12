@@ -42,37 +42,37 @@ export const api = createApi({
     tagTypes: ['Album', 'Albums', 'Pseudo'],
     endpoints: (builder) => ({
         getCollections: builder.query<CollectionType[], void>({
-            query: () => "collections",
+            query: () => "/collections",
         }),
         getPseudoAlbums: builder.query<PseudoAlbumType[], void>({
-            query: () => "pseudos",
+            query: () => "/pseudos",
             providesTags: ['Pseudo'],
             async onCacheEntryAdded(_arg, { dispatch, cacheDataLoaded }) {
                 dispatch(changeFavorite((await cacheDataLoaded).data[0]));
             },
         }),
         getAlbums: builder.query<AlbumType[], QueryAlbums>({
-            query: ({ collection }) => `/collection/${collection}/albums`,
+            query: ({ collection }) => `/collections/${collection}/albums`,
             providesTags: ['Albums'],
         }),
         getAlbum: builder.query<AlbumType, QueryAlbum>({
-            query: ({ collection, album }) => `/collection/${collection}/album/${album}`,
+            query: ({ collection, album }) => `/collections/${collection}/albums/${album}`,
             providesTags: (_result, _error, arg) => [{ type: 'Album', id: albumId(arg) }],
         }),
         addAlbum: builder.mutation<void, QueryAddAlbum>({
             query: ({ collection, ...body }) => ({
-                url: `/collection/${collection}/albums`,
+                url: `/collections/${collection}/albums`,
                 method: 'PUT',
                 body,
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
-        getPhotoInfo: builder.query<any, string>({
-            query: (infoUrl) => infoUrl,
+        getPhotoInfo: builder.query<any[], PhotoType>({
+            query: ({collection, album, id }) => `/collections/${collection}/albums/${album}/photos/${id}/info`,
         }),
         savePhotoToPseudo: builder.mutation<void, QuerySaveFavorite>({
             query: ({ collection, album, favorite, saveData }) => ({
-                url: `/collection/${collection}/album/${album}/pseudo`,
+                url: `/collections/${collection}/albums/${album}/pseudos`,
                 method: favorite ? 'PUT' : 'DELETE',
                 body: saveData,
             }),

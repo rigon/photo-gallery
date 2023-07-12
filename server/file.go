@@ -18,9 +18,9 @@ import (
 
 type File struct {
 	Path        string      `json:"-"`
+	Id          int         `json:"id"`
 	Type        string      `json:"type"`
 	MIME        string      `json:"mime"`
-	Url         string      `json:"url"`
 	Width       int         `json:"width"`    // Image Width
 	Height      int         `json:"height"`   // Image Height
 	Date        time.Time   `json:"date"`     // Image Date taken
@@ -31,7 +31,6 @@ type File struct {
 type FileExtendedInfo struct {
 	Type     string `json:"type"`
 	MIME     string `json:"mime"`
-	Url      string `json:"url"`
 	FileStat struct {
 		Name      string    `json:"name"`      // base name of the file
 		Size      int64     `json:"size"`      // length in bytes for regular files; system-dependent for others
@@ -151,7 +150,6 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 	// Copy some data from File
 	info.Type = file.Type
 	info.MIME = file.MIME
-	info.Url = file.Url
 	// Stat file info
 	fileInfo, err := os.Stat(file.Path)
 	if err != nil {

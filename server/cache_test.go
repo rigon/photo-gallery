@@ -22,8 +22,9 @@ func TestPrintPhotoInfoEntries(t *testing.T) {
 		count++
 		fmt.Printf("Photo #%d\n", count)
 		fmt.Printf("- Title: %s\n", photo.Title)
-		fmt.Printf("- Thumb: %s\n", photo.Thumb)
 		fmt.Printf("- Type: %s\n", photo.Type)
+		fmt.Printf("- Collection: %s\n", photo.Collection)
+		fmt.Printf("- Album: %s\n", photo.Album)
 		fmt.Printf("- Dimension: %dx%d\n", photo.Width, photo.Height)
 		fmt.Printf("- Date: %s\n", photo.Date)
 		fmt.Printf("- Location: %s\n", photo.Date.Location())
