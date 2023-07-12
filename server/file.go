@@ -103,9 +103,14 @@ func (file *File) ExtractInfo() error {
 	switch file.Type {
 	case "image":
 		_, cfg, exifInfo, err := ExtractImageConfigOpened(f)
-		if err == nil {
+		if cfg.Width < 1 || cfg.Height < 1 {
+			file.Width = 200
+			file.Height = 200
+		} else {
 			file.Width = cfg.Width
 			file.Height = cfg.Height
+		}
+		if err == nil {
 			// If date is available from EXIF
 			file.Date, _ = exifInfo.DateTime()
 			// If GPS Location is available from EXIF
@@ -128,8 +133,6 @@ func (file *File) ExtractInfo() error {
 				file.Orientation = orientationUnspecified // tag not present
 			}
 		} else {
-			file.Width = 200
-			file.Height = 200
 			// File Modification Date otherwise
 			fileInfo, err := os.Stat(file.Path)
 			if err == nil {
