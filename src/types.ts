@@ -34,7 +34,11 @@ export interface PhotoType {
     width: number;
     height: number;
     date: string;
-    info: string;
+    location: {
+        present: boolean;
+        lat: number;
+        lng: number;
+    }
     files: FileType[];
 }
 

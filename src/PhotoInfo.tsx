@@ -65,8 +65,6 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
     const hasBefore = index > 0;
     const hasNext = index < photos.length - 1;
 
-    const mapLocation = data.findIndex(f => f?.imageinfo?.location?.present);
-
     const handleClose = () => {
         setIndex(-1);
         if(onClose !== undefined)
@@ -129,7 +127,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                         <img src={urls.thumb(photo)} alt={photo.title} style={{ width: "100%", height: "200px", objectFit: "cover" }} />
                     </Grid>
                     <Grid item xs={8}>
-                        {mapLocation >= 0 && <Suspense><Map height="200px" mark={data[mapLocation].imageinfo.location} /></Suspense>}
+                        {photo.location.present && <Suspense><Map height="200px" mark={photo.location} /></Suspense>}
                     </Grid>
                 </Grid>
                 {data.map((file: any) => (

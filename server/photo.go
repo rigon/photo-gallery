@@ -165,6 +165,7 @@ func (photo *Photo) FillInfo() error {
 	photo.Width = selected.Width
 	photo.Height = selected.Height
 	photo.Date = selected.Date
+	photo.Location = selected.Location
 	return nil
 }
 
