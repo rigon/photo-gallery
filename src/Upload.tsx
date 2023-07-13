@@ -1,5 +1,5 @@
 
-import { useState, useRef, MouseEvent, FC } from 'react';
+import { FC, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
@@ -129,17 +129,17 @@ export const Upload: FC = () => {
     const [isEmpty, setIsEmpty] = useState<boolean>(false);
 
     // Open menu when new uploads are added
-    useBatchAddListener((batch, options) => {
+    useBatchAddListener(() => {
         setOpen(true);
         setInProgress(true);
     });
     // Reload album after uploading
-    useBatchFinalizeListener((batch) => {
-        dispatch(api.util.invalidateTags([{ type: 'Album', id: `${collection}-${album}` }]));
+    useBatchFinalizeListener(() => {
+        dispatch(api.util.invalidateTags([{ type: 'Album', id: `${collection}:${album}` }]));
         setInProgress(false);
     });
 
-    const handleOpenMenu = (event: MouseEvent<HTMLElement>) => {
+    const handleOpenMenu = () => {
         setOpen(true);
     };
 

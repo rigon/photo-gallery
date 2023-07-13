@@ -405,9 +405,9 @@ func main() {
 	api.GET("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/info", info)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
-	api.POST("/collection/:collection/album/:album/photos", upload)
-	api.PUT("/collection/:collection/album/:album/photos/move", move)
-	api.DELETE("/collection/:collection/album/:album/photos", delete)
+	api.POST("/collections/:collection/albums/:album/photos", upload)
+	api.PUT("/collections/:collection/albums/:album/photos/move", move)
+	api.DELETE("/collections/:collection/albums/:album/photos", delete)
 	api.PUT("/collections/:collection/albums/:album/pseudos", saveToPseudo)
 	api.DELETE("/collections/:collection/albums/:album/pseudos", saveToPseudo)
 	api.GET("/health", func(c echo.Context) error {

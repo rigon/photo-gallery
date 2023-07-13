@@ -23,7 +23,7 @@ interface SelectableProps<ItemType> {
 
 // Create the selection context
 const SelectContext = React.createContext<ContextProps>({
-    onEvent: () => () => {},
+    onEvent: () => () => {/* do nothing */},
     register: () => 0,
 });
 
@@ -61,7 +61,7 @@ export function useSelectionContext(contextName?: string) {
     const get = () => {
         const ctx = ctxs[getName(contextName)];
         
-        let selected: any[] = [];
+        const selected: any[] = [];
         for(let i=0; i<ctx.selection.length; i++)
             if(ctx.selection[i])
                 selected.push(ctx.items[i]);
@@ -176,7 +176,7 @@ export function SelectionContext<ItemType>({ name, children, transformItemToId }
             // case "onMouseLeave": mouseLeave(); break;
             case "onMouseDown": start(index); break;
             case "onMouseMove": select(index); break;
-            case "onMouseUp": ; stop(); break;
+            case "onMouseUp": stop(); break;
             case "onTouchStartCapture": start(index); break;
             case "onTouchMove": select(index); break;
             case "onTouchEnd": stop(); break;

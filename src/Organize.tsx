@@ -34,20 +34,20 @@ import {
 } from './services/api';
 import useNotification from './Notification';
 import { useSelectionContext } from './Selection';
-import { PhotoType } from './types';
+import { PhotoImageType } from './types';
 
 interface DialogProps {
     collection: string;
     album: string;
-    photos: PhotoType[];
+    photos: PhotoImageType[];
     open: boolean;
     onClose: () => void;
 }
 
 const isValidAlbumName = (function () {
-    var rg1 = /^[^\\/:*?"<>|]+$/; // forbidden characters \ / : * ? " < > |
-    var rg2 = /^\./; // cannot start with dot (.)
-    var rg3 = /^(nul|prn|con|lpt[0-9]|com[0-9])(\.|$)/i; // forbidden file names
+    const rg1 = /^[^\\/:*?"<>|]+$/; // forbidden characters \ / : * ? " < > |
+    const rg2 = /^\./; // cannot start with dot (.)
+    const rg3 = /^(nul|prn|con|lpt[0-9]|com[0-9])(\.|$)/i; // forbidden file names
     return (fname: string) => rg1.test(fname) && !rg2.test(fname) && !rg3.test(fname);
 })();
 
@@ -101,7 +101,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
         setTargetCollection(event.target.value);
     };
     
-    const changeAlbum = (event: React.SyntheticEvent, value: string | null) => {
+    const changeAlbum = (_event: React.SyntheticEvent<Element, Event>, value: string | null) => {
         setTargetAlbum(value?.trim() || "");
     };
 
@@ -136,7 +136,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
             target: {
                 collection: targetCollection,
                 album: targetAlbum.trim(),
-                photos: photos.map(photo => photo.title),
+                photos: photos.map(photo => photo.id),
             }
         };
         
@@ -224,7 +224,7 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
             collection,
             album,
             target: {
-                photos: photos.map(photo => photo.title),
+                photos: photos.map(photo => photo.id),
             }
         };
         
@@ -281,8 +281,8 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
 const Organize: FC = () => {
     const { collection, album } = useParams();
     const { isSelecting, cancel, get } = useSelectionContext();
-    const [movePhotos, setMovePhotos] = useState<PhotoType[]>();
-    const [deletePhotos, setDeletePhotos] = useState<PhotoType[]>();
+    const [movePhotos, setMovePhotos] = useState<PhotoImageType[]>();
+    const [deletePhotos, setDeletePhotos] = useState<PhotoImageType[]>();
 
     const showMove = () => {
         setMovePhotos(get());

@@ -91,9 +91,9 @@ export const api = createApi({
                 method: 'PUT',
                 body: target,
             }),
-            invalidatesTags: (result, error, arg) => [
-                { type: 'Album', id: `${arg.collection}-${arg.album}` },
-                { type: 'Album', id: `${arg.target.collection}-${arg.target.album}` }
+            invalidatesTags: (_result, _error, arg) => [
+                { type: 'Album', id: albumId(arg) },
+                { type: 'Album', id: albumId(arg.target) }
             ],
         }),
         deletePhotos: builder.mutation<void, QueryDeletePhotos>({
@@ -102,8 +102,8 @@ export const api = createApi({
                 method: 'DELETE',
                 body: target,
             }),
-            invalidatesTags: (result, error, arg) => [
-                { type: 'Album', id: `${arg.collection}-${arg.album}` },
+            invalidatesTags: (_result, _error, arg) => [
+                { type: 'Album', id: albumId(arg) },
             ],
         }),
         getPhotoInfo: builder.query<any[], PhotoType>({

@@ -17,7 +17,7 @@ import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 
-import PhotoAlbum, { RenderPhotoProps, Image } from "react-photo-album";
+import PhotoAlbum, { RenderPhotoProps } from "react-photo-album";
 
 import BoxBar from "./BoxBar";
 import PhotoInfo from "./PhotoInfo";
@@ -26,11 +26,9 @@ import LivePhotoIcon from "./icons/LivePhotoIcon";
 import useFavorite from "./favoriteHook";
 import useNotification from "./Notification";
 import { Selectable, SelectionContext } from "./Selection";
-import { PhotoType, urls } from "./types";
+import { PhotoType, PhotoImageType, urls } from "./types";
 import { useGetAlbumQuery, useSavePhotoToPseudoMutation } from "./services/api";
 import { selectZoom } from "./services/app";
-
-type Photo = PhotoType & Image;
 
 const boxStyle: SxProps<Theme> = {
     position: "relative",
@@ -70,7 +68,7 @@ const Gallery: FC = () => {
 
     const subalbums = data?.subalbums || [];
 
-    const photos = useMemo((): Photo[] => {
+    const photos = useMemo((): PhotoImageType[] => {
         let l = data?.photos || [];
         // Filter photos by subalbum
         if(subAlbum !== "")
@@ -129,7 +127,7 @@ const Gallery: FC = () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
     }
     
-    const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<Photo>) => {
+    const RenderPhoto = ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoImageType>) => {
         const [mouseOver, setMouseOver] = useState<boolean>(false);
         const [selected, setSelected] = useState<boolean>(false);
         const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
@@ -240,7 +238,7 @@ const Gallery: FC = () => {
                 photos={photos}
                 selected={infoPhotoIndex}
                 onClose={closeInfoPhoto} />
-      </>);
+        </>);
     
     const loading = (
         <Box sx={{ width: '100%' }}>

@@ -1,4 +1,6 @@
 
+import { Image } from "react-photo-album";
+
 export interface CollectionType {
     name: string;
     storage: CollectionStorageType;
@@ -49,6 +51,8 @@ export interface FileType {
     width: number;
     height: number;
 }
+
+export type PhotoImageType = PhotoType & Image;
 
 export const urls = {
     thumb: (photo: PhotoType) => `/api/collections/${photo.collection}/albums/${photo.album}/photos/${photo.id}/thumb`,
