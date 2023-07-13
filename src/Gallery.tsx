@@ -121,17 +121,6 @@ const Gallery: FC = () => {
         const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
         const selFavorite = favorite.get();
 
-        const favoriteTooltip = isFavorite ?
-            <>
-                <b>This photo is favorite in:</b><br />
-                {photo.favorite?.map(f => <>&bull; {f.album}
-                    {collection !== f.collection && <Badge>{f.collection}</Badge>}
-                    <br /></>
-                )}
-                <Divider/>
-                Press to {isFavoriteThis ? "remove from" : "add to"} {selFavorite?.album}
-            </> :
-            <>Add as favorite in album {selFavorite?.album}</>;
 
         const mouseEnter = () => {
             setMouseOver(true);
@@ -150,6 +139,50 @@ const Gallery: FC = () => {
             event.stopPropagation();
             setInfoPhotoIndex(layout.index);
         }
+
+
+        const favoriteTooltip = isFavorite ?
+            <>
+                <b>This photo is favorite in:</b><br />
+                {photo.favorite?.map(f => <>&bull; {f.album}
+                    {collection !== f.collection && <Badge>{f.collection}</Badge>}
+                    <br /></>
+                )}
+                <Divider/>
+                Press to {isFavoriteThis ? "remove from" : "add to"} {selFavorite?.album}
+            </> :
+            <>Add as favorite in album {selFavorite?.album}</>;
+
+        const icons = (<>
+            {photo.type === "live" &&
+                <BoxBar top left>
+                    <LivePhotoIcon fontSize="small" style={iconsStyle} />
+                </BoxBar>
+            }
+            {photo.type === "video" &&
+                <BoxBar middle center>
+                    <PlayIcon style={{...iconsStyle, width: "100%", height: "100%"}}/>
+                </BoxBar>
+            }
+            {mouseOver &&
+                <BoxBar top right>
+                    <IconButton color="inherit" onClick={showInfo}>
+                        <InfoIcon style={iconsStyle} />
+                    </IconButton>
+                </BoxBar>
+            }
+            {(isFavorite || mouseOver) &&
+                <BoxBar bottom right>
+                    <Tooltip title={favoriteTooltip} arrow>
+                        <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle}>
+                            {!isFavorite && <FavoriteBorderIcon/>}
+                            {isFavoriteThis && <FavoriteIcon/>}
+                            {isFavoriteAnother && <FavoriteTwoToneIcon/>}
+                        </IconButton>
+                    </Tooltip>
+                </BoxBar>
+            }
+        </>);
         
         return (
             <Box
@@ -159,34 +192,7 @@ const Gallery: FC = () => {
                 onClick={openLightbox}
                 onDoubleClick={saveFavorite}>
                     {renderDefaultPhoto({ wrapped: true })}
-                    {photo.type === "live" &&
-                        <BoxBar top left>
-                            <LivePhotoIcon fontSize="small" style={iconsStyle} />
-                        </BoxBar>
-                    }
-                    {photo.type === "video" &&
-                        <BoxBar middle center>
-                            <PlayIcon style={{...iconsStyle, width: "100%", height: "100%"}}/>
-                        </BoxBar>
-                    }
-                    {mouseOver &&
-                        <BoxBar top right>
-                            <IconButton color="inherit" onClick={showInfo}>
-                                <InfoIcon style={iconsStyle} />
-                            </IconButton>
-                        </BoxBar>
-                    }
-                    {(isFavorite || mouseOver) &&
-                        <BoxBar bottom right>
-                            <Tooltip title={favoriteTooltip} arrow>
-                                <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle}>
-                                    {!isFavorite && <FavoriteBorderIcon/>}
-                                    {isFavoriteThis && <FavoriteIcon/>}
-                                    {isFavoriteAnother && <FavoriteTwoToneIcon/>}
-                                </IconButton>
-                            </Tooltip>
-                        </BoxBar>
-                    }
+                    {zoom >= 100 && icons}
             </Box>
         );
     }
