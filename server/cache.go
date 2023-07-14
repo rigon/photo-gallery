@@ -180,15 +180,21 @@ func (c Cache) AddPhotoInfo(album *Album, photos ...*Photo) error {
 	})
 }
 
-// Remove photo info
-func (c Cache) RemovePhotoInfo(album *Album, photos ...*Photo) error {
-	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
+// Delete photo info
+func (c Cache) DeletePhotoInfo(album *Album, photos ...*Photo) ([]*Photo, error) {
+	return photos, c.store.Bolt().Update(func(tx *bolt.Tx) error {
 		for i, photo := range photos {
 			if i%100 == 0 || i == len(photos)-1 {
 				log.Printf("Removing cache info %s (%d/%d)", album.Name, i+1, len(photos))
 			}
 			key := album.Name + ":" + photo.Id
-			err := c.store.TxDelete(tx, key, photo)
+			// Update info to return
+			err := c.store.TxGet(tx, key, photo)
+			if err != nil {
+				log.Println(err)
+			}
+			// Delete entry
+			err = c.store.TxDelete(tx, key, photo)
 			if err != nil {
 				log.Println(err)
 			}

@@ -256,7 +256,7 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 		if isAdd {
 			collection.cache.AddPhotoInfo(album, photos...)
 		} else {
-			collection.cache.RemovePhotoInfo(album, photos...)
+			collection.cache.DeletePhotoInfo(album, photos...)
 		}
 	}()
 
