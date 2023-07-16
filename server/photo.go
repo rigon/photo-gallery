@@ -27,6 +27,7 @@ type Photo struct {
 	Date       time.Time     `json:"date" boltholdIndex:"date"`
 	Location   GPSLocation   `json:"location" boltholdIndex:"location"`
 	Files      []*File       `json:"files"`
+	HasThumb   bool          `json:"-" boltholdIndex:"hasthumb"` // Indicates if the thumbnail was generated
 }
 
 // Add pseudo album to the favorites list
@@ -119,6 +120,12 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		if w != nil {
 			w.Write(data)
 		}
+	}
+
+	// Update flag to indicate that the thumbnail was generated
+	if !photo.HasThumb {
+		photo.HasThumb = true
+		collection.cache.AddPhotoInfo(album, photo)
 	}
 	return nil
 }

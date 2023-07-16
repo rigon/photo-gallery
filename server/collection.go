@@ -233,21 +233,3 @@ func (collection *Collection) CacheAlbums() {
 		}
 	}
 }
-
-// Create thumbnails for all photos in the collection
-func (collection *Collection) CreateThumbnails() {
-	albums, err := collection.GetAlbums()
-	if err != nil {
-		log.Println(err)
-	}
-
-	for _, album := range albums {
-		WaitBackgroundWork()
-		album, err := collection.GetAlbumWithPhotos(album.Name, false)
-		if err == nil {
-			album.GenerateThumbnails(collection)
-		} else {
-			log.Println(err)
-		}
-	}
-}

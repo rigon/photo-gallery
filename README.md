@@ -96,22 +96,24 @@ Optionally you can open [http://localhost:3080/webdav](http://localhost:3080/web
 
 Server help:
 
-    Usage of ./photo-gallery:
-      -b, --cache-thumbnails         Generate thumbnails in background when the application starts
-      -c, --collection stringArray   Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
-                                     List of possible options:
-                                     index          Position in the collection list
-                                     name           Name of the collection
-                                     path           Path to load the albums from
-                                     thumbs         Path to store the thumbnails
-                                     db             Path to cache DB, if a filename is provided it will be located in thumbnails directory
-                                     hide=false     Hide the collection from the list (does not affect webdav)
-                                     rename=true    Rename files instead of overwriting them
-                                     readonly=false
-          --disable-webdav           Disable WebDAV
-          --host string              Specify a host (default "localhost")
-      -p, --port int                 Specify a port (default 3080)
-      -r, --recreate-cache           Recreate cache DB, required after DB version upgrade
+    Usage of ./server/photo-gallery:
+      -b, --[no-]cache-thumbnails   Generate missing thumbnails while scanning (default true)
+      -c, --collection strings      Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
+                                    List of possible options:
+                                      index          Position in the collection list
+                                      name           Name of the collection
+                                      path           Path to load the albums from
+                                      thumbs         Path to store the thumbnails
+                                      db             Path to cache DB, if a filename is provided it will be located in thumbnails directory
+                                      hide=false     Hide the collection from the list (does not affect webdav)
+                                      rename=true    Rename files instead of overwriting them
+                                      readonly=false
+          --disable-scan            Disable scans on start, by default runs regular (same as quick plus thumbnails)
+          --disable-webdav          Disable WebDAV
+          --full-scan               Perform a full scan on start (validates if all cached data is up to date)
+      -h, --host string             Specify a host (default "localhost")
+      -p, --port int                Specify a port (default 3080)
+      -r, --recreate-cache          Recreate cache DB, required after DB version upgrade
 
 ### Docker
 

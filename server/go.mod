@@ -8,11 +8,11 @@ require (
 	github.com/bluele/gcache v0.0.2
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
-	github.com/labstack/echo/v4 v4.10.2
+	github.com/labstack/echo/v4 v4.11.0
 	github.com/mholt/goexif2 v0.0.0-20230302025153-4d89d35092b2
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/spf13/pflag v1.0.5
 	github.com/timshannon/bolthold v0.0.0-20210913165410-232392fc8a6a
+	github.com/zulucmd/zflag v1.1.2
 	gitlab.com/golang-utils/image2 v0.0.1
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/image v0.9.0

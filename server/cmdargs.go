@@ -7,11 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spf13/pflag"
+	"github.com/zulucmd/zflag"
 )
 
 type CmdArgs struct {
 	cacheThumbnails bool
+	disableScan     bool
+	fullScan        bool
 	recreateCacheDB bool
 	webdavDisabled  bool
 	collections     map[string]*Collection
@@ -80,22 +82,24 @@ func parseCollectionOptions(collectionOption string, defaultIndex int) (collecti
 
 func ParseCmdArgs() (cmdArgs CmdArgs) {
 	var collectionArgs []string
-	pflag.StringArrayVarP(&collectionArgs, "collection", "c", collectionArgs, `Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
+	zflag.StringSliceVar(&collectionArgs, "collection", collectionArgs, `Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
 List of possible options:
-index          Position in the collection list
-name           Name of the collection
-path           Path to load the albums from
-thumbs         Path to store the thumbnails
-db             Path to cache DB, if a filename is provided it will be located in thumbnails directory
-hide=false     Hide the collection from the list (does not affect webdav)
-rename=true    Rename files instead of overwriting them
-readonly=false`)
-	pflag.BoolVarP(&cmdArgs.cacheThumbnails, "cache-thumbnails", "b", false, "Generate thumbnails in background when the application starts")
-	pflag.BoolVarP(&cmdArgs.recreateCacheDB, "recreate-cache", "r", false, "Recreate cache DB, required after DB version upgrade")
-	pflag.BoolVar(&cmdArgs.webdavDisabled, "disable-webdav", false, "Disable WebDAV")
-	pflag.StringVar(&cmdArgs.host, "host", "localhost", "Specify a host")
-	pflag.IntVarP(&cmdArgs.port, "port", "p", 3080, "Specify a port")
-	pflag.Parse()
+  index          Position in the collection list
+  name           Name of the collection
+  path           Path to load the albums from
+  thumbs         Path to store the thumbnails
+  db             Path to cache DB, if a filename is provided it will be located in thumbnails directory
+  hide=false     Hide the collection from the list (does not affect webdav)
+  rename=true    Rename files instead of overwriting them
+  readonly=false`, zflag.OptShorthand('c'))
+	zflag.BoolVar(&cmdArgs.cacheThumbnails, "cache-thumbnails", true, "Generate missing thumbnails while scanning", zflag.OptAddNegative(), zflag.OptShorthand('b'))
+	zflag.BoolVar(&cmdArgs.disableScan, "disable-scan", false, "Disable scans on start, by default will cache photo info of new albums")
+	zflag.BoolVar(&cmdArgs.fullScan, "full-scan", false, "Perform a full scan on start (validates if cached data is up to date)")
+	zflag.BoolVar(&cmdArgs.recreateCacheDB, "recreate-cache", false, "Recreate cache DB, required after DB version upgrade", zflag.OptShorthand('r'))
+	zflag.BoolVar(&cmdArgs.webdavDisabled, "disable-webdav", false, "Disable WebDAV")
+	zflag.StringVar(&cmdArgs.host, "host", "localhost", "Specify a host", zflag.OptShorthand('h'))
+	zflag.IntVar(&cmdArgs.port, "port", 3080, "Specify a port", zflag.OptShorthand('p'))
+	zflag.Parse()
 
 	cmdArgs.collections = make(map[string]*Collection)
 	for i, c := range collectionArgs {

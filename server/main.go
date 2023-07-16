@@ -230,18 +230,27 @@ func main() {
 	}
 
 	// Cache albums and thumbnails in background
-	if config.cacheThumbnails {
-		log.Println("Generating thumbnails in background...")
+	if !config.disableScan {
 		go func() {
+			log.Println("Scanning for photos in background...")
 			// First cache all albums
-			for _, c := range config.collections {
-				c.CacheAlbums()
+			for _, collection := range config.collections {
+				collection.QuickScan()
 			}
+			// Validate data in cache
+			// if !config.fullScan {
+			// 	// for _, collection := range config.collections {
+			// 	// 	//collection.Validate()
+			// 	// }
+			// }
 			// Then create thumbnails
-			for _, c := range config.collections {
-				c.CreateThumbnails()
+			if !config.cacheThumbnails {
+				for _, collection := range config.collections {
+					collection.CreateThumbnails()
+				}
 			}
-			log.Println("Background thumbnail generation complete!")
+
+			log.Println("Background scan complete!")
 		}()
 	}
 

@@ -62,12 +62,10 @@ func AddWorkForeground(collection *Collection, album *Album, photo *Photo, write
 	wg.Wait()
 }
 
-func AddWorkBackground(collection *Collection, album *Album) {
-	size := len(album.photosMap)
-	count := 0
-	for _, photo := range album.photosMap {
-		count++
-		log.Printf("Background thumbnail %s[%s] %d/%d: %s %s", collection.Name, album.Name, count, size, photo.Title, photo.SubAlbum)
+func AddWorkBackground(collection *Collection, album *Album, photos ...*Photo) {
+	size := len(photos)
+	for i, photo := range photos {
+		log.Printf("Background thumbnail %s[%s] %d/%d: %s %s", collection.Name, album.Name, i+1, size, photo.Title, photo.SubAlbum)
 		wg.Add(1)
 		w := new(Work)
 		w.collection = collection

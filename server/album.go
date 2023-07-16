@@ -118,10 +118,6 @@ func (album *Album) GetPhoto(photoName string) (photo *Photo, err error) {
 	return photo, nil
 }
 
-func (album *Album) GenerateThumbnails(collection *Collection) {
-	AddWorkBackground(collection, album)
-}
-
 // Custom marshaler in order to transform photo map into a slice
 func (album Album) MarshalJSON() ([]byte, error) {
 	var photos []*Photo
@@ -143,8 +139,8 @@ func (album Album) MarshalJSON() ([]byte, error) {
 	})
 
 	// Avoid cyclic marshaling
-	type Alias Album
-	alias := Alias(album)
+	type AlbumAlias Album
+	alias := AlbumAlias(album)
 	alias.Photos = photos
 	alias.Count = len(photos)
 
