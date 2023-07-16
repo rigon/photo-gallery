@@ -21,11 +21,12 @@ type File struct {
 	Id          int         `json:"id"`
 	Type        string      `json:"type"`
 	MIME        string      `json:"mime"`
-	Width       int         `json:"width"`    // Image Width
-	Height      int         `json:"height"`   // Image Height
-	Date        time.Time   `json:"date"`     // Image Date taken
-	Location    GPSLocation `json:"location"` // Image location
-	Orientation Orientation `json:"-"`        // Image orientation
+	Width       int         `json:"width"`                  // Image Width
+	Height      int         `json:"height"`                 // Image Height
+	Date        time.Time   `json:"date"`                   // Image Date taken
+	Location    GPSLocation `json:"location"`               // Image location
+	Orientation Orientation `json:"-"`                      // Image orientation
+	Size        int64       `json:"-" boltholdIndex:"size"` // Image file size, used to find duplicates
 }
 
 type FileExtendedInfo struct {
@@ -100,17 +101,29 @@ func (file *File) ExtractInfo() error {
 		}
 	}
 
+	// Fill first file info with default values
+	file.Width = 200
+	file.Height = 200
+	file.Location.Present = false
+	// Stat file
+	fileInfo, err := os.Stat(file.Path)
+	if err == nil {
+		file.Date = fileInfo.ModTime()
+		file.Size = fileInfo.Size()
+	}
+
 	switch file.Type {
 	case "image":
 		_, cfg, exifInfo, err := ExtractImageConfigOpened(f)
-		if cfg.Width < 1 || cfg.Height < 1 {
-			file.Width = 200
-			file.Height = 200
-		} else {
+		if err != nil {
+			log.Println(err)
+		}
+
+		if cfg.Width > 0 && cfg.Height > 0 {
 			file.Width = cfg.Width
 			file.Height = cfg.Height
 		}
-		if err == nil {
+		if exifInfo != nil {
 			// If date is available from EXIF
 			file.Date, _ = exifInfo.DateTime()
 			// If GPS Location is available from EXIF
@@ -132,13 +145,6 @@ func (file *File) ExtractInfo() error {
 			} else {
 				file.Orientation = orientationUnspecified // tag not present
 			}
-		} else {
-			// File Modification Date otherwise
-			fileInfo, err := os.Stat(file.Path)
-			if err == nil {
-				file.Date = fileInfo.ModTime()
-			}
-			file.Location.Present = false
 		}
 	case "video":
 		// TODO: extract info for video
