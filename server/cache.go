@@ -147,8 +147,7 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 		for _, photo := range album.photosMap {
 			var data Photo
 			count++
-			key := album.Name + ":" + photo.Id
-			err := c.store.TxGet(tx, key, &data)
+			err := c.store.TxGet(tx, photo.Key(), &data)
 			// Does not require update
 			if err == nil && data.Id == photo.Id && data.Collection == photo.Collection &&
 				data.Album == photo.Album && len(data.Files) == len(photo.Files) { // Validate some fields
@@ -170,18 +169,17 @@ func (c Cache) FillPhotosInfo(album *Album) (err error) {
 	}
 
 	// Update missing entries
-	return c.AddPhotoInfo(album, update...)
+	return c.AddPhotoInfo(update...)
 }
 
 // Add or update info for photos
-func (c Cache) AddPhotoInfo(album *Album, photos ...*Photo) error {
+func (c Cache) AddPhotoInfo(photos ...*Photo) error {
 	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
 		for i, photo := range photos {
 			if i%100 == 0 || i == len(photos)-1 {
-				log.Printf("Updating cache info %s (%d/%d)", album.Name, i+1, len(photos))
+				log.Printf("Updating cache info %s (%d/%d)", photo.Album, i+1, len(photos))
 			}
-			key := album.Name + ":" + photo.Id
-			err := c.store.TxUpsert(tx, key, photo)
+			err := c.store.TxUpsert(tx, photo.Key(), photo)
 			if err != nil {
 				log.Println(err)
 			}
@@ -191,20 +189,19 @@ func (c Cache) AddPhotoInfo(album *Album, photos ...*Photo) error {
 }
 
 // Delete photo info
-func (c Cache) DeletePhotoInfo(album *Album, photos ...*Photo) ([]*Photo, error) {
+func (c Cache) DeletePhotoInfo(photos ...*Photo) ([]*Photo, error) {
 	return photos, c.store.Bolt().Update(func(tx *bolt.Tx) error {
 		for i, photo := range photos {
 			if i%100 == 0 || i == len(photos)-1 {
-				log.Printf("Removing cache info %s (%d/%d)", album.Name, i+1, len(photos))
+				log.Printf("Removing cache info %s (%d/%d)", photo.Album, i+1, len(photos))
 			}
-			key := album.Name + ":" + photo.Id
 			// Update info to return
-			err := c.store.TxGet(tx, key, photo)
+			err := c.store.TxGet(tx, photo.Key(), photo)
 			if err != nil {
 				log.Println(err)
 			}
 			// Delete entry
-			err = c.store.TxDelete(tx, key, photo)
+			err = c.store.TxDelete(tx, photo.Key(), photo)
 			if err != nil {
 				log.Println(err)
 			}

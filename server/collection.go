@@ -104,7 +104,7 @@ func (c *Collection) IsAlbum(albumName string) bool {
 func (c *Collection) GetAlbum(albumName string) (*Album, error) {
 	// Check if album exists
 	if !c.IsAlbum(albumName) {
-		return nil, errors.New("album not found")
+		return nil, errors.New("album not found: " + albumName)
 	}
 	// Check for regular album (i.e. folder)
 	filename := filepath.Join(c.PhotosPath, albumName)
@@ -161,7 +161,9 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Al
 	// Get photos from the disk
 	album.GetPhotos(c)
 	// Fill photos with info in cache (e.g. height and width)
-	c.cache.FillPhotosInfo(album)
+	if !album.IsPseudo { // Pseudo albums already have info filled
+		c.cache.FillPhotosInfo(album)
+	}
 	// ...and save to cache
 	c.cache.SaveAlbum(album)
 

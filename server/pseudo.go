@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 const PSEUDO_ALBUM_EXT = ".PG-ALBUM"
@@ -190,7 +192,7 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 		} else {
 			if found >= 0 {
 				// Remove the entry
-				entries = append(entries[:found], entries[found+1:]...)
+				entries = slices.Delete(entries, found, found+1)
 			} else {
 				errs = append(errs, "entry could not be found: "+edit.Photo)
 			}
@@ -213,8 +215,6 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 
 	// Update in background cached entries that were changed
 	go func() {
-		var photos []*Photo
-
 		for _, entry := range updated {
 			fromCollection, err := GetCollection(entry.Collection)
 			if err != nil {
@@ -227,7 +227,7 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 				continue
 			}
 
-			var fromPhotos []*Photo
+			var photos []*Photo
 			for _, photo := range entry.Photos {
 				fromPhoto, err := fromAlbum.GetPhoto(photo)
 				if err != nil {
@@ -241,22 +241,14 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 					result = fromPhoto.RemoveFavorite(collection, album)
 				}
 				if result {
-					fromPhotos = append(fromPhotos, fromPhoto)
+					photos = append(photos, fromPhoto)
 				}
-				photos = append(photos, fromPhoto.CopyForPseudoAlbum(fromCollection, fromAlbum))
 			}
 			// Update info about cached photos
-			err = fromCollection.cache.AddPhotoInfo(fromAlbum, fromPhotos...)
+			err = fromCollection.cache.AddPhotoInfo(photos...)
 			if err != nil {
 				log.Println(err)
 			}
-		}
-
-		// Add or remove updated entries from cache of the pseudo album
-		if isAdd {
-			collection.cache.AddPhotoInfo(album, photos...)
-		} else {
-			collection.cache.DeletePhotoInfo(album, photos...)
 		}
 	}()
 

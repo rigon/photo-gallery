@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/slices"
 )
 
 type Photo struct {
@@ -28,6 +30,10 @@ type Photo struct {
 	Location   GPSLocation   `json:"location" boltholdIndex:"location"`
 	Files      []*File       `json:"files"`
 	HasThumb   bool          `json:"-" boltholdIndex:"hasthumb"` // Indicates if the thumbnail was generated
+}
+
+func (photo *Photo) Key() string {
+	return photo.Album + ":" + photo.Id
 }
 
 // Add pseudo album to the favorites list
@@ -49,7 +55,7 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 	for i, favorite := range photo.Favorite {
 		// Remove it from the list if present
 		if srcCollection.Name == favorite.Collection && srcAlbum.Name == favorite.Album {
-			photo.Favorite = append(photo.Favorite[:i], photo.Favorite[i+1:]...)
+			photo.Favorite = slices.Delete(photo.Favorite, i, i+1)
 			return true
 		}
 	}
@@ -57,8 +63,8 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 }
 
 // Returns the path location for the thumbnail
-func (photo *Photo) ThumbnailPath(collection *Collection, album *Album) string {
-	name := strings.Join([]string{collection.Name, album.Name, photo.Id}, ":")
+func (photo *Photo) ThumbnailPath(collection *Collection) string {
+	name := strings.Join([]string{photo.Collection, photo.Album, photo.Id}, ":")
 	hash := sha256.Sum256([]byte(name))
 	encoded := hex.EncodeToString(hash[:])
 	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
@@ -96,7 +102,7 @@ func (photo *Photo) MainFile() *File {
 }
 
 func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writer) error {
-	thumbPath := photo.ThumbnailPath(collection, album)
+	thumbPath := photo.ThumbnailPath(collection)
 
 	// If the file doesn't exist
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
@@ -125,7 +131,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 	// Update flag to indicate that the thumbnail was generated
 	if !photo.HasThumb {
 		photo.HasThumb = true
-		collection.cache.AddPhotoInfo(album, photo)
+		collection.cache.AddPhotoInfo(photo)
 	}
 	return nil
 }

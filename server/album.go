@@ -51,7 +51,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 			// Update photo with favorite album
 			result := targetPhoto.AddFavorite(collection, album)
 			if result {
-				go targetCollection.cache.AddPhotoInfo(targetAlbum, targetPhoto)
+				go targetCollection.cache.AddPhotoInfo(targetPhoto)
 			}
 
 			photo := targetPhoto.CopyForPseudoAlbum(targetCollection, targetAlbum)

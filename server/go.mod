@@ -15,6 +15,7 @@ require (
 	github.com/zulucmd/zflag v1.1.2
 	gitlab.com/golang-utils/image2 v0.0.1
 	go.etcd.io/bbolt v1.3.7
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 	golang.org/x/image v0.9.0
 	golang.org/x/net v0.12.0
 )
