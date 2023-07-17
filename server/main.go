@@ -235,16 +235,14 @@ func main() {
 			log.Println("Scanning for photos in background...")
 			// First cache all albums
 			for _, collection := range config.collections {
-				collection.QuickScan()
+				collection.Scan(config.fullScan)
 			}
-			// Validate data in cache
-			// if !config.fullScan {
-			// 	// for _, collection := range config.collections {
-			// 	// 	//collection.Validate()
-			// 	// }
-			// }
+			// Clean thumbnails of deleted photos0
+			if config.fullScan {
+				CleanupThumbnails(config.collections)
+			}
 			// Then create thumbnails
-			if !config.cacheThumbnails {
+			if config.cacheThumbnails {
 				for _, collection := range config.collections {
 					collection.CreateThumbnails()
 				}
