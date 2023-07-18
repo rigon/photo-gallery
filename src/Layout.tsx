@@ -55,7 +55,7 @@ const Layout: FC = () => {
       <Toolbar sx={{ color: "secondary.contrastText", backgroundColor: "secondary.main" }}>
         <Box mx="auto">
           <Typography variant="h5" fontWeight="fontWeightBold" noWrap>
-            Photo Gallery
+            <Link href="#" color="inherit" underline="none">Photo Gallery</Link>
           </Typography>
         </Box>
       </Toolbar>
