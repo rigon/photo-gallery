@@ -207,7 +207,7 @@ func upload(c echo.Context) error {
 	for _, file := range files {
 		// Check if file already exists in album
 		p := filepath.Join(collection.PhotosPath, album.Name, file.Filename)
-		if _, err := os.Stat(p); !errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
 			return echo.NewHTTPError(http.StatusConflict, "file already exits")
 		}
 
@@ -250,13 +250,13 @@ func move(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Delete photos
-	err = srcAlbum.MovePhotos(srcCollection, dstCollection, dstAlbum, query.Photos...)
+	// Move photos
+	stats, err := srcAlbum.MovePhotos(query.Mode, srcCollection, dstCollection, dstAlbum, query.Photos...)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+	return c.JSON(http.StatusOK, stats)
 }
 
 func delete(c echo.Context) error {

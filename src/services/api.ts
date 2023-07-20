@@ -1,6 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CollectionType, PseudoAlbumType, AlbumType, PhotoType } from "../types";
+import { CollectionType, PseudoAlbumType, AlbumType, PhotoType, MoveConflictMode } from "../types";
 import { changeFavorite } from "./app";
+
+export interface ResponseError {
+    message: string;
+}
 
 export interface QueryAlbums {
     collection?: string;
@@ -27,10 +31,18 @@ export interface QueryMovePhotos {
     collection: CollectionType["name"];
     album: AlbumType["name"];
     target: {
+        mode: MoveConflictMode;
         collection: CollectionType["name"];
         album: AlbumType["name"];
         photos: PhotoType["title"][];
     }
+}
+
+export interface ResponseMovePhotos {
+    moved_photos: number;
+    moved_files: number;
+    skipped: number;
+    renamed: number;
 }
 
 export interface QueryDeletePhotos {
@@ -85,7 +97,7 @@ export const api = createApi({
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
-        movePhotos: builder.mutation<void, QueryMovePhotos>({
+        movePhotos: builder.mutation<ResponseMovePhotos, QueryMovePhotos>({
             query: ({ collection, album, target }) => ({
                 url: `/collections/${collection}/albums/${album}/photos/move`,
                 method: 'PUT',

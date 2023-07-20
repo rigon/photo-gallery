@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
+	"path"
+	"regexp"
+	"strings"
 )
 
 // Taken from https://github.com/valyala/fasthttp/blob/0d0bbfee5a8dd12a82e442d3cbb11e56726dd06e/server.go#L1048
@@ -87,4 +91,19 @@ func Batch[T comparable](values <-chan T, maxItems int) chan []T {
 	}()
 
 	return batches
+}
+
+func RenameFilename(filename string, renameIndex int) string {
+	if renameIndex < 2 {
+		return filename
+	}
+
+	// Compile the regular expression
+	regExp := regexp.MustCompile(`\s\(\d+\)$`)
+
+	ext := path.Ext(filename)
+	// Extract name and remove anything like " (number)" from the end
+	name := regExp.ReplaceAllString(strings.TrimSuffix(filename, ext), "")
+
+	return fmt.Sprintf("%s (%d)%s", name, renameIndex, ext)
 }

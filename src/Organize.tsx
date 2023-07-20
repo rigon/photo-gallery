@@ -12,10 +12,14 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
+import FormLabel from '@mui/material/FormLabel';
 import IconButton from '@mui/material/IconButton/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
@@ -34,7 +38,7 @@ import {
 } from './services/api';
 import useNotification from './Notification';
 import { useSelectionContext } from './Selection';
-import { PhotoImageType } from './types';
+import { PhotoImageType, MoveConflictMode } from './types';
 
 interface DialogProps {
     collection: string;
@@ -68,6 +72,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
     const [addAlbum] = useAddAlbumMutation();
     const [targetCollection, setTargetCollection] = useState<string>(collection);
     const [targetAlbum, setTargetAlbum] = useState<string>("");
+    const [mode, setMode] = useState<MoveConflictMode>(MoveConflictMode.Cancel);
     const [isNewAlbum, setIsNewAlbum] = useState<boolean>(false);
     const [errorName, setErrorName] = useState<boolean>(false);
     const [processingAction, setProcessingAction] = useState<boolean>(false);
@@ -105,6 +110,10 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
         setTargetAlbum(value?.trim() || "");
     };
 
+    const changeMode = (_event: React.ChangeEvent<HTMLInputElement>, value: string) => {
+        setMode(value as MoveConflictMode);
+    };
+
     const handleMove = async () => {
         if(isNewAlbum) {
             const addAlbumData: QueryAddAlbum = {
@@ -134,6 +143,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
             collection,
             album,
             target: {
+                mode,
                 collection: targetCollection,
                 album: targetAlbum.trim(),
                 photos: photos.map(photo => photo.id),
@@ -142,12 +152,13 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
         
         setProcessingAction(true);
         try {
-            await movePhotos(query).unwrap();
-            successNotification(`${photos.length} photos were moved successfully to ${album}`);
+            const stats = await movePhotos(query).unwrap();
+            successNotification(`${stats.moved_photos} photos (${stats.moved_files} files)
+                were moved to ${album}, ${stats.skipped} skipped and ${stats.renamed} renamed.`);
             onClose();
         }
-        catch(error) {
-            errorNotification("An error occured while moving photos!");
+        catch(error: any) {
+            errorNotification(`Error while moving photos: ${error.data.message}!`);
             console.log(error);
         }
         setProcessingAction(false);
@@ -183,10 +194,19 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
                     {!errorName && !isNewAlbum && <FormHelperText>Photos will moved into the album "{targetAlbum}"</FormHelperText>}
                 </FormControl>
 
+                <FormControl>
+                    <FormLabel id="conflict-group-label" title="What to do when on the destination the file already exists ">On conflict</FormLabel>
+                    <RadioGroup row defaultValue="cancel" value={mode} onChange={changeMode} name="conflict-group-label" aria-labelledby="conflict-group-label">
+                        <FormControlLabel value="cancel" control={<Radio />} label="Cancel" title="Cancel everything before making any changes" />
+                        <FormControlLabel value="skip" control={<Radio />} label="Skip" title="Skip files in conflict and move everything else" />
+                        <FormControlLabel value="rename" control={<Radio />} label="Rename" title="Rename files in conflict by adding a sequence number between parenthesis" />
+                    </RadioGroup>
+                </FormControl>
+
                 <FormControl variant="filled" fullWidth margin="normal">
-                <DialogContentText>
-                    Photos to be moved:
-                </DialogContentText>
+                    <DialogContentText>
+                        Photos to be moved:
+                    </DialogContentText>
                     <PhotoAlbum
                         photos={photos}
                         layout="rows"

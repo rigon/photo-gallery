@@ -174,7 +174,7 @@ func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 	p := filepath.Join(c.PhotosPath, name)
 
 	// File or folder already exists, cannot overwrite
-	if _, err := os.Stat(p); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(p); !os.IsNotExist(err) {
 		return err
 	}
 

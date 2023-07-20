@@ -54,6 +54,12 @@ export interface FileType {
 
 export type PhotoImageType = PhotoType & Image;
 
+export enum MoveConflictMode {
+    Cancel = "cancel",
+    Skip = "skip",
+    Rename = "rename",
+}
+
 export const urls = {
     thumb: (photo: PhotoType) => `/api/collections/${photo.collection}/albums/${photo.album}/photos/${photo.id}/thumb`,
     file: (photo: PhotoType, file: FileType) => `/api/collections/${photo.collection}/albums/${photo.album}/photos/${photo.id}/files/${file.id}`,
