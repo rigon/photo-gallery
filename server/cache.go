@@ -136,40 +136,19 @@ func (c Cache) WasAlbumSaved(album *Album) bool {
 	return c.store.Get(album.Name, &a) == nil
 }
 
+func (photo *Photo) Key() string {
+	return PhotoKey(photo.Album, photo.Id)
+}
+
+func PhotoKey(album string, id string) string {
+	return album + ":" + id
+}
+
 // Fill photos with info in cache (e.g. height and width)
-func (c Cache) FillPhotosInfo(album *Album) (err error) {
-	var update []*Photo
-
-	// Get photos that are in cache
-	err = c.store.Bolt().View(func(tx *bolt.Tx) error {
-		size := len(album.photosMap)
-		count := 0
-		for _, photo := range album.photosMap {
-			var data Photo
-			count++
-			err := c.store.TxGet(tx, photo.Key(), &data)
-			// Does not require update
-			if err == nil && data.Id == photo.Id && data.Collection == photo.Collection &&
-				data.Album == photo.Album && len(data.Files) == len(photo.Files) { // Validate some fields
-
-				*photo = data
-				continue
-			}
-
-			log.Printf("Caching photo info [%s] %d/%d: %s %s\n", album.Name, count, size, photo.Title, photo.SubAlbum)
-			photo.FillInfo()
-			update = append(update, photo)
-		}
-		return nil
-	})
-
-	// Nothing to update
-	if len(update) < 1 {
-		return
-	}
-
-	// Update missing entries
-	return c.AddPhotoInfo(update...)
+func (c Cache) GetPhotoInfo(album string, id string) (*Photo, error) {
+	var photo Photo
+	err := c.store.Get(PhotoKey(album, id), &photo)
+	return &photo, err
 }
 
 // Add or update info for photos

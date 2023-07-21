@@ -144,10 +144,7 @@ func file(c echo.Context) error {
 	collectionName := c.Param("collection")
 	albumName := c.Param("album")
 	photoName := c.Param("photo")
-	fileNumber, err := strconv.Atoi(c.Param("file"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
+	fileName := c.Param("file")
 
 	collection, err := GetCollection(collectionName)
 	if err != nil {
@@ -167,7 +164,7 @@ func file(c echo.Context) error {
 	}
 
 	// Get file
-	file, err := photo.GetFile(fileNumber)
+	file, err := photo.GetFile(fileName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -257,7 +254,7 @@ func main() {
 
 	// Middleware
 	e.Use(middleware.Gzip())
-	e.Use(middleware.Recover())
+	//e.Use(middleware.Recover())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		CustomTimeFormat: "2006/01/02 15:04:05",
 		Format:           "${time_custom} ${status} ${method} ${latency_human} ${path} (${remote_ip})\n",

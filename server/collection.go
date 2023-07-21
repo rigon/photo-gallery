@@ -160,10 +160,6 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Al
 
 	// Get photos from the disk
 	album.GetPhotos(c)
-	// Fill photos with info in cache (e.g. height and width)
-	if !album.IsPseudo { // Pseudo albums already have info filled
-		c.cache.FillPhotosInfo(album)
-	}
 	// ...and save to cache
 	c.cache.SaveAlbum(album)
 

@@ -32,10 +32,6 @@ type Photo struct {
 	HasThumb   bool          `json:"-" boltholdIndex:"hasthumb"` // Indicates if the thumbnail was generated
 }
 
-func (photo *Photo) Key() string {
-	return photo.Album + ":" + photo.Id
-}
-
 // Add pseudo album to the favorites list
 func (photo *Photo) AddFavorite(srcCollection *Collection, srcAlbum *Album) bool {
 	collection, album := srcCollection.Name, srcAlbum.Name
@@ -71,11 +67,13 @@ func (photo *Photo) ThumbnailPath(collection *Collection) string {
 }
 
 // Gets a file from the photo
-func (photo *Photo) GetFile(fileNumber int) (*File, error) {
-	if fileNumber < 0 || fileNumber >= len(photo.Files) {
-		return nil, errors.New("invalid photo file number")
+func (photo *Photo) GetFile(id string) (*File, error) {
+	for _, file := range photo.Files {
+		if file.Id == id {
+			return file, nil
+		}
 	}
-	return photo.Files[fileNumber], nil
+	return nil, errors.New("File not found")
 }
 
 // Selects a file that will represent the photo
@@ -139,9 +137,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 func (photo *Photo) FillInfo() error {
 	var countImages = 0
 	var countVideos = 0
-	// Extract info for each file
 	for _, file := range photo.Files {
-		file.ExtractInfo()
 		switch file.Type {
 		case "image":
 			countImages++
@@ -175,8 +171,12 @@ func (photo *Photo) FillInfo() error {
 		return errors.New("cannot find file")
 	}
 
-	photo.Width = selected.Width
-	photo.Height = selected.Height
+	photo.Width = 200  // Default width
+	photo.Height = 200 // Default height
+	if selected.Width > 0 && selected.Height > 0 {
+		photo.Width = selected.Width // Valid dimensions
+		photo.Height = selected.Height
+	}
 	photo.Date = selected.Date
 	photo.Location = selected.Location
 	return nil
