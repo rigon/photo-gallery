@@ -163,7 +163,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                             <StyledList>
                                 <dt>Name</dt><dd>{file.filestat.name}</dd>
                                 <dt>Size</dt><dd>{file.filestat.sizehuman} ({file.filestat.size.toLocaleString()} bytes)</dd>
-                                <dt>Modification Time</dt><dd>{file.filestat.modtime}</dd>
+                                <dt>Modification Time</dt><dd>{new Date(file.filestat.modtime).toLocaleString()}</dd>
                                 <dt>Permissions</dt><dd>{file.filestat.perm}</dd>
                             </StyledList>
                         </AccordionDetails>

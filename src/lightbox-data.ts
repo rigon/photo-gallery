@@ -17,6 +17,7 @@ export function photoToSlideImage(photo: PhotoType, files: FileType[]): SlideIma
         src: urls.thumb(photo),
         alt: photo.title,
         title: photo.title,
+        description: new Date(photo.date).toLocaleString(),
         width: width * MAX_ZOOM,
         height: height * MAX_ZOOM,
         srcSet: [
@@ -51,6 +52,7 @@ export function photoToSlideVideo(photo: PhotoType, files: FileType[]): SlideVid
         favorite: photo.favorite,
         poster: urls.thumb(photo),
         title: photo.title,
+        description: new Date(photo.date).toLocaleString(),
         width: photo.width,
         height: photo.height,
         sources: files.map(file => ({
@@ -69,6 +71,7 @@ export function photoToSlideLivePhoto(photo: PhotoType): SlideLivePhoto {
         favorite: photo.favorite,
         src: urls.thumb(photo),
         title: photo.title,
+        description: new Date(photo.date).toLocaleString(),
         width: photo.width,
         height: photo.height,
         image: photoToSlideImage(photo, [file_image as FileType]),
