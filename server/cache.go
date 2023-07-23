@@ -4,6 +4,7 @@ import (
 	"log"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/bluele/gcache"
 	"github.com/timshannon/bolthold"
@@ -18,10 +19,16 @@ type DbInfo struct {
 	Version int
 }
 
+const InfoBatchSize = 100
+
 type Cache struct {
-	albums *sync.Map
-	mem    gcache.Cache
-	store  *bolthold.Store
+	albums    *sync.Map
+	mem       gcache.Cache
+	store     *bolthold.Store
+	addInfoCh chan *Photo
+	delInfoCh chan *Photo
+	infoWg    sync.WaitGroup
+	mux       sync.Mutex
 }
 
 // Init cache: boltdb and gcache
@@ -72,12 +79,16 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	// Cache for listing albums
 	c.albums = new(sync.Map)
 
+	// Start running batchers
+	c.addInfoBatcher()
+	c.delInfoBatcher()
+
 	// Ok
 	return nil
 }
 
 // Release all caching resources
-func (c Cache) End() error {
+func (c *Cache) End() error {
 	c.mem.Purge()
 	return c.store.Close()
 }
@@ -92,7 +103,7 @@ func (c *Cache) SetListAlbums(albums ...*Album) {
 	c.AddToListAlbums(albums...)
 }
 
-func (c Cache) AddToListAlbums(albums ...*Album) {
+func (c *Cache) AddToListAlbums(albums ...*Album) {
 	for _, album := range albums {
 		c.albums.Store(album.Name, true)
 	}
@@ -107,13 +118,13 @@ func (c *Cache) IsListAlbumsLoaded() bool {
 	return ret
 }
 
-func (c Cache) IsAlbum(albumName string) bool {
+func (c *Cache) IsAlbum(albumName string) bool {
 	// Check if value is present
 	_, present := c.albums.Load(albumName)
 	return present
 }
 
-func (c Cache) GetAlbum(albumName string) (*Album, error) {
+func (c *Cache) GetAlbum(albumName string) (*Album, error) {
 	// Check if value is present
 	album, err := c.mem.Get(albumName)
 	if err != nil || album == nil {
@@ -122,7 +133,7 @@ func (c Cache) GetAlbum(albumName string) (*Album, error) {
 	return album.(*Album), nil
 }
 
-func (c Cache) SaveAlbum(album *Album) error {
+func (c *Cache) SaveAlbum(album *Album) error {
 	// Flag this album as loaded
 	type AlbumSaved struct{}
 	go c.store.Upsert(album.Name, AlbumSaved{})
@@ -130,7 +141,7 @@ func (c Cache) SaveAlbum(album *Album) error {
 	return c.mem.Set(album.Name, album)
 }
 
-func (c Cache) WasAlbumSaved(album *Album) bool {
+func (c *Cache) WasAlbumSaved(album *Album) bool {
 	type AlbumSaved struct{}
 	var a AlbumSaved
 	return c.store.Get(album.Name, &a) == nil
@@ -145,46 +156,85 @@ func PhotoKey(album string, id string) string {
 }
 
 // Fill photos with info in cache (e.g. height and width)
-func (c Cache) GetPhotoInfo(album string, id string) (*Photo, error) {
+func (c *Cache) GetPhotoInfo(album string, id string) (*Photo, error) {
 	var photo Photo
 	err := c.store.Get(PhotoKey(album, id), &photo)
 	return &photo, err
 }
 
-// Add or update info for photos
-func (c Cache) AddPhotoInfo(photos ...*Photo) error {
-	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
-		for i, photo := range photos {
-			if i%100 == 0 || i == len(photos)-1 {
-				log.Printf("Updating cache info %s (%d/%d)", photo.Album, i+1, len(photos))
-			}
-			err := c.store.TxUpsert(tx, photo.Key(), photo)
-			if err != nil {
-				log.Println(err)
-			}
+func (c *Cache) addInfoBatcher() {
+	c.addInfoCh = make(chan *Photo)
+	batches := Batch[*Photo](c.addInfoCh, InfoBatchSize, 3*time.Second)
+	go func() {
+		for batch := range batches {
+			log.Printf("Updating cache info (%d items)", len(batch))
+			c.store.Bolt().Update(func(tx *bolt.Tx) error {
+				// Add or update info for photos
+				for _, photo := range batch {
+					err := c.store.TxUpsert(tx, photo.Key(), photo)
+					if err != nil {
+						log.Println(err)
+					}
+				}
+				return nil
+			})
 		}
-		return nil
-	})
+	}()
+}
+
+func (c *Cache) delInfoBatcher() {
+	c.delInfoCh = make(chan *Photo)
+	batches := Batch[*Photo](c.delInfoCh, InfoBatchSize, 3*time.Second)
+	go func() {
+		for batch := range batches {
+			log.Printf("Deleting cache info (%d items)", len(batch))
+			c.store.Bolt().Update(func(tx *bolt.Tx) error {
+				// Delete photo info
+				for _, photo := range batch {
+					// Delete entry
+					err := c.store.TxDelete(tx, photo.Key(), photo)
+					if err != nil {
+						log.Println(err)
+					}
+				}
+				return nil
+			})
+		}
+	}()
+}
+
+func (c *Cache) FlushInfo() {
+	go func() {
+		c.mux.Lock()
+		c.infoWg.Wait()
+		c.addInfoCh <- nil
+		c.delInfoCh <- nil
+		c.mux.Unlock()
+	}()
+}
+
+// Add or update info for photos
+func (c *Cache) AddPhotoInfo(photos ...*Photo) {
+	c.mux.Lock()
+	c.infoWg.Add(1)
+	go func() {
+		for _, photo := range photos {
+			c.addInfoCh <- photo
+		}
+		c.infoWg.Done()
+		c.mux.Unlock()
+	}()
 }
 
 // Delete photo info
-func (c Cache) DeletePhotoInfo(photos ...*Photo) ([]*Photo, error) {
-	return photos, c.store.Bolt().Update(func(tx *bolt.Tx) error {
-		for i, photo := range photos {
-			if i%100 == 0 || i == len(photos)-1 {
-				log.Printf("Removing cache info %s (%d/%d)", photo.Album, i+1, len(photos))
-			}
-			// Update info to return
-			err := c.store.TxGet(tx, photo.Key(), photo)
-			if err != nil {
-				log.Println(err)
-			}
-			// Delete entry
-			err = c.store.TxDelete(tx, photo.Key(), photo)
-			if err != nil {
-				log.Println(err)
-			}
+func (c *Cache) DeletePhotoInfo(photos ...*Photo) {
+	c.mux.Lock()
+	c.infoWg.Add(1)
+	go func() {
+		for _, photo := range photos {
+			c.delInfoCh <- photo
 		}
-		return nil
-	})
+		c.infoWg.Done()
+		c.mux.Unlock()
+	}()
 }

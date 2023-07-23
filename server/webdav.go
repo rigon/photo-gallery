@@ -20,7 +20,7 @@ type webDavCollections map[string]*Collection
 
 type collectionsNodeFS struct {
 	cs webDavCollections // Used by root folder
-	c  Collection        // Used by each collection
+	c  *Collection       // Used by each collection
 }
 
 func (cs webDavCollections) find(name string) (*Collection, webdav.Dir, string, error) {
@@ -46,7 +46,7 @@ func (c collectionsNodeFS) Readdir(count int) ([]fs.FileInfo, error) {
 	children := make([]fs.FileInfo, len(c.cs))
 	i := 0
 	for _, c := range c.cs {
-		children[i] = collectionsNodeFS{c: *c}
+		children[i] = collectionsNodeFS{c: c}
 		i++
 	}
 	return children, nil

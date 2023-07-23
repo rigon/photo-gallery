@@ -65,6 +65,7 @@ func AddWorkForeground(collection *Collection, album *Album, photo *Photo, write
 func AddWorkBackground(collection *Collection, album *Album, photos ...*Photo) {
 	size := len(photos)
 	for i, photo := range photos {
+		WaitBackgroundWork()
 		log.Printf("Background thumbnail %s[%s] %d/%d: %s %s", collection.Name, album.Name, i+1, size, photo.Title, photo.SubAlbum)
 		wg.Add(1)
 		w := new(Work)
@@ -74,7 +75,6 @@ func AddWorkBackground(collection *Collection, album *Album, photos ...*Photo) {
 		w.writer = nil
 		w.wg = &wg
 		ch <- w
-		WaitBackgroundWork()
 	}
 	wg.Wait()
 }

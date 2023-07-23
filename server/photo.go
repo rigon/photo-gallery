@@ -100,6 +100,14 @@ func (photo *Photo) MainFile() *File {
 }
 
 func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writer) error {
+	// Update flag to indicate that the thumbnail was generated
+	defer func() {
+		if !photo.HasThumb {
+			photo.HasThumb = true
+			collection.cache.AddPhotoInfo(photo)
+		}
+	}()
+
 	thumbPath := photo.ThumbnailPath(collection)
 
 	// If the file doesn't exist
@@ -107,7 +115,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		// Create thumbnail
 		selected := photo.MainFile()
 		if selected == nil {
-			return errors.New("is not a photo")
+			return errors.New("no source file to generate thumbnail from")
 		}
 		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
@@ -126,11 +134,6 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		}
 	}
 
-	// Update flag to indicate that the thumbnail was generated
-	if !photo.HasThumb {
-		photo.HasThumb = true
-		collection.cache.AddPhotoInfo(photo)
-	}
 	return nil
 }
 

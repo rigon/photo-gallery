@@ -15,6 +15,8 @@ func (collection *Collection) Scan(fullScan bool) error {
 		return err
 	}
 
+	defer collection.cache.FlushInfo()
+
 	for _, album := range albums {
 		// Skip album if it was already scanned and it is a quick scan
 		if !fullScan && collection.cache.WasAlbumSaved(album) {
@@ -22,7 +24,7 @@ func (collection *Collection) Scan(fullScan bool) error {
 		}
 
 		// Load album
-		album, err = collection.GetAlbumWithPhotos(album.Name, fullScan)
+		album, err = collection.GetAlbumWithPhotos(album.Name, fullScan, true)
 		if err != nil {
 			log.Println(err)
 		}
@@ -81,6 +83,8 @@ func (collection *Collection) CreateThumbnails() error {
 	if err != nil {
 		return err
 	}
+
+	defer collection.cache.FlushInfo()
 
 	for _, albumResult := range result {
 		var photos []*Photo

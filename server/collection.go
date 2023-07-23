@@ -144,7 +144,7 @@ func readAlbum(file fs.FileInfo) (*Album, error) {
 }
 
 // Get album with photos
-func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Album, error) {
+func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool, runningInBackground bool) (*Album, error) {
 	if !forceUpdate {
 		// Check if album is in cache
 		cachedAlbum, err := c.cache.GetAlbum(albumName)
@@ -159,7 +159,7 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Al
 	}
 
 	// Get photos from the disk
-	album.GetPhotos(c)
+	album.GetPhotos(c, runningInBackground)
 	// ...and save to cache
 	c.cache.SaveAlbum(album)
 
@@ -214,20 +214,4 @@ func (collection *Collection) StorageUsage() (*CollectionStorage, error) {
 		Used:       humanize.IBytes(di.Total - di.Free),
 		Percentage: int(math.Round(percentage)),
 	}, nil
-}
-
-// Cache info about all albums in the collection
-func (collection *Collection) CacheAlbums() {
-	albums, err := collection.GetAlbums()
-	if err != nil {
-		log.Println(err)
-	}
-
-	for _, album := range albums {
-		WaitBackgroundWork()
-		_, err := collection.GetAlbumWithPhotos(album.Name, false)
-		if err != nil {
-			log.Println(err)
-		}
-	}
 }

@@ -20,41 +20,24 @@ type Album struct {
 	photosMap map[string]*Photo `json:"-"`      // actual place where photos are stored
 }
 
-func (album *Album) GetPhotos(collection *Collection) error {
+func (album *Album) GetPhotos(collection *Collection, runningInBackground bool) error {
 	subAlbums := make(map[string]bool)
 	album.photosMap = make(map[string]*Photo)
 
 	if album.IsPseudo {
+		// Read pseudo album
 		pseudos, err := readPseudoAlbum(collection, album)
 		if err != nil {
 			return err
 		}
+
+		// Get photos from pseudos
+		photos := GetPhotosFromPseudos(collection, album, true, pseudos...)
+
 		// Iterate over entries in the pseudo album
-		for _, pseudo := range pseudos {
-			targetCollection, err := GetCollection(pseudo.Collection)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			targetAlbum, err := targetCollection.GetAlbumWithPhotos(pseudo.Album, false)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			targetPhoto, err := targetAlbum.GetPhoto(pseudo.Photo)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			// Update photo with favorite album
-			result := targetPhoto.AddFavorite(collection, album)
-			if result {
-				go targetCollection.cache.AddPhotoInfo(targetPhoto)
-			}
-
-			photo := targetPhoto.CopyForPseudoAlbum(targetCollection, targetAlbum)
-			album.photosMap[targetPhoto.Id] = photo
+		for _, srcPhoto := range photos {
+			photo := srcPhoto.CopyForPseudoAlbum()
+			album.photosMap[photo.Id] = photo
 			subAlbums[photo.SubAlbum] = true
 		}
 	} else {
@@ -105,6 +88,9 @@ func (album *Album) GetPhotos(collection *Collection) error {
 						Id:   name,
 					}
 					log.Printf("Extracting photo info [%s]: %s %s\n", album.Name, photo.Title, photo.SubAlbum)
+					if runningInBackground {
+						WaitBackgroundWork()
+					}
 					photoFile.ExtractInfo()
 					photo.Files = append(photo.Files, photoFile)
 					// Add photo to the list of updated photos
@@ -122,6 +108,7 @@ func (album *Album) GetPhotos(collection *Collection) error {
 			photo.FillInfo()
 			collection.cache.AddPhotoInfo(photo)
 		}
+		collection.cache.FlushInfo()
 	}
 
 	// List of sub-albums

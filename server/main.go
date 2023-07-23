@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -55,7 +56,7 @@ func album(c echo.Context) error {
 	}
 
 	// Fetch album from disk
-	album, err := collection.GetAlbumWithPhotos(albumName, true)
+	album, err := collection.GetAlbumWithPhotos(albumName, true, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -94,7 +95,7 @@ func thumb(c echo.Context) error {
 	}
 
 	// Fetch album with photos including info
-	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -121,7 +122,7 @@ func info(c echo.Context) error {
 	}
 
 	// Fetch album with photos including info
-	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -152,7 +153,7 @@ func file(c echo.Context) error {
 	}
 
 	// Fetch photo from cache
-	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -227,6 +228,7 @@ func main() {
 	}
 
 	// Cache albums and thumbnails in background
+	fmt.Println(config.cacheThumbnails, config.disableScan, config.fullScan)
 	if !config.disableScan {
 		go func() {
 			log.Println("Scanning for photos in background...")
@@ -234,7 +236,7 @@ func main() {
 			for _, collection := range config.collections {
 				collection.Scan(config.fullScan)
 			}
-			// Clean thumbnails of deleted photos0
+			// Clean thumbnails of deleted photos
 			if config.fullScan {
 				CleanupThumbnails(config.collections)
 			}
