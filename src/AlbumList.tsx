@@ -26,26 +26,28 @@ interface AlbumListProps {
 const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     const { collection, album } = useParams();
     const { data = [], isFetching } = useGetAlbumsQuery({collection}, {skip: collection === undefined});
-    const [ searchTerm, setSearchTerm ] = useState<string>("");
+    const [ searchTerm, setSearchTerm ] = useState<string[]>([]);
     
     const albums = useMemo(() => searchTerm.length < 1 ? data :
-            data.filter((album) => album.name.toLowerCase().includes(searchTerm)),
-            [searchTerm, data]);
+        data.filter(album => {
+            const low = album.name.toLowerCase();
+            return searchTerm.reduce((acc, term) => acc && low.includes(term), true);
+    }), [searchTerm, data]);
 
     const onSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(event.target.value.toLowerCase());
+        setSearchTerm(event.target.value.toLowerCase().split(/\s+/));
     };
     const clearSearch = () => {
-        setSearchTerm("");
+        setSearchTerm([]);
     };
 
     const renderRow = ({ index, style }: ListChildComponentProps<AlbumType>) => {
-        const a = albums[index];
+        const current = albums[index];
         return (
-            <ListItem onClick={onClick} style={style} key={a.name} disablePadding>
-                <ListItemButton component={Link} to={`/${collection}/${a.name}`} selected={a.name === album}>
+            <ListItem onClick={onClick} style={style} key={current.name} disablePadding>
+                <ListItemButton component={Link} to={`/${collection}/${current.name}`} selected={current.name === album}>
                     <ListItemText>
-                        <Typography noWrap>{a.name}</Typography>
+                        <Typography noWrap>{current.name}</Typography>
                     </ListItemText>
                 </ListItemButton>
             </ListItem>
@@ -78,7 +80,6 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     return <>
         <TextField
             label="Search albums"
-            value={searchTerm}
             onChange={onSearch}
             fullWidth
             variant="filled"
