@@ -25,7 +25,7 @@ import Lightbox from "./Lightbox";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import useFavorite from "./favoriteHook";
 import useNotification from "./Notification";
-import { Selectable, SelectionContext } from "./Selection";
+import { Selectable, SelectionContext, useSelectionContext } from "./Selection";
 import { PhotoType, PhotoImageType, urls } from "./types";
 import { useGetAlbumQuery, useSavePhotoToPseudoMutation } from "./services/api";
 import { selectZoom } from "./services/app";
@@ -61,6 +61,7 @@ const Gallery: FC = () => {
     const [ lightboxIndex, setLightboxIndex ] = useState<number>(-1);
     const [ infoPhotoIndex, setInfoPhotoIndex ] = useState<number>(-1);
     const [ subAlbum, setSubAlbum ] = useState<string>("");
+    const { getIndexes: getSelection } = useSelectionContext();
     const [ saveFavorite ] = useSavePhotoToPseudoMutation();
     const { infoNotification, errorNotification } = useNotification();
     const zoom = useSelector(selectZoom);
@@ -91,8 +92,9 @@ const Gallery: FC = () => {
             return;
         }
 
-        const photo = photos[index];
-        const isFavorite = !(favorite.photo(photo).isFavoriteThis);
+        const selection = getSelection();
+        const indexes = selection.includes(index) ? selection : [index];
+        const isFavorite = !(favorite.photo(photos[index]).isFavoriteThis);
         try {
             await saveFavorite({
                 collection: selected.collection,
@@ -101,9 +103,9 @@ const Gallery: FC = () => {
                 saveData: {
                     collection,
                     album,
-                    photos: [photo.id], // TODO: change here for bulk selection
+                    photos: indexes.map(i => photos[i].id),
                 },
-                photoIndex: [index], // TODO: change here for bulk selection
+                photoIndexes: indexes,
             }).unwrap();
             infoNotification(isFavorite ?
                 `Photo added as favorite to ${selected.album}` :

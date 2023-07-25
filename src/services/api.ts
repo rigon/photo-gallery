@@ -57,7 +57,7 @@ export interface QuerySaveFavorite {
     collection: CollectionType["name"];
     album: AlbumType["name"];
     favorite: boolean;
-    photoIndex: number[];
+    photoIndexes: number[];
     saveData: {
         collection: CollectionType["name"];
         album: AlbumType["name"];
@@ -128,12 +128,12 @@ export const api = createApi({
                 body: saveData,
             }),
             invalidatesTags: (_result, _error, arg) => [{ type: 'Album', id: albumId(arg) }],
-            async onQueryStarted({ collection, album, saveData, photoIndex, favorite }, { dispatch, queryFulfilled }) {
+            async onQueryStarted({ collection, album, saveData, photoIndexes, favorite }, { dispatch, queryFulfilled }) {
                 const query: QueryAlbum = { collection: saveData.collection, album: saveData.album };
                 const patchResult = dispatch(
                     api.util.updateQueryData('getAlbum', query, draft => {
                         // Optimistic Updates
-                        photoIndex.forEach(i => {
+                        photoIndexes.forEach(i => {
                             if(!draft.photos[i].favorite)
                                 draft.photos[i].favorite = [];
                             

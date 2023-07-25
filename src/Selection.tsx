@@ -38,6 +38,8 @@ interface Ctx {
     cbs: React.Dispatch<React.SetStateAction<boolean>>[];
     // Current selected items
     selection: boolean[];
+    // Counter for selected items
+    countSelection: number;
 }
 
 // List of contexts
@@ -68,11 +70,22 @@ export function useSelectionContext(contextName?: string) {
         
         return selected;
     };
+    const getIndexes = () => {
+        const ctx = ctxs[getName(contextName)];
+
+        const selected: number[] = [];
+        for(let i=0; i<ctx.selection.length; i++)
+            if(ctx.selection[i])
+                selected.push(i);
+        
+        return selected;
+    };
     
     return {
         get,
+        getIndexes,
         cancel,
-        isSelecting: true,
+        isSelecting: true, // FIXME: shoud reflect if it is selecting
     }
 }
 
@@ -91,18 +104,19 @@ export function SelectionContext<ItemType>({ name, children, transformItemToId }
         // On ComponentMount
         // Create context if doesn't exist
         if(ctxs[getName(name)] === undefined) {
-            ctxs[getName()] = {
+            ctxs[getName(name)] = {
                 count: 0,
                 items: [],
                 keyMap: {},
                 cbs: [],
                 selection: [],
+                countSelection: 0,
             };
         }
         
         // On ComponentWillUnmount
         return () => {
-            delete ctxs[getName()];
+            delete ctxs[getName(name)];
         }
     }, [name]);
 
@@ -131,6 +145,7 @@ export function SelectionContext<ItemType>({ name, children, transformItemToId }
             // Special case for startIndex, select it if not selected
             if(index === startIndex && ctx.selection[index] !== value) {
                 ctx.selection[index] = value;
+                ctx.countSelection += (value? 1 : -1);
                 if(ctx.cbs[index])
                     ctx.cbs[index](value);
             }
@@ -151,16 +166,21 @@ export function SelectionContext<ItemType>({ name, children, transformItemToId }
         const min = Math.min(prevIndex, index) + offsetmin;
         const max = Math.max(prevIndex, index) - offsetmax;
         // Iterate over changing items
-        const ctx = ctxs[getName()];
+        const ctx = ctxs[getName(name)];
         for(let i = min; i <= max ; i++) {
             const hasCrossed = (!side && i > startIndex) ||
                                ( side && i < startIndex);
             const newVal = (hasCrossed ? !dir : dir) === value;
-            // Trigger event on the component
-            if(ctx.selection[i] !== newVal && ctx.cbs[i])
-                ctx.cbs[i](newVal);
-            // Select or deselect
-            ctx.selection[i] = newVal;
+            // Selection has changed
+            if(ctx.selection[i] !== newVal) {
+                // Select or deselect
+                ctx.selection[i] = newVal;
+                // Update counter
+                ctx.countSelection += (newVal? 1 : -1);
+                // Trigger event on the component
+                if(ctx.cbs[i])
+                    ctx.cbs[i](newVal);
+            }
         }
         prevIndex = index;
     };
