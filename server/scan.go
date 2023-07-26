@@ -15,7 +15,7 @@ func (collection *Collection) Scan(fullScan bool) error {
 		return err
 	}
 
-	defer collection.cache.FlushInfo()
+	defer collection.cache.FinishFlush()
 
 	for _, album := range albums {
 		// Skip album if it was already scanned and it is a quick scan
@@ -84,7 +84,7 @@ func (collection *Collection) CreateThumbnails() error {
 		return err
 	}
 
-	defer collection.cache.FlushInfo()
+	defer collection.cache.FinishFlush()
 
 	for _, albumResult := range result {
 		var photos []*Photo

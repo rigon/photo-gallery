@@ -4,7 +4,6 @@ import (
 	"log"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"github.com/bluele/gcache"
 	"github.com/timshannon/bolthold"
@@ -27,8 +26,7 @@ type Cache struct {
 	store     *bolthold.Store
 	addInfoCh chan *Photo
 	delInfoCh chan *Photo
-	infoWg    sync.WaitGroup
-	mux       sync.Mutex
+	wgFlush   sync.WaitGroup
 }
 
 // Init cache: boltdb and gcache
@@ -163,11 +161,12 @@ func (c *Cache) GetPhotoInfo(album string, id string) (*Photo, error) {
 }
 
 func (c *Cache) addInfoBatcher() {
-	c.addInfoCh = make(chan *Photo)
-	batches := Batch[*Photo](c.addInfoCh, InfoBatchSize, 3*time.Second)
+	c.addInfoCh = make(chan *Photo, InfoBatchSize*10)
+	batches := Batch[*Photo](c.addInfoCh, InfoBatchSize)
 	go func() {
 		for batch := range batches {
 			log.Printf("Updating cache info (%d items)", len(batch))
+			c.wgFlush.Add(1)
 			c.store.Bolt().Update(func(tx *bolt.Tx) error {
 				// Add or update info for photos
 				for _, photo := range batch {
@@ -175,19 +174,22 @@ func (c *Cache) addInfoBatcher() {
 					if err != nil {
 						log.Println(err)
 					}
+					c.wgFlush.Done()
 				}
 				return nil
 			})
+			c.wgFlush.Done()
 		}
 	}()
 }
 
 func (c *Cache) delInfoBatcher() {
-	c.delInfoCh = make(chan *Photo)
-	batches := Batch[*Photo](c.delInfoCh, InfoBatchSize, 3*time.Second)
+	c.delInfoCh = make(chan *Photo, InfoBatchSize*10)
+	batches := Batch[*Photo](c.delInfoCh, InfoBatchSize)
 	go func() {
 		for batch := range batches {
 			log.Printf("Deleting cache info (%d items)", len(batch))
+			c.wgFlush.Add(1)
 			c.store.Bolt().Update(func(tx *bolt.Tx) error {
 				// Delete photo info
 				for _, photo := range batch {
@@ -196,45 +198,39 @@ func (c *Cache) delInfoBatcher() {
 					if err != nil {
 						log.Println(err)
 					}
+					c.wgFlush.Done()
 				}
 				return nil
 			})
+			c.wgFlush.Done()
 		}
 	}()
 }
 
+// Flushes remaining items still in memory
 func (c *Cache) FlushInfo() {
-	go func() {
-		c.mux.Lock()
-		c.infoWg.Wait()
-		c.addInfoCh <- nil
-		c.delInfoCh <- nil
-		c.mux.Unlock()
-	}()
+	c.addInfoCh <- nil
+	c.delInfoCh <- nil
+}
+
+// Wait for all items in memory to be flushed
+func (c *Cache) FinishFlush() {
+	c.FlushInfo()
+	c.wgFlush.Wait()
 }
 
 // Add or update info for photos
 func (c *Cache) AddPhotoInfo(photos ...*Photo) {
-	c.mux.Lock()
-	c.infoWg.Add(1)
-	go func() {
-		for _, photo := range photos {
-			c.addInfoCh <- photo
-		}
-		c.infoWg.Done()
-		c.mux.Unlock()
-	}()
+	c.wgFlush.Add(len(photos))
+	for _, photo := range photos {
+		c.addInfoCh <- photo
+	}
 }
 
 // Delete photo info
 func (c *Cache) DeletePhotoInfo(photos ...*Photo) {
-	c.mux.Lock()
-	c.infoWg.Add(1)
-	go func() {
-		for _, photo := range photos {
-			c.delInfoCh <- photo
-		}
-		c.infoWg.Done()
-		c.mux.Unlock()
-	}()
+	c.wgFlush.Add(len(photos))
+	for _, photo := range photos {
+		c.delInfoCh <- photo
+	}
 }

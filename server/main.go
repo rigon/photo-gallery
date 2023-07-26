@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -228,10 +227,9 @@ func main() {
 	}
 
 	// Cache albums and thumbnails in background
-	fmt.Println(config.cacheThumbnails, config.disableScan, config.fullScan)
 	if !config.disableScan {
 		go func() {
-			log.Println("Scanning for photos in background...")
+			log.Println("Start scanning for photos in background...")
 			// First cache all albums
 			for _, collection := range config.collections {
 				collection.Scan(config.fullScan)

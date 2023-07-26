@@ -210,7 +210,7 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 	}
 
 	// Update in background cached entries that were changed
-	go GetPhotosFromPseudos(collection, album, isAdd, updated...)
+	go GetPhotosFromPseudos(isAdd, false, collection, album, updated...)
 
 	if len(errs) > 0 {
 		return errors.New(strings.Join(errs, "\n"))
@@ -218,7 +218,7 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 	return nil
 }
 
-func GetPhotosFromPseudos(collection *Collection, album *Album, isAdd bool, entries ...PseudoAlbumEntry) []*Photo {
+func GetPhotosFromPseudos(isAdd bool, runningInBackground bool, collection *Collection, album *Album, entries ...PseudoAlbumEntry) []*Photo {
 	var photos []*Photo
 
 	// Sort pseudo entries by collection and album
@@ -251,7 +251,7 @@ func GetPhotosFromPseudos(collection *Collection, album *Album, isAdd bool, entr
 
 		// Load album
 		if forceAlbumLoad || srcAlbum == nil || srcAlbum.Name != entry.Album {
-			srcAlbum, err = collection.GetAlbumWithPhotos(entry.Album, false, true)
+			srcAlbum, err = collection.GetAlbumWithPhotos(entry.Album, false, runningInBackground)
 			if err != nil {
 				log.Println(err)
 				continue

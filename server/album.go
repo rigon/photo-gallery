@@ -26,13 +26,14 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool) 
 
 	if album.IsPseudo {
 		// Read pseudo album
+		log.Printf("Scanning pseudo-album %s[%s]...", collection.Name, album.Name)
 		pseudos, err := readPseudoAlbum(collection, album)
 		if err != nil {
 			return err
 		}
 
 		// Get photos from pseudos
-		photos := GetPhotosFromPseudos(collection, album, true, pseudos...)
+		photos := GetPhotosFromPseudos(true, runningInBackground, collection, album, pseudos...)
 
 		// Iterate over entries in the pseudo album
 		for _, srcPhoto := range photos {

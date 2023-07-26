@@ -1,13 +1,9 @@
 package main
 
-import (
-	"time"
-)
-
 /**
  * Source: https://elliotchance.medium.com/batch-a-channel-by-size-or-time-in-go-92fa3098f65
  */
-func Batch[T comparable](values <-chan T, maxItems int, maxTimeout time.Duration) chan []T {
+func Batch[T comparable](values <-chan T, maxItems int) chan []T {
 	var zero T // nil value for type T
 	batches := make(chan []T)
 
