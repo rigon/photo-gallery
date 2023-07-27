@@ -20,7 +20,7 @@ type Album struct {
 	photosMap map[string]*Photo `json:"-"`      // actual place where photos are stored
 }
 
-func (album *Album) GetPhotos(collection *Collection, runningInBackground bool) error {
+func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, photosToLoad ...PseudoAlbumEntry) error {
 	subAlbums := make(map[string]bool)
 	album.photosMap = make(map[string]*Photo)
 
@@ -33,7 +33,7 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool) 
 		}
 
 		// Get photos from pseudos
-		photos := GetPhotosFromPseudos(true, runningInBackground, collection, album, pseudos...)
+		photos := album.GetPhotosForPseudo(collection, true, runningInBackground, pseudos...)
 
 		// Iterate over entries in the pseudo album
 		for _, srcPhoto := range photos {
@@ -51,52 +51,69 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool) 
 			if err != nil {
 				return err
 			}
-			if !file.IsDir() {
-				name, ext := file.Name(), filepath.Ext(file.Name())
-				removedDir := strings.TrimPrefix(fileDir, dir+string(filepath.Separator))
-				fileId := strings.ToLower(strings.ReplaceAll(strings.TrimSuffix(removedDir, ext), string(filepath.Separator), "|"))
+			// Skip folders
+			if file.IsDir() {
+				return nil
+			}
+			// Get parameters
+			name, ext := file.Name(), filepath.Ext(file.Name())
+			removedDir := strings.TrimPrefix(fileDir, dir+string(filepath.Separator))
+			fileId := strings.ToLower(strings.ReplaceAll(strings.TrimSuffix(removedDir, ext), string(filepath.Separator), "|"))
 
-				photo, photoExists := album.photosMap[fileId]
-				if !photoExists {
-					title := strings.TrimSuffix(name, ext)
-					subAlbum := strings.TrimSuffix(strings.TrimSuffix(removedDir, name), string(filepath.Separator))
-					// Retrive photo info from cache if present
-					photo, err = collection.cache.GetPhotoInfo(album.Name, fileId)
-					if err != nil || photo == nil || photo.Id != fileId || photo.Title != title || photo.SubAlbum != subAlbum {
-						// Create a new photo for photos not in cache or outdated data
-						photo = &Photo{
-							Id:         fileId,
-							Title:      title,
-							Collection: collection.Name,
-							Album:      album.Name,
-							SubAlbum:   subAlbum,
-							Favorite:   []PseudoAlbum{},
-						}
-						// Add photo to the list of updated photos
-						updatedPhotos[fileId] = true
-					}
-					album.photosMap[fileId] = photo
-					// Map of sub-albums
-					if subAlbum != "" {
-						subAlbums[subAlbum] = true
+			// Load only the selected photos
+			if len(photosToLoad) > 0 {
+				found := false
+				for _, entry := range photosToLoad {
+					if entry.Collection == collection.Name && entry.Album == album.Name && entry.Photo == fileId {
+						found = true
+						break
 					}
 				}
+				if !found { // if not in the list, skip
+					return nil
+				}
+			}
 
-				photoFile, err := photo.GetFile(name)
-				if err != nil || photoFile == nil || photoFile.Path != fileDir {
-					photoFile = &File{
-						Path: fileDir,
-						Id:   name,
+			photo, photoExists := album.photosMap[fileId]
+			if !photoExists {
+				title := strings.TrimSuffix(name, ext)
+				subAlbum := strings.TrimSuffix(strings.TrimSuffix(removedDir, name), string(filepath.Separator))
+				// Retrive photo info from cache if present
+				photo, err = collection.cache.GetPhotoInfo(album.Name, fileId)
+				if err != nil || photo == nil || photo.Id != fileId || photo.Title != title || photo.SubAlbum != subAlbum {
+					// Create a new photo for photos not in cache or outdated data
+					photo = &Photo{
+						Id:         fileId,
+						Title:      title,
+						Collection: collection.Name,
+						Album:      album.Name,
+						SubAlbum:   subAlbum,
+						Favorite:   []PseudoAlbum{},
 					}
-					log.Printf("Extracting photo info [%s]: %s %s\n", album.Name, photo.Title, photo.SubAlbum)
-					if runningInBackground {
-						WaitBackgroundWork()
-					}
-					photoFile.ExtractInfo()
-					photo.Files = append(photo.Files, photoFile)
 					// Add photo to the list of updated photos
 					updatedPhotos[fileId] = true
 				}
+				album.photosMap[fileId] = photo
+				// Map of sub-albums
+				if subAlbum != "" {
+					subAlbums[subAlbum] = true
+				}
+			}
+
+			photoFile, err := photo.GetFile(name)
+			if err != nil || photoFile == nil || photoFile.Path != fileDir {
+				photoFile = &File{
+					Path: fileDir,
+					Id:   name,
+				}
+				log.Printf("Extracting photo info %s[%s]: %s %s", collection.Name, album.Name, photo.Title, photo.SubAlbum)
+				if runningInBackground {
+					WaitBackgroundWork()
+				}
+				photoFile.ExtractInfo()
+				photo.Files = append(photo.Files, photoFile)
+				// Add photo to the list of updated photos
+				updatedPhotos[fileId] = true
 			}
 			return nil
 		})
@@ -109,7 +126,11 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool) 
 			photo.FillInfo()
 			collection.cache.AddPhotoInfo(photo)
 		}
-		collection.cache.FlushInfo()
+		if runningInBackground {
+			collection.cache.FinishFlush()
+		} else {
+			collection.cache.FlushInfo()
+		}
 	}
 
 	// List of sub-albums

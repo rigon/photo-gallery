@@ -105,6 +105,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		if !photo.HasThumb {
 			photo.HasThumb = true
 			collection.cache.AddPhotoInfo(photo)
+			collection.cache.FinishFlush()
 		}
 	}()
 

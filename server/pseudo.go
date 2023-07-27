@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -210,7 +209,7 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 	}
 
 	// Update in background cached entries that were changed
-	go GetPhotosFromPseudos(isAdd, false, collection, album, updated...)
+	go album.GetPhotosForPseudo(collection, isAdd, false, updated...)
 
 	if len(errs) > 0 {
 		return errors.New(strings.Join(errs, "\n"))
@@ -218,68 +217,55 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 	return nil
 }
 
-func GetPhotosFromPseudos(isAdd bool, runningInBackground bool, collection *Collection, album *Album, entries ...PseudoAlbumEntry) []*Photo {
+func (album *Album) GetPhotosForPseudo(collection *Collection, isAdd bool, runningInBackground bool, entries ...PseudoAlbumEntry) []*Photo {
 	var photos []*Photo
+	var grouped = make(map[string]map[string][]PseudoAlbumEntry)
 
-	// Sort pseudo entries by collection and album
-	// it will allow loading them only once
-	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].Collection == entries[j].Collection {
-			return entries[i].Album < entries[j].Album
-		}
-		return entries[i].Collection < entries[j].Collection
-	})
-
-	var srcCollection *Collection
-	var srcAlbum *Album
-	var err error
+	// Group the entries by Collection and Album
 	for _, entry := range entries {
-		forceAlbumLoad := false
-		// Load collection
-		if srcCollection == nil || srcCollection.Name != entry.Collection {
-			// Flush previous collection
-			if srcCollection != nil {
-				srcCollection.cache.FlushInfo()
-			}
-			srcCollection, err = GetCollection(entry.Collection)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			forceAlbumLoad = true
+		if _, ok := grouped[entry.Collection]; !ok {
+			grouped[entry.Collection] = make(map[string][]PseudoAlbumEntry)
 		}
-
-		// Load album
-		if forceAlbumLoad || srcAlbum == nil || srcAlbum.Name != entry.Album {
-			srcAlbum, err = collection.GetAlbumWithPhotos(entry.Album, false, runningInBackground)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-		}
-
-		// Load photo
-		photo, err := srcAlbum.GetPhoto(entry.Photo)
-		if err != nil {
-			continue
-		}
-
-		result := false
-		if isAdd { // Add link to the album
-			result = photo.AddFavorite(collection, album)
-		} else { // Remove link to the album
-			result = photo.RemoveFavorite(collection, album)
-		}
-		// Update info about cached photos if there is a change
-		if result {
-			collection.cache.AddPhotoInfo(photo)
-		}
-
-		photos = append(photos, photo)
+		grouped[entry.Collection][entry.Album] = append(grouped[entry.Collection][entry.Album], entry)
 	}
 
-	// Flush previous collection
-	if srcCollection != nil {
+	// Print the groups
+	for collectionName, collectionAlbums := range grouped {
+		// Load collection
+		srcCollection, err := GetCollection(collectionName)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		for albumName, albumPhotos := range collectionAlbums {
+			// Load album with photos
+			srcAlbum, err := srcCollection.GetAlbumWithPhotos(albumName, false, runningInBackground, albumPhotos...)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			for _, entry := range albumPhotos {
+				// Load photo
+				photo, err := srcAlbum.GetPhoto(entry.Photo)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				result := false
+				if isAdd { // Add link to the album
+					result = photo.AddFavorite(collection, album)
+				} else { // Remove link to the album
+					result = photo.RemoveFavorite(collection, album)
+				}
+				// Update info about cached photos if there is a change
+				if result {
+					collection.cache.AddPhotoInfo(photo)
+				}
+
+				photos = append(photos, photo)
+			}
+		}
 		srcCollection.cache.FlushInfo()
 	}
 
