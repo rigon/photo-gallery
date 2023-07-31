@@ -85,8 +85,6 @@ func (collection *Collection) CreateThumbnails() error {
 		return err
 	}
 
-	defer collection.cache.FinishFlush()
-
 	for _, albumResult := range result {
 		var photos []*Photo
 		var albumName string

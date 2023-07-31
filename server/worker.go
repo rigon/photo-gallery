@@ -115,6 +115,8 @@ func AddThumbForeground(collection *Collection, album *Album, photo *Photo, writ
 	w.wg = &wg
 	chThumbs <- &w
 	wg.Wait()
+	// Update flag to indicate that the thumbnail was generated
+	collection.cache.FinishFlush()
 }
 
 func AddThumbsBackground(collection *Collection, album *Album, photos ...*Photo) {
@@ -134,4 +136,6 @@ func AddThumbsBackground(collection *Collection, album *Album, photos ...*Photo)
 		chThumbs <- w
 	}
 	wg.Wait()
+	// Update flag to indicate that the thumbnail was generated
+	collection.cache.FlushInfo()
 }
