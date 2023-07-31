@@ -18,10 +18,15 @@ type DbInfo struct {
 	Version int
 }
 
+const InfoBatchSize = 100
+
 type Cache struct {
-	albums *sync.Map
-	mem    gcache.Cache
-	store  *bolthold.Store
+	albums    *sync.Map
+	mem       gcache.Cache
+	store     *bolthold.Store
+	addInfoCh chan *Photo
+	delInfoCh chan *Photo
+	wgFlush   sync.WaitGroup
 }
 
 // Init cache: boltdb and gcache
@@ -72,12 +77,16 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	// Cache for listing albums
 	c.albums = new(sync.Map)
 
+	// Start running batchers
+	c.addInfoBatcher()
+	c.delInfoBatcher()
+
 	// Ok
 	return nil
 }
 
 // Release all caching resources
-func (c Cache) End() error {
+func (c *Cache) End() error {
 	c.mem.Purge()
 	return c.store.Close()
 }
@@ -92,7 +101,7 @@ func (c *Cache) SetListAlbums(albums ...*Album) {
 	c.AddToListAlbums(albums...)
 }
 
-func (c Cache) AddToListAlbums(albums ...*Album) {
+func (c *Cache) AddToListAlbums(albums ...*Album) {
 	for _, album := range albums {
 		c.albums.Store(album.Name, true)
 	}
@@ -107,13 +116,13 @@ func (c *Cache) IsListAlbumsLoaded() bool {
 	return ret
 }
 
-func (c Cache) IsAlbum(albumName string) bool {
+func (c *Cache) IsAlbum(albumName string) bool {
 	// Check if value is present
 	_, present := c.albums.Load(albumName)
 	return present
 }
 
-func (c Cache) GetAlbum(albumName string) (*Album, error) {
+func (c *Cache) GetAlbum(albumName string) (*Album, error) {
 	// Check if value is present
 	album, err := c.mem.Get(albumName)
 	if err != nil || album == nil {
@@ -122,83 +131,106 @@ func (c Cache) GetAlbum(albumName string) (*Album, error) {
 	return album.(*Album), nil
 }
 
-func (c Cache) SaveAlbum(album *Album) error {
+func (c *Cache) SaveAlbum(album *Album) error {
+	// Flag this album as loaded
+	type AlbumSaved struct{}
+	go c.store.Upsert(album.Name, AlbumSaved{})
+	// Cache album in memory
 	return c.mem.Set(album.Name, album)
 }
 
+func (c *Cache) WasAlbumSaved(album *Album) bool {
+	type AlbumSaved struct{}
+	var a AlbumSaved
+	return c.store.Get(album.Name, &a) == nil
+}
+
+func (photo *Photo) Key() string {
+	return PhotoKey(photo.Album, photo.Id)
+}
+
+func PhotoKey(album string, id string) string {
+	return album + ":" + id
+}
+
 // Fill photos with info in cache (e.g. height and width)
-func (c Cache) FillPhotosInfo(album *Album) (err error) {
-	var update []*Photo
+func (c *Cache) GetPhotoInfo(album string, id string) (*Photo, error) {
+	var photo Photo
+	err := c.store.Get(PhotoKey(album, id), &photo)
+	return &photo, err
+}
 
-	// Get photos that are in cache
-	err = c.store.Bolt().View(func(tx *bolt.Tx) error {
-		size := len(album.photosMap)
-		count := 0
-		for _, photo := range album.photosMap {
-			var data Photo
-			count++
-			key := album.Name + ":" + photo.Id
-			err := c.store.TxGet(tx, key, &data)
-			// Does not require update
-			if err == nil && data.Id == photo.Id && data.Collection == photo.Collection &&
-				data.Album == photo.Album && len(data.Files) == len(photo.Files) { // Validate some fields
-
-				*photo = data
-				continue
-			}
-
-			log.Printf("Caching photo info [%s] %d/%d: %s %s\n", album.Name, count, size, photo.Title, photo.SubAlbum)
-			photo.FillInfo()
-			update = append(update, photo)
+func (c *Cache) addInfoBatcher() {
+	c.addInfoCh = make(chan *Photo, InfoBatchSize*10)
+	batches := Batch[*Photo](c.addInfoCh, InfoBatchSize)
+	go func() {
+		for batch := range batches {
+			log.Printf("Updating cache info (%d items)", len(batch))
+			c.wgFlush.Add(1)
+			c.store.Bolt().Update(func(tx *bolt.Tx) error {
+				// Add or update info for photos
+				for _, photo := range batch {
+					err := c.store.TxUpsert(tx, photo.Key(), photo)
+					if err != nil {
+						log.Println(err)
+					}
+					c.wgFlush.Done()
+				}
+				return nil
+			})
+			c.wgFlush.Done()
 		}
-		return nil
-	})
+	}()
+}
 
-	// Nothing to update
-	if len(update) < 1 {
-		return
-	}
+func (c *Cache) delInfoBatcher() {
+	c.delInfoCh = make(chan *Photo, InfoBatchSize*10)
+	batches := Batch[*Photo](c.delInfoCh, InfoBatchSize)
+	go func() {
+		for batch := range batches {
+			log.Printf("Deleting cache info (%d items)", len(batch))
+			c.wgFlush.Add(1)
+			c.store.Bolt().Update(func(tx *bolt.Tx) error {
+				// Delete photo info
+				for _, photo := range batch {
+					// Delete entry
+					err := c.store.TxDelete(tx, photo.Key(), photo)
+					if err != nil {
+						log.Println(err)
+					}
+					c.wgFlush.Done()
+				}
+				return nil
+			})
+			c.wgFlush.Done()
+		}
+	}()
+}
 
-	// Update missing entries
-	return c.AddPhotoInfo(album, update...)
+// Flushes remaining items still in memory
+func (c *Cache) FlushInfo() {
+	c.addInfoCh <- nil
+	c.delInfoCh <- nil
+}
+
+// Wait for all items in memory to be flushed
+func (c *Cache) FinishFlush() {
+	c.FlushInfo()
+	c.wgFlush.Wait()
 }
 
 // Add or update info for photos
-func (c Cache) AddPhotoInfo(album *Album, photos ...*Photo) error {
-	return c.store.Bolt().Update(func(tx *bolt.Tx) error {
-		for i, photo := range photos {
-			if i%100 == 0 || i == len(photos)-1 {
-				log.Printf("Updating cache info %s (%d/%d)", album.Name, i+1, len(photos))
-			}
-			key := album.Name + ":" + photo.Id
-			err := c.store.TxUpsert(tx, key, photo)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-		return nil
-	})
+func (c *Cache) AddPhotoInfo(photos ...*Photo) {
+	c.wgFlush.Add(len(photos))
+	for _, photo := range photos {
+		c.addInfoCh <- photo
+	}
 }
 
 // Delete photo info
-func (c Cache) DeletePhotoInfo(album *Album, photos ...*Photo) ([]*Photo, error) {
-	return photos, c.store.Bolt().Update(func(tx *bolt.Tx) error {
-		for i, photo := range photos {
-			if i%100 == 0 || i == len(photos)-1 {
-				log.Printf("Removing cache info %s (%d/%d)", album.Name, i+1, len(photos))
-			}
-			key := album.Name + ":" + photo.Id
-			// Update info to return
-			err := c.store.TxGet(tx, key, photo)
-			if err != nil {
-				log.Println(err)
-			}
-			// Delete entry
-			err = c.store.TxDelete(tx, key, photo)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-		return nil
-	})
+func (c *Cache) DeletePhotoInfo(photos ...*Photo) {
+	c.wgFlush.Add(len(photos))
+	for _, photo := range photos {
+		c.delInfoCh <- photo
+	}
 }

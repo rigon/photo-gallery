@@ -141,10 +141,10 @@ func ExtractImageInfo(filepath string) (string, image.Config, *exif.Exif, error)
 	}
 	defer fin.Close()
 
-	return ExtractImageConfigOpened(fin)
+	return ExtractImageInfoOpened(fin)
 }
 
-func ExtractImageConfigOpened(fin *os.File) (format string, config image.Config, exifData *exif.Exif, err error) {
+func ExtractImageInfoOpened(fin *os.File) (format string, config image.Config, exifData *exif.Exif, err error) {
 	// Rewind to the start
 	fin.Seek(0, io.SeekStart)
 

@@ -11,5 +11,5 @@ func TestCreateThumbnails(t *testing.T) {
 
 	collection.CreateThumbnails()
 	// Wait to thumbnails to finish
-	wg.Wait()
+	wgThumbs.Wait()
 }

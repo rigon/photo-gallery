@@ -104,7 +104,7 @@ func (c *Collection) IsAlbum(albumName string) bool {
 func (c *Collection) GetAlbum(albumName string) (*Album, error) {
 	// Check if album exists
 	if !c.IsAlbum(albumName) {
-		return nil, errors.New("album not found")
+		return nil, errors.New("album not found: " + albumName)
 	}
 	// Check for regular album (i.e. folder)
 	filename := filepath.Join(c.PhotosPath, albumName)
@@ -144,7 +144,7 @@ func readAlbum(file fs.FileInfo) (*Album, error) {
 }
 
 // Get album with photos
-func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Album, error) {
+func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool, runningInBackground bool, photosToLoad ...PseudoAlbumEntry) (*Album, error) {
 	if !forceUpdate {
 		// Check if album is in cache
 		cachedAlbum, err := c.cache.GetAlbum(albumName)
@@ -159,9 +159,7 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool) (*Al
 	}
 
 	// Get photos from the disk
-	album.GetPhotos(c)
-	// Fill photos with info in cache (e.g. height and width)
-	c.cache.FillPhotosInfo(album)
+	album.GetPhotos(c, runningInBackground, photosToLoad...)
 	// ...and save to cache
 	c.cache.SaveAlbum(album)
 
@@ -216,38 +214,4 @@ func (collection *Collection) StorageUsage() (*CollectionStorage, error) {
 		Used:       humanize.IBytes(di.Total - di.Free),
 		Percentage: int(math.Round(percentage)),
 	}, nil
-}
-
-// Cache info about all albums in the collection
-func (collection *Collection) CacheAlbums() {
-	albums, err := collection.GetAlbums()
-	if err != nil {
-		log.Println(err)
-	}
-
-	for _, album := range albums {
-		WaitBackgroundWork()
-		_, err := collection.GetAlbumWithPhotos(album.Name, false)
-		if err != nil {
-			log.Println(err)
-		}
-	}
-}
-
-// Create thumbnails for all photos in the collection
-func (collection *Collection) CreateThumbnails() {
-	albums, err := collection.GetAlbums()
-	if err != nil {
-		log.Println(err)
-	}
-
-	for _, album := range albums {
-		WaitBackgroundWork()
-		album, err := collection.GetAlbumWithPhotos(album.Name, false)
-		if err == nil {
-			album.GenerateThumbnails(collection)
-		} else {
-			log.Println(err)
-		}
-	}
 }

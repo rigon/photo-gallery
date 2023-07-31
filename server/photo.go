@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/slices"
 )
 
 type Photo struct {
@@ -27,6 +29,7 @@ type Photo struct {
 	Date       time.Time     `json:"date" boltholdIndex:"date"`
 	Location   GPSLocation   `json:"location" boltholdIndex:"location"`
 	Files      []*File       `json:"files"`
+	HasThumb   bool          `json:"-" boltholdIndex:"hasthumb"` // Indicates if the thumbnail was generated
 }
 
 // Add pseudo album to the favorites list
@@ -48,7 +51,7 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 	for i, favorite := range photo.Favorite {
 		// Remove it from the list if present
 		if srcCollection.Name == favorite.Collection && srcAlbum.Name == favorite.Album {
-			photo.Favorite = append(photo.Favorite[:i], photo.Favorite[i+1:]...)
+			photo.Favorite = slices.Delete(photo.Favorite, i, i+1)
 			return true
 		}
 	}
@@ -56,19 +59,21 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 }
 
 // Returns the path location for the thumbnail
-func (photo *Photo) ThumbnailPath(collection *Collection, album *Album) string {
-	name := strings.Join([]string{collection.Name, album.Name, photo.Id}, ":")
+func (photo *Photo) ThumbnailPath(collection *Collection) string {
+	name := strings.Join([]string{photo.Collection, photo.Album, photo.Id}, ":")
 	hash := sha256.Sum256([]byte(name))
 	encoded := hex.EncodeToString(hash[:])
 	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
 }
 
 // Gets a file from the photo
-func (photo *Photo) GetFile(fileNumber int) (*File, error) {
-	if fileNumber < 0 || fileNumber >= len(photo.Files) {
-		return nil, errors.New("invalid photo file number")
+func (photo *Photo) GetFile(id string) (*File, error) {
+	for _, file := range photo.Files {
+		if file.Id == id {
+			return file, nil
+		}
 	}
-	return photo.Files[fileNumber], nil
+	return nil, errors.New("File not found")
 }
 
 // Selects a file that will represent the photo
@@ -95,14 +100,23 @@ func (photo *Photo) MainFile() *File {
 }
 
 func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writer) error {
-	thumbPath := photo.ThumbnailPath(collection, album)
+	// Update flag to indicate that the thumbnail was generated
+	defer func() {
+		if !photo.HasThumb {
+			photo.HasThumb = true
+			collection.cache.AddPhotoInfo(photo)
+			collection.cache.FinishFlush()
+		}
+	}()
+
+	thumbPath := photo.ThumbnailPath(collection)
 
 	// If the file doesn't exist
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
 		// Create thumbnail
 		selected := photo.MainFile()
 		if selected == nil {
-			return errors.New("is not a photo")
+			return errors.New("no source file to generate thumbnail from")
 		}
 		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
@@ -120,15 +134,14 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 			w.Write(data)
 		}
 	}
+
 	return nil
 }
 
 func (photo *Photo) FillInfo() error {
 	var countImages = 0
 	var countVideos = 0
-	// Extract info for each file
 	for _, file := range photo.Files {
-		file.ExtractInfo()
 		switch file.Type {
 		case "image":
 			countImages++
@@ -162,8 +175,12 @@ func (photo *Photo) FillInfo() error {
 		return errors.New("cannot find file")
 	}
 
-	photo.Width = selected.Width
-	photo.Height = selected.Height
+	photo.Width = 200  // Default width
+	photo.Height = 200 // Default height
+	if selected.Width > 0 && selected.Height > 0 {
+		photo.Width = selected.Width // Valid dimensions
+		photo.Height = selected.Height
+	}
 	photo.Date = selected.Date
 	photo.Location = selected.Location
 	return nil

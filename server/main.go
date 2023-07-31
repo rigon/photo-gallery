@@ -55,7 +55,7 @@ func album(c echo.Context) error {
 	}
 
 	// Fetch album from disk
-	album, err := collection.GetAlbumWithPhotos(albumName, true)
+	album, err := collection.GetAlbumWithPhotos(albumName, true, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -94,7 +94,7 @@ func thumb(c echo.Context) error {
 	}
 
 	// Fetch album with photos including info
-	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -106,7 +106,7 @@ func thumb(c echo.Context) error {
 	}
 
 	c.Set("Content-Type", "image/jpeg")
-	AddWorkForeground(collection, album, photo, c.Response())
+	AddThumbForeground(collection, album, photo, c.Response())
 	return nil
 }
 
@@ -121,7 +121,7 @@ func info(c echo.Context) error {
 	}
 
 	// Fetch album with photos including info
-	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -144,10 +144,7 @@ func file(c echo.Context) error {
 	collectionName := c.Param("collection")
 	albumName := c.Param("album")
 	photoName := c.Param("photo")
-	fileNumber, err := strconv.Atoi(c.Param("file"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
+	fileName := c.Param("file")
 
 	collection, err := GetCollection(collectionName)
 	if err != nil {
@@ -155,7 +152,7 @@ func file(c echo.Context) error {
 	}
 
 	// Fetch photo from cache
-	album, err := collection.GetAlbumWithPhotos(albumName, false)
+	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -167,7 +164,7 @@ func file(c echo.Context) error {
 	}
 
 	// Get file
-	file, err := photo.GetFile(fileNumber)
+	file, err := photo.GetFile(fileName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -224,24 +221,32 @@ func main() {
 	serverAddr := config.host + ":" + strconv.Itoa(config.port)
 	log.Println("Collections:", config.collections)
 
+	InitWorkers(config)
 	for _, collection := range config.collections {
 		collection.cache.Init(collection, config.recreateCacheDB)
 		defer collection.cache.End()
 	}
 
 	// Cache albums and thumbnails in background
-	if config.cacheThumbnails {
-		log.Println("Generating thumbnails in background...")
+	if !config.disableScan {
 		go func() {
+			log.Println("Start scanning for photos in background...")
 			// First cache all albums
-			for _, c := range config.collections {
-				c.CacheAlbums()
+			for _, collection := range config.collections {
+				collection.Scan(config.fullScan)
+			}
+			// Clean thumbnails of deleted photos
+			if config.fullScan {
+				CleanupThumbnails(config.collections)
 			}
 			// Then create thumbnails
-			for _, c := range config.collections {
-				c.CreateThumbnails()
+			if config.cacheThumbnails {
+				for _, collection := range config.collections {
+					collection.CreateThumbnails()
+				}
 			}
-			log.Println("Background thumbnail generation complete!")
+
+			log.Println("Background scan complete!")
 		}()
 	}
 
@@ -250,7 +255,7 @@ func main() {
 
 	// Middleware
 	e.Use(middleware.Gzip())
-	e.Use(middleware.Recover())
+	//e.Use(middleware.Recover())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		CustomTimeFormat: "2006/01/02 15:04:05",
 		Format:           "${time_custom} ${status} ${method} ${latency_human} ${path} (${remote_ip})\n",

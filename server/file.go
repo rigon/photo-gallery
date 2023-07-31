@@ -18,13 +18,13 @@ import (
 
 type File struct {
 	Path        string      `json:"-"`
-	Id          int         `json:"id"`
+	Id          string      `json:"id"`
 	Type        string      `json:"type"`
 	MIME        string      `json:"mime"`
 	Width       int         `json:"width"`                  // Image Width
 	Height      int         `json:"height"`                 // Image Height
 	Date        time.Time   `json:"date"`                   // Image Date taken
-	Location    GPSLocation `json:"location"`               // Image location
+	Location    GPSLocation `json:"-"`                      // Image location
 	Orientation Orientation `json:"-"`                      // Image orientation
 	Size        int64       `json:"-" boltholdIndex:"size"` // Image file size, used to find duplicates
 }
@@ -114,15 +114,10 @@ func (file *File) ExtractInfo() error {
 
 	switch file.Type {
 	case "image":
-		_, cfg, exifInfo, err := ExtractImageConfigOpened(f)
-		if err != nil {
-			log.Println(err)
-		}
+		_, cfg, exifInfo, _ := ExtractImageInfoOpened(f)
+		file.Width = cfg.Width
+		file.Height = cfg.Height
 
-		if cfg.Width > 0 && cfg.Height > 0 {
-			file.Width = cfg.Width
-			file.Height = cfg.Height
-		}
 		if exifInfo != nil {
 			// If date is available from EXIF
 			file.Date, _ = exifInfo.DateTime()
@@ -140,7 +135,7 @@ func (file *File) ExtractInfo() error {
 					orientationRotate270,
 					orientationTranspose,
 					orientationTransverse:
-					file.Width, file.Height = file.Height, file.Width
+					file.Width, file.Height = file.Height, file.Width // Swap dimensions
 				}
 			} else {
 				file.Orientation = orientationUnspecified // tag not present
