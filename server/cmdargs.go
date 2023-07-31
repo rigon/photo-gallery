@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"log"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -19,6 +20,8 @@ type CmdArgs struct {
 	collections     map[string]*Collection
 	port            int
 	host            string
+	nWorkersInfo    int
+	nWorkersThumb   int
 }
 
 func parseCollectionOptions(collectionOption string, defaultIndex int) (collection *Collection, err error) {
@@ -99,6 +102,8 @@ List of possible options:
 	zflag.BoolVar(&cmdArgs.webdavDisabled, "disable-webdav", false, "Disable WebDAV")
 	zflag.StringVar(&cmdArgs.host, "host", "localhost", "Specify a host", zflag.OptShorthand('h'))
 	zflag.IntVar(&cmdArgs.port, "port", 3080, "Specify a port", zflag.OptShorthand('p'))
+	zflag.IntVar(&cmdArgs.nWorkersInfo, "workers-info", 2, "Number of concurrent workers to extract photos info")
+	zflag.IntVar(&cmdArgs.nWorkersThumb, "workers-thumb", runtime.NumCPU(), "Number of concurrent workers to generate thumbnails, by default number of CPUs")
 	zflag.Parse()
 
 	cmdArgs.collections = make(map[string]*Collection)

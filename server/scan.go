@@ -17,21 +17,22 @@ func (collection *Collection) Scan(fullScan bool) error {
 
 	defer collection.cache.FinishFlush()
 
-	for _, album := range albums {
-		// Skip album if it was already scanned and it is a quick scan
-		if !fullScan && collection.cache.WasAlbumSaved(album) {
-			continue
+	// Quick scan
+	if !fullScan {
+		for _, album := range albums {
+			if !collection.cache.WasAlbumSaved(album) { // Skip album if it was already scanned
+				collection.GetAlbumWithPhotos(album.Name, false, true)
+			}
 		}
+		return nil
+	}
 
+	// Full scan
+	for _, album := range albums {
 		// Load album
-		album, err = collection.GetAlbumWithPhotos(album.Name, fullScan, true)
+		album, err = collection.GetAlbumWithPhotos(album.Name, true, true)
 		if err != nil {
 			log.Println(err)
-		}
-
-		// Skip the rest if it's a quick scan
-		if !fullScan {
-			continue
 		}
 
 		// Validate if photos have thumbnails
@@ -102,7 +103,7 @@ func (collection *Collection) CreateThumbnails() error {
 		albumResult.Reduction(&photos)
 
 		// Add work to generate thumbnails in background
-		AddWorkBackground(collection, album, photos...)
+		AddThumbsBackground(collection, album, photos...)
 	}
 	return nil
 }

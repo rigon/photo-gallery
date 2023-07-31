@@ -20,6 +20,11 @@ type Album struct {
 	photosMap map[string]*Photo `json:"-"`      // actual place where photos are stored
 }
 
+type PhotoFile struct {
+	photoId string
+	file    *File
+}
+
 func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, photosToLoad ...PseudoAlbumEntry) error {
 	subAlbums := make(map[string]bool)
 	album.photosMap = make(map[string]*Photo)
@@ -44,7 +49,8 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, 
 	} else {
 		// Read album (i.e. folder) contents
 		log.Printf("Scanning folder for album %s[%s]...", collection.Name, album.Name)
-		var updatedPhotos = make(map[string]bool)
+		var updatedPhotos = make(map[string]int)
+		var updatedFiles []PhotoFile
 		dir := filepath.Join(collection.PhotosPath, album.Name)
 		err := filepath.WalkDir(dir, func(fileDir string, file fs.DirEntry, err error) error {
 			// Iterate over folder items
@@ -90,8 +96,6 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, 
 						SubAlbum:   subAlbum,
 						Favorite:   []PseudoAlbum{},
 					}
-					// Add photo to the list of updated photos
-					updatedPhotos[fileId] = true
 				}
 				album.photosMap[fileId] = photo
 				// Map of sub-albums
@@ -106,25 +110,30 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, 
 					Path: fileDir,
 					Id:   name,
 				}
-				log.Printf("Extracting photo info %s[%s]: %s %s", collection.Name, album.Name, photo.Title, photo.SubAlbum)
-				if runningInBackground {
-					WaitBackgroundWork()
-				}
-				photoFile.ExtractInfo()
 				photo.Files = append(photo.Files, photoFile)
 				// Add photo to the list of updated photos
-				updatedPhotos[fileId] = true
+				updatedPhotos[fileId]++
+				updatedFiles = append(updatedFiles, PhotoFile{fileId, photoFile})
 			}
 			return nil
 		})
 		if err != nil {
 			return err
 		}
+
+		// Extract missing file info
+		processedFiles := AddExtractInfoWork(collection, album, runningInBackground, updatedFiles...)
+
 		// Determine photo info after processing all files
-		for photoId := range updatedPhotos {
-			photo := album.photosMap[photoId]
-			photo.FillInfo()
-			collection.cache.AddPhotoInfo(photo)
+		for photoId := range processedFiles {
+			updatedPhotos[photoId]--
+			if updatedPhotos[photoId] <= 0 { // Files for this photo were processed
+				photo := album.photosMap[photoId]
+				// Fill photo info
+				photo.FillInfo()
+				// Update cache
+				collection.cache.AddPhotoInfo(photo)
+			}
 		}
 		if runningInBackground {
 			collection.cache.FinishFlush()

@@ -108,12 +108,14 @@ Server help:
                                       hide=false     Hide the collection from the list (does not affect webdav)
                                       rename=true    Rename files instead of overwriting them
                                       readonly=false
-          --disable-scan            Disable scans on start, by default runs regular (same as quick plus thumbnails)
+          --disable-scan            Disable scans on start, by default will cache photo info of new albums
           --disable-webdav          Disable WebDAV
-          --full-scan               Perform a full scan on start (validates if all cached data is up to date)
+          --full-scan               Perform a full scan on start (validates if cached data is up to date)
       -h, --host string             Specify a host (default "localhost")
       -p, --port int                Specify a port (default 3080)
       -r, --recreate-cache          Recreate cache DB, required after DB version upgrade
+          --workers-info int        Number of concurrent workers to extract photos info (default 2)
+          --workers-thumb int       Number of concurrent workers to generate thumbnails, by default number of CPUs
 
 ### Docker
 

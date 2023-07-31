@@ -106,7 +106,7 @@ func thumb(c echo.Context) error {
 	}
 
 	c.Set("Content-Type", "image/jpeg")
-	AddWorkForeground(collection, album, photo, c.Response())
+	AddThumbForeground(collection, album, photo, c.Response())
 	return nil
 }
 
@@ -221,6 +221,7 @@ func main() {
 	serverAddr := config.host + ":" + strconv.Itoa(config.port)
 	log.Println("Collections:", config.collections)
 
+	InitWorkers(config)
 	for _, collection := range config.collections {
 		collection.cache.Init(collection, config.recreateCacheDB)
 		defer collection.cache.End()
