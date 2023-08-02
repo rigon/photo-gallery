@@ -32,7 +32,7 @@ type PseudoAlbumSaveQuery struct {
 	Photos     []string `json:"photos"`
 }
 
-// Create a new copy photo to use in pseudo albums
+// Create a new copy of photo object to used in pseudo albums
 func (photo *Photo) CopyForPseudoAlbum() *Photo {
 	return &Photo{
 		// Changed fields
@@ -49,6 +49,7 @@ func (photo *Photo) CopyForPseudoAlbum() *Photo {
 		Location:   photo.Location,
 		Favorite:   photo.Favorite,
 		Files:      photo.Files,
+		HasThumb:   photo.HasThumb,
 	}
 }
 
@@ -171,7 +172,6 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 	}
 
 	var updated []PseudoAlbumEntry
-	errs := make([]string, 0)
 	for _, edit := range editPhotos {
 		// Find entry already in the album
 		found := -1
@@ -183,18 +183,14 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 		}
 
 		if isAdd {
-			if found < 0 {
+			if found < 0 { // Avoid duplicating entries
 				// Add a new entry
 				entries = append(entries, edit)
-			} else {
-				errs = append(errs, "entry duplicated: "+edit.Photo)
 			}
 		} else {
-			if found >= 0 {
+			if found >= 0 { // Avoid removing entries not found
 				// Remove the entry
 				entries = slices.Delete(entries, found, found+1)
-			} else {
-				errs = append(errs, "entry could not be found: "+edit.Photo)
 			}
 		}
 
@@ -211,9 +207,6 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 	// Update in background cached entries that were changed
 	go album.GetPhotosForPseudo(collection, isAdd, false, updated...)
 
-	if len(errs) > 0 {
-		return errors.New(strings.Join(errs, "\n"))
-	}
 	return nil
 }
 
@@ -229,7 +222,6 @@ func (album *Album) GetPhotosForPseudo(collection *Collection, isAdd bool, runni
 		grouped[entry.Collection][entry.Album] = append(grouped[entry.Collection][entry.Album], entry)
 	}
 
-	// Print the groups
 	for collectionName, collectionAlbums := range grouped {
 		// Load collection
 		srcCollection, err := GetCollection(collectionName)

@@ -67,7 +67,7 @@ func (c *Collection) Info() CollectionInfo {
 	if err != nil {
 		log.Println("Cannot retrieve storage usage for " + c.Name + ": " + err.Error())
 	}
-	return CollectionInfo{Name: c.Name, Storage: *st}
+	return CollectionInfo{Name: c.Name, Storage: st}
 }
 
 // Lists all albums, however photos are not loaded together.
@@ -202,13 +202,13 @@ func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 	return nil
 }
 
-func (collection *Collection) StorageUsage() (*CollectionStorage, error) {
+func (collection *Collection) StorageUsage() (CollectionStorage, error) {
 	di, err := disk.Usage(collection.PhotosPath)
 	if err != nil {
-		return nil, err
+		return CollectionStorage{}, err
 	}
 	percentage := (float64(di.Total-di.Free) / float64(di.Total)) * 100
-	return &CollectionStorage{
+	return CollectionStorage{
 		Size:       humanize.IBytes(di.Total),
 		Free:       humanize.IBytes(di.Free),
 		Used:       humanize.IBytes(di.Total - di.Free),

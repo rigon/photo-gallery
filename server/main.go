@@ -17,7 +17,7 @@ var config CmdArgs
 func GetCollection(collection string) (*Collection, error) {
 	val, present := config.collections[collection]
 	if !present {
-		return nil, errors.New("invalid collection")
+		return nil, errors.New("invalid collection: " + collection)
 	}
 	return val, nil
 }
