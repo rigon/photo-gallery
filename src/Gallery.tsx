@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
+import DangerousIcon from '@mui/icons-material/Dangerous';
 import LinearProgress from '@mui/material/LinearProgress';
 import Paper from "@mui/material/Paper";
 import ReportIcon from '@mui/icons-material/Report';
@@ -21,25 +22,25 @@ import { useGetAlbumQuery } from "./services/api";
 import { selectZoom } from "./services/app";
 
 const Gallery: FC = () => {
-    const { collection = "", album = ""} = useParams();
-    const { data, isFetching } = useGetAlbumQuery({collection, album});
-    const [ lightboxIndex, setLightboxIndex ] = useState<number>(-1);
-    const [ infoPhotoIndex, setInfoPhotoIndex ] = useState<number>(-1);
-    const [ subAlbum, setSubAlbum ] = useState<string>("");
+    const { collection = "", album = "" } = useParams();
+    const { data, isFetching, isError } = useGetAlbumQuery({ collection, album });
+    const [lightboxIndex, setLightboxIndex] = useState<number>(-1);
+    const [infoPhotoIndex, setInfoPhotoIndex] = useState<number>(-1);
+    const [subAlbum, setSubAlbum] = useState<string>("");
     const zoom = useSelector(selectZoom);
     const favorite = useFavorite();
 
     const subAlbums = data?.subalbums || [];
     const hasSubAlbums = subAlbums.length > 0;
-    const isEmptyAlbum = !(Number(data?.photos?.length) > 0);
+    const isEmpty = !(Number(data?.photos?.length) > 0);
 
     const photos = useMemo((): PhotoImageType[] => {
         let list = data?.photos || [];
         // Filter photos by subalbum
-        if(subAlbum !== "")
+        if (subAlbum !== "")
             list = list.filter(v => subAlbum === v.subalbum);
         // Create urls for thumbnails
-        return list.map(v => ({...v, src: urls.thumb(v)}));
+        return list.map(v => ({ ...v, src: urls.thumb(v) }));
     }, [data, subAlbum]);
 
     // Clear sub-album selection when album changed
@@ -60,18 +61,23 @@ const Gallery: FC = () => {
     const toggleFavorite = (index: number) => {
         favorite.toggle(index, photos);
     }
-    
+
     const RenderPhoto = Thumb(toggleFavorite, setLightboxIndex, setInfoPhotoIndex, zoom >= 100);
 
     const loading = (
         <Box sx={{ width: '100%' }}>
             <LinearProgress />
         </Box>);
+
+    const errorAlbum = (
+        <Box sx={{ marginTop: "45vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <DangerousIcon fontSize="large" sx={{ m: 1 }} />
+            <Typography variant="h6">Album not found.</Typography>
+        </Box>);
     
-    // Center and middle box in viewport
     const emptyAlbum = (
         <Box sx={{ marginTop: "45vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <ReportIcon fontSize="large" sx={{m: 1}} />
+            <ReportIcon fontSize="large" sx={{ m: 1 }} />
             <Typography variant="h6">No photos in this album.</Typography>
         </Box>);
 
@@ -84,7 +90,7 @@ const Gallery: FC = () => {
 
     const gallery = (
         <>
-            { hasSubAlbums && subAlbumsComp }
+            {hasSubAlbums && subAlbumsComp}
             <PhotoAlbum
                 photos={photos}
                 layout="rows"
@@ -102,10 +108,11 @@ const Gallery: FC = () => {
                 selected={infoPhotoIndex}
                 onClose={closeInfoPhoto} />
         </>);
-    
+
     return isFetching ? loading :   // Loading
-        isEmptyAlbum ? emptyAlbum : // Empty album
-        gallery;                    // Gallery
+        isError? errorAlbum :       // Error
+        isEmpty ? emptyAlbum :      // Empty album
+        /* OK */ gallery;           // Gallery
 }
 
 export default Gallery;
