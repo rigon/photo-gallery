@@ -97,6 +97,13 @@ export const api = createApi({
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
         }),
+        deleteAlbum: builder.mutation<void, QueryAlbum>({
+            query: ({ collection, album }) => ({
+                url: `/collections/${collection}/albums/${album}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: (_result, _error, arg) => ['Pseudo', 'Albums', { type: 'Album', id: albumId(arg) }],
+        }),
         movePhotos: builder.mutation<ResponseMovePhotos, QueryMovePhotos>({
             query: ({ collection, album, target }) => ({
                 url: `/collections/${collection}/albums/${album}/photos/move`,
@@ -160,6 +167,7 @@ export const {
     useGetAlbumsQuery,
     useGetAlbumQuery,
     useAddAlbumMutation,
+    useDeleteAlbumMutation,
     useMovePhotosMutation,
     useDeletePhotosMutation,
     useGetPhotoInfoQuery,

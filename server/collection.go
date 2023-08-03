@@ -226,6 +226,30 @@ func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 	return nil
 }
 
+func (c *Collection) DeleteAlbum(album *Album) error {
+	name := album.Name
+	if album.IsPseudo {
+		name += PSEUDO_ALBUM_EXT
+	}
+	p := filepath.Join(c.PhotosPath, name)
+
+	// File or folder does not exist, cannot delete
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return err
+	}
+
+	// Remove album folder (if empty) or pseudo-album file
+	err := os.Remove(p)
+	if err != nil {
+		return err
+	}
+
+	// Remove from cache
+	c.cache.RemoveFromListAlbums(album.Name)
+	c.cache.RemoveAlbumSaved(album.Name)
+	return nil
+}
+
 func (collection *Collection) StorageUsage() (CollectionStorage, error) {
 	di, err := disk.Usage(collection.PhotosPath)
 	if err != nil {

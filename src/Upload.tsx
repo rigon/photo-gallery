@@ -194,7 +194,7 @@ export const Upload: FC = () => {
                 <ListItem>
                     <ListItemText
                         primary={<em>No items for uploading</em>}
-                        secondary={<em>Use the Upload button <b>or</b> drag & drop files here</em>} />
+                        secondary={<em>Use the Upload button <b>or</b> drop files here</em>} />
                 </ListItem>}
 
             {!isEmpty &&
