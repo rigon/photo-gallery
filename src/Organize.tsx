@@ -229,7 +229,7 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
 
     const { successNotification, errorNotification } = useNotification();
 
-    const answerOk = (answer === "yes");
+    const answerOk = (answer?.toLocaleLowerCase() === "yes");
 
     const handleAnswer = (event: React.ChangeEvent<HTMLInputElement>) => {
         setAnswer(event.target.value)
@@ -290,8 +290,8 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
                 />
             </DialogContent>
             <DialogActions>
-                <Button onClick={handleClose} color='inherit'>Cancel</Button>
-                <Button onClick={handleDelete} disabled={!answerOk || processingAction} color='error' variant='contained' disableElevation>Delete</Button>
+                <Button onClick={handleClose} color="inherit">Cancel</Button>
+                <Button onClick={handleDelete} disabled={!answerOk || processingAction} color="error" variant="contained" disableElevation>Delete</Button>
             </DialogActions>
         </Dialog>
     )

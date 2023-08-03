@@ -90,6 +90,27 @@ func addAlbum(c echo.Context) error {
 	}
 	return c.JSON(http.StatusCreated, map[string]bool{"ok": true})
 }
+func deleteAlbum(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+
+	collection, err := GetCollection(collectionName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Fetch album from disk
+	album, err := collection.GetAlbum(albumName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	err = collection.DeleteAlbum(album)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusCreated, map[string]bool{"ok": true})
+}
 
 func thumb(c echo.Context) error {
 	collectionName := c.Param("collection")
@@ -424,6 +445,7 @@ func main() {
 	api.GET("/collections/:collection/albums", albums)
 	api.PUT("/collections/:collection/albums", addAlbum)
 	api.GET("/collections/:collection/albums/:album", album)
+	api.DELETE("/collections/:collection/albums/:album", deleteAlbum)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/info", info)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
