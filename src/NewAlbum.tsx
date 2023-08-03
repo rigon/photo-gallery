@@ -1,5 +1,6 @@
 import { FC, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
 import Button from '@mui/material/Button';
 import CloseIcon from '@mui/icons-material/Close';
@@ -27,11 +28,12 @@ import useNotification from './Notification';
 
 const defaults: QueryAddAlbum = {
     collection: "",
-    type: "pseudo",
+    type: "regular",
     name: ""
 };
 
 const NewAlbum: FC = () => {
+    const navigate = useNavigate();
     const { collection = "" } = useParams();
     const [ open, setOpen ] = useState<boolean>(false);
     const [ formData, updateFormData ] = useState<QueryAddAlbum>(defaults);
@@ -71,6 +73,7 @@ const NewAlbum: FC = () => {
             await addAlbum(trimmedFormData).unwrap();
             successNotification(`Album created with name ${trimmedFormData.name}`);
             setOpen(false);
+            navigate(`/${collection}/${trimmedFormData.name}`);
         }
         catch(error) {
             errorNotification(`Could not create album named ${trimmedFormData.name}!`);
@@ -127,8 +130,12 @@ const NewAlbum: FC = () => {
                                     value={formData.type}
                                     onChange={handleChange}
                                 >
-                                    <FormControlLabel value="regular" control={<Radio />} label="Regular" />
-                                    <FormControlLabel value="pseudo" control={<Radio />} label="Pseudo" />
+                                    <Tooltip title="Regular album that contains photos, it will create a folder." enterDelay={300}>
+                                        <FormControlLabel value="regular" control={<Radio />} label="Regular" />
+                                    </Tooltip>
+                                    <Tooltip title="It allows combining photos from different albums in a single one, used to save favorites." enterDelay={300}>
+                                        <FormControlLabel value="pseudo" control={<Radio />} label="Pseudo" />
+                                    </Tooltip>
                                 </RadioGroup>
                             </FormControl>
                         </Grid>
@@ -152,12 +159,8 @@ const NewAlbum: FC = () => {
                     </Grid>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="primary">
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSave} color="primary">
-                        Create
-                    </Button>
+                    <Button onClick={handleClose} color="inherit">Cancel</Button>
+                    <Button onClick={handleSave} color="primary" variant="contained" disableElevation>Create</Button>
                 </DialogActions>
             </Dialog>
         </>
