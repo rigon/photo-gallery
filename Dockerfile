@@ -24,6 +24,7 @@ RUN npm run build
 FROM --platform=$TARGETPLATFORM alpine:3.16
 WORKDIR /app/server
 EXPOSE 3080
+ENV GIN_MODE=release
 VOLUME "/photos" "/thumbs"
 RUN apk update && apk add ffmpeg-libs
 COPY --from=frontend /app/build /app/build/

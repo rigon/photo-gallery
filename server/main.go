@@ -4,13 +4,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"net/url"
-	"path"
 	"strconv"
 	"strings"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/gin-gonic/contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 const HeaderCacheControl = "private, max-age=31536000"
@@ -25,126 +23,136 @@ func GetCollection(collection string) (*Collection, error) {
 	return val, nil
 }
 
-func collections(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetCollections(config.collections))
+func collections(c *gin.Context) {
+	c.JSON(http.StatusOK, GetCollections(config.collections))
 }
 
-func pseudos(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetPseudoAlbums(config.collections))
+func pseudos(c *gin.Context) {
+	c.JSON(http.StatusOK, GetPseudoAlbums(config.collections))
 }
 
-func albums(c echo.Context) error {
+func albums(c *gin.Context) {
 	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Get all albums from the disk
 	albums, err := collection.GetAlbums()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
-	return c.JSON(http.StatusOK, albums)
+	c.JSON(http.StatusOK, albums)
 }
 
-func album(c echo.Context) error {
-	collectionName := c.Param("collection")
-	albumName := c.Param("album")
-
-	collection, err := GetCollection(collectionName)
+func album(c *gin.Context) {
+	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
+	albumName := c.Param("album")
 
 	// Fetch album from disk
 	album, err := collection.GetAlbumWithPhotos(albumName, true, false)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.AbortWithError(http.StatusNotFound, err)
+		return
 	}
 
-	return c.JSON(http.StatusOK, album)
+	c.JSON(http.StatusOK, album)
 }
 
-func addAlbum(c echo.Context) error {
+func addAlbum(c *gin.Context) {
 	var albumQuery AddAlbumQuery
 
 	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
+
 	// Decode body
-	if err := c.Bind(&albumQuery); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&albumQuery); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Add album
 	err = collection.AddAlbum(albumQuery)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusConflict, err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return c.JSON(http.StatusCreated, map[string]bool{"ok": true})
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-func thumb(c echo.Context) error {
-	collectionName := c.Param("collection")
+func thumb(c *gin.Context) {
+	collection, err := GetCollection(c.Param("collection"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 	albumName := c.Param("album")
 	photoName := c.Param("photo")
-
-	collection, err := GetCollection(collectionName)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
-	}
 
 	// Fetch album with photos including info
 	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Find photo
 	photo, err := album.GetPhoto(photoName)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
-	c.Response().Header().Set(echo.HeaderContentType, "image/jpeg")
-	c.Response().Header().Set(echo.HeaderCacheControl, HeaderCacheControl)
-	AddThumbForeground(collection, album, photo, c.Response())
-	return nil
+	c.Status(http.StatusOK)
+	c.Header("Content-Type", "image/jpeg")
+	c.Header("Cache-Control", HeaderCacheControl)
+	AddThumbForeground(collection, album, photo, c.Writer)
 }
 
-func info(c echo.Context) error {
-	collectionName := c.Param("collection")
+func info(c *gin.Context) {
+	collection, err := GetCollection(c.Param("collection"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 	albumName := c.Param("album")
 	photoName := c.Param("photo")
-
-	collection, err := GetCollection(collectionName)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
-	}
 
 	// Fetch album with photos including info
 	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Find photo
 	photo, err := album.GetPhoto(photoName)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	info, err := photo.GetExtendedInfo()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	return c.JSON(http.StatusOK, info)
+	c.JSON(http.StatusOK, info)
 }
 
-func file(c echo.Context) error {
+func file(c *gin.Context) {
 	collectionName := c.Param("collection")
 	albumName := c.Param("album")
 	photoName := c.Param("photo")
@@ -152,61 +160,70 @@ func file(c echo.Context) error {
 
 	collection, err := GetCollection(collectionName)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Fetch photo from cache
 	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Find photo
 	photo, err := album.GetPhoto(photoName)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Get file
 	file, err := photo.GetFile(fileName)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Convert files that require conversion
 	if file.RequiresConvertion() {
-		return file.Convert(c.Response())
+		file.Convert(c.Writer)
+		return
 	}
 
-	c.Response().Header().Set(echo.HeaderContentType, file.MIME)
-	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename=\""+file.Name()+"\"")
-	c.Response().Header().Set(echo.HeaderCacheControl, HeaderCacheControl)
-	return c.File(file.Path)
+	c.Header("Content-Type", file.MIME)
+	c.Header("Content-Disposition", "inline; filename=\""+file.Name()+"\"")
+	c.Header("Cache-Control", HeaderCacheControl)
+	c.File(file.Path)
 }
 
-func saveToPseudo(c echo.Context) error {
+func saveToPseudo(c *gin.Context) {
 	var query PseudoAlbumSaveQuery
 
 	// Decode body
-	if err := c.Bind(&query); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	album, err := collection.GetAlbum(c.Param("album"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
 	}
 
 	if !album.IsPseudo {
-		return echo.NewHTTPError(http.StatusBadRequest, "album must be of type pseudo")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	switch c.Request().Method {
+	switch c.Request.Method {
 	case "PUT":
 		// Add photo to pseudo album
 		err = album.EditPseudoAlbum(collection, query, true)
@@ -215,10 +232,11 @@ func saveToPseudo(c echo.Context) error {
 		err = album.EditPseudoAlbum(collection, query, false)
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
 func main() {
@@ -256,57 +274,26 @@ func main() {
 	}
 
 	// Server
-	e := echo.New()
+	r := gin.Default()
 
 	// Middleware
-	e.Use(middleware.Secure())
-	//e.Use(middleware.Recover())
-	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
-		Skipper: func(c echo.Context) bool {
-			skip := []string{
-				"/api/collections/*/albums/*/photos/*/thumb",   // Skip compressing thumbnails
-				"/api/collections/*/albums/*/photos/*/files/*", // Skip compressing files
-			}
-			for _, pattern := range skip {
-				if matched, _ := path.Match(pattern, c.Path()); matched {
-					return true
-				}
-			}
-			return false
-		},
-	}))
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		CustomTimeFormat: "2006/01/02 15:04:05",
-		Format:           "${time_custom} ${status} ${method} ${latency_human} ${path} (${remote_ip})\n",
-		Output:           e.Logger.Output(),
-	}))
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			defer ResumeBackgroundWork()
-			SuspendBackgroundWork()
-			return next(c)
-		}
+	r.Use(func(c *gin.Context) {
+		defer ResumeBackgroundWork()
+		SuspendBackgroundWork()
+		c.Next()
 	})
-	// URL decode parameters
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			vs := c.ParamValues()
-			ws := make([]string, len(vs))
-			for i, v := range vs {
-				w, err := url.PathUnescape(v)
-				if err != nil {
-					e.Logger.Error(err)
-				} else {
-					ws[i] = w
-				}
-			}
-			c.SetParamValues(ws...)
-			return next(c)
+	// Cache-Control header
+	r.Use(func(c *gin.Context) {
+		isNotStatic := strings.HasPrefix(c.Request.URL.Path, "/api") ||
+			strings.HasPrefix(c.Request.URL.Path, "/webdav")
+		if !isNotStatic { // Cache-Control header
+			c.Header("Cache-Control", HeaderCacheControl)
 		}
+		c.Next()
 	})
 
 	// API
-	api := e.Group("/api")
+	api := r.Group("/api")
 	api.GET("/pseudos", pseudos)
 	api.GET("/collections", collections)
 	api.GET("/collections/:collection/albums", albums)
@@ -317,38 +304,29 @@ func main() {
 	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
 	api.PUT("/collections/:collection/albums/:album/pseudos", saveToPseudo)
 	api.DELETE("/collections/:collection/albums/:album/pseudos", saveToPseudo)
-	api.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+	api.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
 	})
 	// Create a catch-all route for /api/*
-	api.Any("/*", func(c echo.Context) error {
-		return c.String(http.StatusNotFound, "not found")
-	})
+	// api.Any("/*any", func(c *gin.Context) {
+	// 	c.JSON(http.StatusNotFound, gin.H{"error": "invalid URL"})
+	// })
 
 	// WebDAV
 	if !config.webdavDisabled {
-		e.Use(WebDAVWithConfig("/webdav", config.collections))
+		r.Use(ServeWebDAV("/webdav", config.collections))
 		log.Println("WebDAV will be available at http://" + serverAddr + "/webdav")
 	}
 
 	// Frontend
 	// serve Single Page application on "/"
 	// assume static file at ../build folder
-	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:  "../build",   // This is the path to your SPA build folder, the folder that is created from running "npm build"
-		Index: "index.html", // This is the default html page for your SPA
-		HTML5: true,
-		Skipper: func(c echo.Context) bool {
-			isNotStatic := strings.HasPrefix(c.Path(), "/api") ||
-				strings.HasPrefix(c.Path(), "/webdav")
-			if !isNotStatic { // Cache-Control header
-				c.Response().Header().Set(echo.HeaderCacheControl, HeaderCacheControl)
-			}
-			return isNotStatic
-		},
-	}))
+	r.Use(static.Serve("/", static.LocalFile("../build", false)))
+	r.NoRoute(func(c *gin.Context) {
+		c.File("../build/index.html")
+	})
 
 	// Start server
 	log.Println("Starting server: http://" + serverAddr)
-	e.Logger.Fatal(e.Start(serverAddr))
+	log.Fatal(r.Run(serverAddr))
 }

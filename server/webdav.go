@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/net/webdav"
 )
 
@@ -137,8 +137,8 @@ func (cs webDavCollections) Stat(ctx context.Context, name string) (os.FileInfo,
 	return dir.Stat(ctx, name)
 }
 
-func WebDAVWithConfig(prefix string, collections map[string]*Collection) echo.MiddlewareFunc {
-	wd := webdav.Handler{
+func ServeWebDAV(prefix string, collections map[string]*Collection) gin.HandlerFunc {
+	w := webdav.Handler{
 		Prefix:     prefix,
 		FileSystem: webDavCollections(collections),
 		LockSystem: webdav.NewMemLS(),
@@ -149,13 +149,11 @@ func WebDAVWithConfig(prefix string, collections map[string]*Collection) echo.Mi
 		},
 	}
 
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if strings.HasPrefix(c.Request().URL.Path, wd.Prefix) {
-				wd.ServeHTTP(c.Response(), c.Request())
-				return nil
-			}
-			return next(c)
+	return func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, w.Prefix) {
+			c.Status(http.StatusOK) // 200 by default, which may be override later
+			w.ServeHTTP(c.Writer, c.Request)
+			c.Abort()
 		}
 	}
 }
