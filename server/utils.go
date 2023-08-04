@@ -1,5 +1,19 @@
 package main
 
+func mergeWithoutDuplicates[T comparable](slices ...[]T) []T {
+	allKeys := make(map[T]bool)
+	list := []T{}
+	for _, slice := range slices {
+		for _, item := range slice {
+			if _, value := allKeys[item]; !value {
+				allKeys[item] = true
+				list = append(list, item)
+			}
+		}
+	}
+	return list
+}
+
 /**
  * Source: https://elliotchance.medium.com/batch-a-channel-by-size-or-time-in-go-92fa3098f65
  */
