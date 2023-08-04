@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 
@@ -254,7 +255,20 @@ func main() {
 	e := echo.New()
 
 	// Middleware
-	e.Use(middleware.Gzip())
+	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+		Skipper: func(c echo.Context) bool {
+			skip := []string{
+				"/api/collections/*/albums/*/photos/*/thumb",   // Skip compressing thumbnails
+				"/api/collections/*/albums/*/photos/*/files/*", // Skip compressing files
+			}
+			for _, pattern := range skip {
+				if matched, _ := path.Match(pattern, c.Path()); matched {
+					return true
+				}
+			}
+			return false
+		},
+	}))
 	//e.Use(middleware.Recover())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		CustomTimeFormat: "2006/01/02 15:04:05",
