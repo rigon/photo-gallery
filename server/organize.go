@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 type AlbumMoveQuery struct {
@@ -136,7 +138,7 @@ func (photo *Photo) CopyForMove(dstCollection *Collection, dstAlbum *Album, rena
 	}
 }
 
-func UpdateFavorites(dstCollection *Collection, dstAlbum *Album, photos []PhotoMove) {
+func UpdateFavorites(photos []PhotoMove) {
 	var favorites = make(map[string]map[string][]PhotoMove)
 
 	// Group favorites by Collection and Album
@@ -178,6 +180,52 @@ func UpdateFavorites(dstCollection *Collection, dstAlbum *Album, photos []PhotoM
 							Album:      dst.Album,
 							Photo:      dst.Id,
 						}
+					}
+				}
+			}
+			// Write back updated entries of the pseudo-album
+			writePseudoAlbum(collection, album, entries...)
+		}
+	}
+}
+
+func DeleteFavorites(photos *[]*Photo) {
+	var favorites = make(map[string]map[string][]*Photo)
+
+	// Group favorites by Collection and Album
+	for _, photo := range *photos {
+		for _, favorite := range photo.Favorite {
+			if _, ok := favorites[favorite.Collection]; !ok {
+				favorites[favorite.Collection] = make(map[string][]*Photo)
+			}
+			favorites[favorite.Collection][favorite.Album] = append(favorites[favorite.Collection][favorite.Album], photo)
+		}
+	}
+
+	for collectionName, albums := range favorites {
+		// Load collection
+		collection, err := GetCollection(collectionName)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		for albumName, photos := range albums {
+			// Load album with photos
+			album, err := collection.GetAlbum(albumName)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			// Load entries of the pseudo-album
+			entries, err := readPseudoAlbum(collection, album)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			for i, entry := range entries {
+				for _, photo := range photos {
+					if entry.Collection == photo.Collection && entry.Album == photo.Album && entry.Photo == photo.Id {
+						entries = slices.Delete(entries, i, i+1)
 					}
 				}
 			}
@@ -265,7 +313,7 @@ func (srcAlbum *Album) MovePhotos(mode string, srcCollection *Collection, dstCol
 			for _, file := range newPhoto.Files {
 				_, err := os.Stat(file.Path)      // Existing files
 				_, ok := moveFilesPath[file.Path] //Any of the files of the photos to be moved
-				if ok || err == nil {
+				if ok || !os.IsNotExist(err) {
 					exists = true
 					break
 				}
@@ -280,7 +328,7 @@ func (srcAlbum *Album) MovePhotos(mode string, srcCollection *Collection, dstCol
 	}
 
 	// Update favorite albums with new Collection/Album
-	UpdateFavorites(dstCollection, dstAlbum, movePhotos)
+	UpdateFavorites(movePhotos)
 
 	// Perform the actual move
 	for _, photo := range movePhotos {
@@ -324,20 +372,16 @@ func (srcAlbum *Album) MovePhotos(mode string, srcCollection *Collection, dstCol
 }
 
 func (album *Album) DeletePhotos(collection *Collection, photoNames ...string) error {
+	var deletedPhotos []*Photo
+
 	defer collection.cache.FlushInfo()
+	defer DeleteFavorites(&deletedPhotos)
 
 	for _, photoName := range photoNames {
 		photo, err := album.GetPhoto(photoName)
 		if err != nil {
 			return err
 		}
-
-		// Remove info
-		collection.cache.DeletePhotoInfo(photo)
-
-		// Remove thumbnail
-		thumbPath := photo.ThumbnailPath(collection)
-		os.Remove(thumbPath)
 
 		// Remove files
 		for _, file := range photo.Files {
@@ -346,6 +390,16 @@ func (album *Album) DeletePhotos(collection *Collection, photoNames ...string) e
 				return err
 			}
 		}
+
+		// Add to remove from pseudo-albums where is favorite
+		deletedPhotos = append(deletedPhotos, photo)
+
+		// Remove info
+		collection.cache.DeletePhotoInfo(photo)
+
+		// Remove thumbnail
+		thumbPath := photo.ThumbnailPath(collection)
+		os.Remove(thumbPath)
 	}
 	return nil
 }
