@@ -53,9 +53,11 @@ jobs:
         cache-to: type=gha,mode=max
 
   demo:
-    needs: build
     name: Demo docker image
+    needs: build
     runs-on: ubuntu-latest
+    # Run only when it is a release build
+    if: github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v')
 
     steps:
     - name: Checkout
@@ -65,7 +67,8 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: rigon/photo-gallery
-        tags: type=semver,value=demo
+        tags: |
+          type=raw,value=demo
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Set up Docker Buildx

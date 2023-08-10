@@ -57,7 +57,7 @@ Main features:
 - [X] Show storage info
 - [X] Metadata extraction from photos (EXIF)
 - [X] Show photo location in a map
-- [ ] Organize photos in bulk:
+- [ ] Organize photos:
   - [ ] Upload new photos
   - [ ] Move photos
   - [ ] Delete photos
@@ -69,6 +69,16 @@ Main features:
 - [ ] Search for duplicates
 - [ ] Tool for renaming files
 - [ ] Image resizing according with screen
+
+## Quick start
+
+Using docker, run:
+
+    docker run -p 3080:3080 --name photo-gallery rigon/photo-gallery:demo
+
+That's it, enjoy! Just open in your browser [http://localhost:3080](http://localhost:3080).
+
+This image however includes a demo gallery, for your own use please use `rigon/photo-gallery`.
 
 
 ## Build and Run
@@ -119,7 +129,7 @@ Server help:
 
 ### Docker
 
-This project is distributed docker ([Photo Gallery Docker Hub page](https://hub.docker.com/r/rigon/photo-gallery)).
+This project is distributed via docker ([Photo Gallery Docker Hub page](https://hub.docker.com/r/rigon/photo-gallery)).
 
 The following example illustrates a case where you have two folders mounted with volumes, one with the collection of photos that is read-only and a recent folder with your still unorganized photos that is writable.
 
@@ -157,10 +167,12 @@ services:
 
 `photo-gallery_data` can be safely deleted, however cached data must be regenerated.
 
+<!--
 ### Port forwarding on Terminus under iOS
 
 - https://support.termius.com/hc/en-us/articles/900006226306-I-can-t-use-the-iOS-app-in-the-background
 - https://support.termius.com/hc/en-us/articles/4402044543897#location
+-->
 
 
 ## Development
