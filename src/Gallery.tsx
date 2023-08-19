@@ -95,6 +95,7 @@ const Gallery: FC = () => {
                 photos={photos}
                 layout="rows"
                 targetRowHeight={zoom}
+                rowConstraints={{ singleRowMaxHeight: zoom*2 }}
                 spacing={1}
                 renderPhoto={RenderPhoto} />
             <Lightbox
