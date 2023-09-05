@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/xml"
 	"errors"
 	"io/fs"
 	"log"
@@ -24,6 +25,7 @@ type webDavFileInfo struct {
 	dir        webDavFileInfoable
 	collection *Collection
 	album      *Album
+	file       *File
 }
 
 type webDavFileInfoable interface {
@@ -40,6 +42,7 @@ func (cs webDavCollections) webDavInfo(collection *Collection, album *Album) web
 		dir:        cs,
 		collection: nil,
 		album:      nil,
+		file:       nil,
 	}
 }
 func (cs webDavCollections) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
@@ -58,6 +61,7 @@ func (collection *Collection) webDavInfo(c *Collection, a *Album) webDavFileInfo
 		dir:        collection,
 		collection: nil,
 		album:      nil,
+		file:       nil,
 	}
 }
 func (collection *Collection) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
@@ -77,6 +81,7 @@ func (album Album) webDavInfo(c *Collection, a *Album) webDavFileInfo {
 		dir:        album,
 		collection: c,
 		album:      nil,
+		file:       nil,
 	}
 }
 func (album Album) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
@@ -94,7 +99,7 @@ func (album Album) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error
 
 // Photo file
 
-func (file File) webDavInfo(c *Collection, a *Album) webDavFileInfo {
+func (file *File) webDavInfo(c *Collection, a *Album) webDavFileInfo {
 	return webDavFileInfo{
 		name:       file.Name(),
 		path:       file.Path,
@@ -102,6 +107,7 @@ func (file File) webDavInfo(c *Collection, a *Album) webDavFileInfo {
 		dir:        nil,
 		collection: c,
 		album:      a,
+		file:       file,
 	}
 }
 func (file File) webDavDir(info webDavFileInfo) (list []fs.FileInfo, err error) {
@@ -200,12 +206,18 @@ func (fi webDavFileInfo) Name() string {
 	return fi.name
 }
 func (fi webDavFileInfo) Size() int64 {
-	return 0
+	if fi.file == nil {
+		return 0
+	}
+	return fi.file.Size
 }
 func (fi webDavFileInfo) Mode() fs.FileMode {
 	return os.ModeDir
 }
 func (fi webDavFileInfo) ModTime() time.Time {
+	if fi.file != nil {
+		return fi.file.Date
+	}
 	return time.Now()
 }
 func (fi webDavFileInfo) IsDir() bool {
@@ -215,7 +227,7 @@ func (fi webDavFileInfo) Sys() any {
 	return nil
 }
 func (fi webDavFileInfo) Close() error {
-	return errors.New("close not supported")
+	return nil
 }
 func (fi webDavFileInfo) Read(p []byte) (n int, err error) {
 	return 0, errors.New("read not supported")
@@ -232,6 +244,22 @@ func (fi webDavFileInfo) Stat() (fs.FileInfo, error) {
 func (fi webDavFileInfo) Write(p []byte) (n int, err error) {
 	return 0, errors.New("write not supported")
 }
+func (fi webDavFileInfo) DeadProps() (map[xml.Name]webdav.Property, error) {
+	if fi.file == nil {
+		return nil, nil
+	}
+
+	name := xml.Name{Space: "DAV:", Local: "getcontenttype"}
+	props := make(map[xml.Name]webdav.Property)
+	props[name] = webdav.Property{
+		XMLName:  name,
+		InnerXML: []byte(fi.file.MIME),
+	}
+	return props, nil
+}
+func (fi webDavFileInfo) Patch([]webdav.Proppatch) ([]webdav.Propstat, error) {
+	return nil, nil
+}
 
 // Webdav actions
 
@@ -243,10 +271,7 @@ func (cs webDavCollections) OpenFile(ctx context.Context, name string, flag int,
 	if err != nil {
 		return nil, err
 	}
-	if info.IsDir() {
-		return info, nil
-	}
-	return webdav.Dir("/").OpenFile(ctx, info.path, flag, perm)
+	return info, nil
 }
 func (cs webDavCollections) RemoveAll(ctx context.Context, name string) error {
 	return errors.New("not implemented RemoveAll")
@@ -259,8 +284,5 @@ func (cs webDavCollections) Stat(ctx context.Context, name string) (os.FileInfo,
 	if err != nil {
 		return nil, err
 	}
-	if info.IsDir() {
-		return info, nil
-	}
-	return webdav.Dir("/").Stat(ctx, info.path)
+	return info, nil
 }
