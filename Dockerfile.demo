@@ -1,6 +1,7 @@
 FROM rigon/photo-gallery:latest
 
-RUN set -- Nature Film Animals Travel People "Machu Picchu" "The Grand Canyon" "Great Barrier Reef" Maldives Paris Iceland \
+RUN touch /photos/Favorites.PG-ALBUM; \
+    set -- Nature Film Animals Travel People "Machu Picchu" "The Grand Canyon" "Great Barrier Reef" Maldives Paris Iceland \
         Wallpapers/Moutains Wallpapers/Rivers Wallpapers/Lanscapes Wallpapers/Abstract Wallpapers/Gradients Wallpapers/Patterns; \
     for term in "$@"; do \
         mkdir -p "/photos/$term"; \
