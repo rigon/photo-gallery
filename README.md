@@ -178,6 +178,18 @@ services:
 - https://support.termius.com/hc/en-us/articles/4402044543897#location
 -->
 
+### WebDAV access
+
+WebDAV makes it very easy to access to the photo galleries in the file explorer or to upload photos directly from your phone.
+
+For uploading from your phone, the app [PhotoSync](https://www.photosync-app.com/) makes that task very convinent. However for WebDAV functions you have to purchase it and we do not have any partnership with them.
+When creating a new WebDAV configuration in PhotoSync, make sure you fill the field `Directory` with `/webdav`
+
+Remote access is also possible by configuring Port forwarding over SSH using tools like [Terminus](https://termius.com/).
+See [How to configure Port forwarding in Terminus](https://support.termius.com/hc/en-us/articles/4402386576793-Port-forwarding).
+For iOS is more difficult setting it up, you can find more info
+[here](https://support.termius.com/hc/en-us/articles/900006226306-I-can-t-use-the-iOS-app-in-the-background) and
+[here](https://support.termius.com/hc/en-us/articles/4402044543897#location).
 
 ## Development
 
