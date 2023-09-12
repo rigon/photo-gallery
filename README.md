@@ -3,6 +3,7 @@ Photo Gallery
 
 Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can browse through your photos quick and easy.
 
+## [Demo](http://16.171.253.209/)
 <p style="text-align: center;">
 <img src="screenshot.jpg" alt="Photo Gallery" style="text-align: center; width: 100%; max-width: 683px"/>
 </p>
