@@ -3,7 +3,7 @@ Photo Gallery
 
 Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can browse through your photos quick and easy.
 
-## [Demo](http://16.171.253.209/)
+## [Live Demo](http://16.171.253.209/)
 <p style="text-align: center;">
 <img src="screenshot.jpg" alt="Photo Gallery" style="text-align: center; width: 100%; max-width: 683px"/>
 </p>
@@ -172,16 +172,9 @@ services:
 
 `photo-gallery_data` can be safely deleted, however cached data must be regenerated.
 
-<!--
-### Port forwarding on Terminus under iOS
-
-- https://support.termius.com/hc/en-us/articles/900006226306-I-can-t-use-the-iOS-app-in-the-background
-- https://support.termius.com/hc/en-us/articles/4402044543897#location
--->
-
 ### WebDAV access
 
-WebDAV makes it very easy to access to the photo galleries in the file explorer or to upload photos directly from your phone.
+WebDAV endpoint is like [http://localhost:3080/webdav](http://localhost:3080/webdav) and makes it very easy to access to the photo galleries in the file explorer (just past the URL in the address bar) or to upload photos directly from your phone.
 
 For uploading from your phone, the app [PhotoSync](https://www.photosync-app.com/) makes that task very convinent. However for WebDAV functions you have to purchase it and we do not have any partnership with them.
 When creating a new WebDAV configuration in PhotoSync, make sure you fill the field `Directory` with `/webdav`
