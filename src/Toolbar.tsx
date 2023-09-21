@@ -1,5 +1,6 @@
-import React, {FC, useContext, useState } from "react";
-import { styled } from '@mui/material/styles';
+import React, {FC, useContext, useState, forwardRef } from "react";
+import { useTheme, styled } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import Box from "@mui/material/Box";
@@ -38,32 +39,36 @@ interface ToolbarItemProps {
     onClick: (event: React.MouseEvent<Element, MouseEvent>) => void;
 }
 
-const ToolbarItem: FC<ToolbarItemProps> = ({ icon, title, tooltip, subMenu, showTitle, "aria-label": ariaLabel, onClick }) => {
-    const ctx = useContext(ToolbarContext);
-    return ctx.isCollapsed ? (
-        <Tooltip title={tooltip} enterDelay={300} placement="left" arrow>
-            <MenuItem onClick={onClick} aria-label={ariaLabel}>
-                <ListItemIcon>{icon}</ListItemIcon>
-                <ListItemText>{title}</ListItemText>
-                {subMenu && <ArrowRightIcon />}
-            </MenuItem>
-        </Tooltip>
-    ):(
-        <Tooltip title={tooltip} enterDelay={300}>
-            <StyledButton onClick={onClick} aria-label={ariaLabel} color="inherit">
-                {icon}
-                {showTitle && <span style={{marginLeft: 4}}>{title}</span>}
-                {subMenu && <ArrowDropDownIcon sx={{mr: -0.8}} />}
-            </StyledButton>
-        </Tooltip>
-    );
-}
+export const ToolbarItem = forwardRef<any, ToolbarItemProps>(
+    ({ icon, title, tooltip, subMenu, showTitle, "aria-label": ariaLabel, onClick }, ref) => {
+        const ctx = useContext(ToolbarContext);
+        return ctx.isCollapsed ? (
+            <Tooltip title={tooltip} enterDelay={300} placement="left" arrow>
+                <MenuItem ref={ref} onClick={onClick} aria-label={ariaLabel}>
+                    <ListItemIcon>{icon}</ListItemIcon>
+                    <ListItemText>{title}</ListItemText>
+                    {subMenu && <ArrowRightIcon />}
+                </MenuItem>
+            </Tooltip>
+        ):(
+            <Tooltip title={tooltip} enterDelay={300}>
+                <StyledButton ref={ref} onClick={onClick} aria-label={ariaLabel} color="inherit">
+                    {icon}
+                    {showTitle && <span style={{marginLeft: 4}}>{title}</span>}
+                    {subMenu && <ArrowDropDownIcon sx={{mr: -0.8}} />}
+                </StyledButton>
+            </Tooltip>
+        );
+    }
+);
 
 interface ToolbarMenuProps {
     children?: React.ReactNode;
 }
 
-const ToolbarMenu: FC<ToolbarMenuProps> = ({ children }) => {
+export const ToolbarMenu: FC<ToolbarMenuProps> = ({ children }) => {
+    const theme = useTheme();
+    const isCollapsed = useMediaQuery(theme.breakpoints.down("lg"));
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -73,8 +78,8 @@ const ToolbarMenu: FC<ToolbarMenuProps> = ({ children }) => {
         setAnchorEl(null);
     };
 
-    return (<>
-        {/* Collapsed menu for mobile */}
+    return isCollapsed ? (
+        // Collapsed menu for mobile
         <ToolbarContext.Provider value={{ isCollapsed: true }}>
             <Menu
                 keepMounted
@@ -96,17 +101,13 @@ const ToolbarMenu: FC<ToolbarMenuProps> = ({ children }) => {
                 </IconButton>
             </Box>
         </ToolbarContext.Provider>
-
-        {/* Expanded toolbar for desktop */}
+    ):(
+        // Expanded toolbar for desktop
         <ToolbarContext.Provider value={{ isCollapsed: false }}>
             <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
                 {children}
             </Box>
         </ToolbarContext.Provider>
-    </>);
+    );
 }
 
-export {
-    ToolbarMenu,
-    ToolbarItem,
-};
