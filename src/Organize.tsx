@@ -15,14 +15,12 @@ import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormLabel from '@mui/material/FormLabel';
-import IconButton from '@mui/material/IconButton/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
 
 import PhotoAlbum from 'react-photo-album';
 
@@ -39,6 +37,7 @@ import {
 import useNotification from './Notification';
 import { useSelectionContext } from './Selection';
 import { PhotoImageType, MoveConflictMode } from './types';
+import { ToolbarItem } from './Toolbar';
 
 interface DialogProps {
     collection: string;
@@ -211,6 +210,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
                         photos={photos}
                         layout="rows"
                         targetRowHeight={48}
+                        rowConstraints={{ singleRowMaxHeight: 48 }}
                         spacing={1} />
                 </FormControl>
             </DialogContent>
@@ -273,6 +273,7 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
                         photos={photos}
                         layout="rows"
                         targetRowHeight={48}
+                        rowConstraints={{ singleRowMaxHeight: 48 }}
                         spacing={1} />
                 </FormControl>
                 <DialogContentText>
@@ -321,21 +322,26 @@ const Organize: FC = () => {
     };
     
     return !isSelecting || collection === undefined || album === undefined ? null : (<>
-        <Tooltip title="Cancel selection" enterDelay={300}>
-            <IconButton onClick={cancel} aria-label="cancel selection" color="inherit">
-                <DeselectIcon />
-            </IconButton>
-        </Tooltip>
-        <Tooltip title="Move to another album" enterDelay={300}>
-            <IconButton onClick={showMove} aria-label="move to another album" color="inherit">
-                <DriveFileMoveIcon />
-            </IconButton>
-        </Tooltip>
-        <Tooltip title="Delete photos" enterDelay={300}>
-            <IconButton onClick={showDelete} aria-label="delete photos" color="inherit">
-                <DeleteForeverIcon />
-            </IconButton>
-        </Tooltip>
+        <ToolbarItem
+            onClick={cancel}
+            icon={<DeselectIcon />}
+            title="Clear selection"
+            tooltip="Clear current photo selection in the gallery"
+            aria-label="cancel selection" />
+
+        <ToolbarItem
+            onClick={showMove}
+            icon={<DriveFileMoveIcon />}
+            title="Move photos"
+            tooltip="Move selected photos to another album"
+            aria-label="move photos" />
+        
+        <ToolbarItem
+            onClick={showDelete}
+            icon={<DeleteForeverIcon />}
+            title="Delete photos"
+            tooltip="Delete selected photos"
+            aria-label="delete photos" />
         
         <MoveDialog open={movePhotos !== undefined}
             collection={collection}

@@ -22,7 +22,6 @@
     "@mui/material": "^5.14.5",
     "@reduxjs/toolkit": "^1.9.5",
     "@rpldy/upload-drop-zone": "^1.4.1",
-    "@rpldy/upload-paste": "^1.4.1",
     "@rpldy/upload-preview": "^1.4.1",
     "@rpldy/uploady": "^1.4.1",
     "@tabler/icons-react": "^2.39.0",
