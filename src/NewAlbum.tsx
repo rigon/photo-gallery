@@ -25,6 +25,7 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { useGetCollectionsQuery, useAddAlbumMutation, QueryAddAlbum } from "./services/api";
 import useNotification from './Notification';
+import { ToolbarItem } from './Toolbar';
 
 const defaults: QueryAddAlbum = {
     collection: "",
@@ -83,11 +84,12 @@ const NewAlbum: FC = () => {
 
     return (
         <>
-            <Tooltip title="Create new album" enterDelay={300}>
-                <IconButton onClick={handleClickOpen} aria-label="create album" color="inherit">
-                    <AddAlbumIcon />
-                </IconButton>
-            </Tooltip>
+            <ToolbarItem
+                onClick={handleClickOpen}
+                icon={<AddAlbumIcon />}
+                title="New album"
+                tooltip="Create a new album"
+                aria-label="create album" />
 
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title" >

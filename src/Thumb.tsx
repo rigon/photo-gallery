@@ -60,11 +60,11 @@ export default (
     const openLightbox = () => {
         setLightboxIndex(layout.index);
     }
-    const saveFavorite = (event: { stopPropagation: () => void; }) => {
+    const saveFavorite = (event: React.MouseEvent<Element, MouseEvent>) => {
         event.stopPropagation();
         toggleFavorite(layout.index);
     }
-    const showInfo = (event: { stopPropagation: () => void; }) => {
+    const showInfo = (event: React.MouseEvent<Element, MouseEvent>) => {
         event.stopPropagation();
         setInfoPhotoIndex(layout.index);
     }

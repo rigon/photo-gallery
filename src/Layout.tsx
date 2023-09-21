@@ -13,7 +13,6 @@ import Link from '@mui/material/Link';
 import MenuIcon from '@mui/icons-material/Menu';
 import Paper from '@mui/material/Paper';
 import Toolbar from '@mui/material/Toolbar';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
@@ -25,6 +24,7 @@ import FavoriteMenu from './FavoriteMenu';
 import NewAlbum from './NewAlbum';
 import Storage from './Storage';
 import ThemeMenu from './ThemeMenu';
+import { ToolbarItem, ToolbarMenu } from './Toolbar';
 
 import { increaseZoom, decreaseZoom } from "./services/app";
 
@@ -65,7 +65,6 @@ const Layout: FC = () => {
                 <AlbumList onClick={handleDrawerClose} />
             </Box>
             <Box sx={{ flex: 'none' }}>
-                {/* <Divider /> */}
                 <Storage />
                 <Paper elevation={24} square>
                     <Typography variant="body2" style={{ padding: "10px", textAlign: 'justify' }} >
@@ -86,8 +85,8 @@ const Layout: FC = () => {
             <AppBar
                 position="fixed"
                 sx={{
-                    width: { sm: `calc(100% - ${drawerWidth}px)` },
-                    ml: { sm: `${drawerWidth}px` },
+                    width: { md: `calc(100% - ${drawerWidth}px)` },
+                    ml: { md: `${drawerWidth}px` },
                 }}
             >
                 <Toolbar>
@@ -96,32 +95,23 @@ const Layout: FC = () => {
                         aria-label="open drawer"
                         edge="start"
                         onClick={handleDrawerToggle}
-                        sx={{ mr: 2, display: { sm: 'none' } }}
+                        sx={{ mr: 2, display: { md: 'none' } }}
                     >
                         <MenuIcon />
                     </IconButton>
                     <AlbumTitle />
                     <Box sx={{ flexGrow: 1 }} />
-                    <NewAlbum />
-                    <FavoriteMenu />
-                    <ThemeMenu />
-
-                    <Tooltip title="Increase Zoom" enterDelay={300}>
-                        <IconButton onClick={zoomIn} aria-label="zoom in" color="inherit">
-                            <ZoomInIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Decrease Zoom" enterDelay={300}>
-                        <IconButton onClick={zoomOut} aria-label="zoom out" color="inherit">
-                            <ZoomOutIcon />
-                        </IconButton>
-                    </Tooltip>
+                    <ToolbarMenu>
+                        <NewAlbum />
+                        <FavoriteMenu />
+                        <Divider />
+                        <ThemeMenu />
+                        <ToolbarItem title="Zoom in" tooltip="Increase Zoom" onClick={zoomIn} icon={<ZoomInIcon />} />
+                        <ToolbarItem title="Zoom out" tooltip="Decrease Zoom" onClick={zoomOut} icon={<ZoomOutIcon />} />
+                    </ToolbarMenu>
                 </Toolbar>
             </AppBar>
-            <Box
-                component="nav"
-                sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-            >
+            <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
                 {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
                 <Drawer
                     variant="temporary"
@@ -131,8 +121,8 @@ const Layout: FC = () => {
                         keepMounted: true, // Better open performance on mobile.
                     }}
                     sx={{
-                        display: { xs: 'block', sm: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: "90%" },
+                        display: { xs: 'block', md: 'none' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: "70%", minWidth: drawerWidth },
                     }}
                 >
                     {drawer}
@@ -140,7 +130,7 @@ const Layout: FC = () => {
                 <Drawer
                     variant="permanent"
                     sx={{
-                        display: { xs: 'none', sm: 'block' },
+                        display: { xs: 'none', md: 'block' },
                         '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
                     }}
                     open
@@ -150,7 +140,7 @@ const Layout: FC = () => {
             </Box>
             <Box
                 component="main"
-                sx={{ flexGrow: 1, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
+                sx={{ flexGrow: 1, width: { md: `calc(100% - ${drawerWidth}px)` } }}
             >
                 <Toolbar />
 
