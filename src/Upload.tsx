@@ -24,14 +24,11 @@ import UploadPreview, {
     PreviewMethods
 } from "@rpldy/upload-preview";
 import UploadDropZone from "@rpldy/upload-drop-zone";
-import withPasteUpload from "@rpldy/upload-paste";
 
-import { styled } from '@mui/material';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { Divider, styled } from '@mui/material';
+import AddToPhotosIcon from '@mui/icons-material/AddToPhotos';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import ButtonGroup from '@mui/material/ButtonGroup';
 import CircularProgress from '@mui/material/CircularProgress';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import DangerousIcon from '@mui/icons-material/Dangerous';
@@ -47,10 +44,13 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
 import api from './services/api';
+import { ToolbarItem } from './Toolbar';
 
-const PasteUploadDropZone = withPasteUpload(styled(UploadDropZone)({
-    height: "100vh"
-}));
+const StyledUploadDropZone = styled(UploadDropZone)({
+    "&.drag-over": {
+        backgroundColor: "rgba(128,128,128,0.6)",
+    }
+});
 
 const StyledCircularProgress = styled(CircularProgress)({
     position: 'absolute',
@@ -67,20 +67,6 @@ const StyledIcon = styled("div")({
     padding: "8px",
     filter: "drop-shadow(0px 0px 1px white)",
 });
-
-function UploadButton() {
-    const uploady = useUploady();
-
-    const handleUpload = () => {
-        uploady.showFileUpload();
-    };
-
-    return (
-        <Button startIcon={<FileUploadIcon />} onClick={handleUpload} aria-label="upload photos" color="inherit" component='label'>
-            Upload
-        </Button>
-    );
-}
 
 const UploadEntry = ({ type, url, id, name, size }: PreviewComponentProps) => {
     const [ item, setItem ] = useState<BatchItem>({} as BatchItem);
@@ -118,19 +104,30 @@ const UploadEntry = ({ type, url, id, name, size }: PreviewComponentProps) => {
     );
 }
 
-export const Upload: FC = () => {
+
+interface UploadMenuProps {
+    open: boolean;
+    anchorEl: Element | null;
+    onOpen: () => void;
+    onClose: () => void;
+}
+
+const UploadMenu: FC<UploadMenuProps> = ({ open, anchorEl, onOpen, onClose }) => {
     const { collection, album } = useParams();
     const dispatch = useDispatch();
+    const uploady = useUploady();
     const abortAll = useAbortAll();
-    const dropdownRef = useRef(null);
     const previewMethodsRef = useRef<PreviewMethods>(null);
-    const [open, setOpen] = useState<boolean>(false);
     const [inProgress, setInProgress] = useState<boolean>(false);
     const [isEmpty, setIsEmpty] = useState<boolean>(false);
 
+    const handleUpload = () => {
+        uploady.showFileUpload();
+    };
+
     // Open menu when new uploads are added
     useBatchAddListener(() => {
-        setOpen(true);
+        onOpen();
         setInProgress(true);
     });
     // Reload album after uploading
@@ -138,14 +135,6 @@ export const Upload: FC = () => {
         dispatch(api.util.invalidateTags([{ type: 'Album', id: `${collection}:${album}` }]));
         setInProgress(false);
     });
-
-    const handleOpenMenu = () => {
-        setOpen(true);
-    };
-
-    const handleCloseMenu = () => {
-        setOpen(false);
-    };
 
     const onAbortOrClear = () => {
         if(inProgress)
@@ -158,65 +147,57 @@ export const Upload: FC = () => {
         setIsEmpty(items.length === 0);
     };
 
-    // Do not add the upload button when not in a album
-    if(!collection || !album)
-        return null;
-
-    return (<>
-        <ButtonGroup ref={dropdownRef} variant="text" aria-label="split button">
-            <UploadButton />
-            <Button
-                onClick={handleOpenMenu}
-                size="small"
-                color="inherit"
-                aria-controls={open ? 'split-button-menu' : undefined}
-                aria-expanded={open ? 'true' : undefined}
-                aria-label="select merge strategy"
-                aria-haspopup="menu"
-            >
-                <ArrowDropDownIcon />
-            </Button>
-        </ButtonGroup>
-
+    return (
         <Menu
             open={open}
-            anchorEl={dropdownRef.current}
-            onClose={handleCloseMenu}
+            anchorEl={anchorEl}
+            onClose={onClose}
             keepMounted={true}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
             MenuListProps={{
                 'aria-labelledby': 'lock-button',
                 role: 'listbox',
             }}
         >
-            {isEmpty &&
-                <ListItem>
-                    <ListItemText
-                        primary={<em>No items for uploading</em>}
-                        secondary={<em>Use the Upload button <b>or</b> drop files here</em>} />
-                </ListItem>}
+            <MenuItem onClick={handleUpload}>
+                <ListItemIcon><AddToPhotosIcon /></ListItemIcon>
+                <ListItemText>Add photos</ListItemText>
+            </MenuItem>
+            <Divider />
 
             {!isEmpty &&
+                // Button to clear uploading the list
                 <MenuItem onClick={onAbortOrClear}>
                     <ListItemIcon>
-                        {inProgress && <DangerousIcon />}
-                        {!inProgress && <ClearAllIcon />}
+                        {inProgress ? <DangerousIcon /> : <ClearAllIcon />}
                     </ListItemIcon>
                     <ListItemText>
-                        {inProgress && <>Stop current uploads</>}
-                        {!inProgress && <>Clear all</>}
+                        {inProgress ? "Stop current uploads": "Clear all" }
                     </ListItemText>
-                </MenuItem>}
-            
-            <UploadPreview
-                rememberPreviousBatches
-                PreviewComponent={UploadEntry}
-                previewMethodsRef={previewMethodsRef}
-                onPreviewsChanged={onPreviewsChanged}
-            />
+                </MenuItem>
+            }
+            <StyledUploadDropZone onDragOverClassName="drag-over">
+                <>
+                    {isEmpty &&
+                        // Empty list for upload
+                        <ListItem onClick={handleUpload} sx={{ cursor: 'pointer', p: 5 }}>
+                            <ListItemText sx={{ textAlign: "center" }}
+                                primary={<em>No items for uploading</em>}
+                                secondary={<em>Use the button above &uarr; to add more photos <br/><b>Or</b><br/>Drag and drop files here!</em>} />
+                        </ListItem>
+                    }
+                
+                    <UploadPreview
+                        rememberPreviousBatches
+                        PreviewComponent={UploadEntry}
+                        previewMethodsRef={previewMethodsRef}
+                        onPreviewsChanged={onPreviewsChanged}
+                    />
+                </>
+            </StyledUploadDropZone>
         </Menu>
-    </>);
+    );
 }
 
 interface UploadProviderProps {
@@ -231,9 +212,46 @@ export const UploadProvider: FC<UploadProviderProps> = ({children}) => {
 
     return (
         <Uploady destination={{ url: uploadUrl }}>
-            <PasteUploadDropZone>
-                {children}
-            </PasteUploadDropZone>
+            {children}
         </Uploady>
     );
 };
+
+export const Upload: FC = () => {
+    const { collection, album } = useParams();
+    const dropdownRef = useRef(null);
+    const [open, setOpen] = useState<boolean>(false);
+    
+    const handleOpenMenu = () => {
+        setOpen(true);
+    };
+
+    const handleCloseMenu = () => {
+        setOpen(false);
+    };
+    
+
+    // Do not add the upload button when not in a album
+    if(!collection || !album)
+        return null;
+
+    return (<>
+        <ToolbarItem
+            ref={dropdownRef}
+            icon={<FileUploadIcon />}
+            onClick={handleOpenMenu}
+            title="Upload"
+            aria-label="upload photos"
+            tooltip="Upload photos to this album"
+            subMenu
+            showTitle
+        />
+
+        <UploadMenu
+            open={open}
+            anchorEl={dropdownRef.current}
+            onOpen={handleOpenMenu}
+            onClose={handleCloseMenu}
+         />
+    </>);
+}
