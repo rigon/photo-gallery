@@ -1,6 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 
+import DeleteDialog from './Delete';
 import Lightbox from './Lightbox';
+import MoveDialog from './Move';
 import NewAlbumDialog from './NewAlbum';
 import PhotoInfoDialog from './PhotoInfo';
 
@@ -10,12 +12,16 @@ interface DialogContext {
     lightbox(photos: PhotoType[], selected: number): void;
     newAlbum(): void;
     info(photos: PhotoType[], selected: number): void;
+    move(collection: string, album: string, photos: PhotoImageType[]): void;
+    delete(collection: string, album: string, photos: PhotoImageType[]): void;
 }
 
 const DialogContext = React.createContext<DialogContext>({
     lightbox: function (): void {},
     newAlbum: function (): void {},
     info: function (): void {},
+    move: function (): void {},
+    delete: function (): void {},
 });
 
 interface DialogProviderProps {
@@ -27,10 +33,18 @@ interface SelectedPhotos {
     selected: number;
 }
 
+interface MoveDeleteData {
+    collection: string;
+    album: string;
+    photos: PhotoImageType[];
+}
+
 const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
     const [lightbox, setLightbox] = useState<SelectedPhotos | null>(null);
     const [newAlbum, setNewAlbum] = useState<boolean>(false);
     const [info, setInfo] = useState<SelectedPhotos | null>(null);
+    const [move, setMove] = useState<MoveDeleteData | null>(null);
+    const [del, setDelete] = useState<MoveDeleteData | null>(null);
 
     // Lightbox
     const openLightbox = (photos: PhotoImageType[], selected: number) => {
@@ -53,12 +67,28 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
     const closeInfo = () => {
         setInfo(null);
     }
+    // Move
+    const openMove = (collection: string, album: string, photos: PhotoImageType[]) => {
+        setMove({collection, album, photos});
+    }
+    const closeMove = () => {
+        setMove(null);
+    }
+    // Delete
+    const openDelete = (collection: string, album: string, photos: PhotoImageType[]) => {
+        setDelete({collection, album, photos});
+    }
+    const closeDelete = () => {
+        setDelete(null);
+    }
     
     return (
         <DialogContext.Provider value={{
                 lightbox: openLightbox,
                 newAlbum: openNewAlbum,
                 info: openInfo,
+                move: openMove,
+                delete: openDelete,
             }}>
             
             { children }
@@ -78,6 +108,20 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
                 photos={info?.photos || []}
                 selected={info?.selected || 0}
                 onClose={closeInfo} />
+            
+            <MoveDialog
+                open={move !== null}
+                collection={move?.collection || ""}
+                album={move?.album || ""}
+                photos={move?.photos || []}
+                onClose={closeMove} />
+            
+            <DeleteDialog
+                open={del !== null}
+                collection={move?.collection || ""}
+                album={move?.album || ""}
+                photos={del?.photos || []}
+                onClose={closeDelete} />
             
         </DialogContext.Provider>
     );
