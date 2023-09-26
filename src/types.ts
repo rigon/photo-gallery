@@ -56,6 +56,16 @@ export interface FileType {
 
 export type PhotoImageType = PhotoType & Image;
 
+export interface DuplicatedType {
+    photo: PhotoType,
+    found: {
+        file: string,
+        collection: string,
+        album: string,
+        photo: string,
+    }[];
+}
+
 export enum MoveConflictMode {
     Cancel = "cancel",
     Skip = "skip",

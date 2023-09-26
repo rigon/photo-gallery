@@ -8,6 +8,7 @@ import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import Box from "@mui/material/Box";
+import DifferenceIcon from '@mui/icons-material/Difference';
 import Divider from "@mui/material/Divider";
 import FavoriteMenu from './FavoriteMenu';
 import IconButton from "@mui/material/IconButton";
@@ -141,9 +142,16 @@ const ToolbarMenu : FC = () => {
 
     return (
         <ToolbarProvider>
-            {inAlbum &&
+            {inAlbum && <>
                 <Upload />
-            }
+                <ToolbarItem
+                    onClick={() => dialog.duplicates(collection, album)}
+                    icon={<DifferenceIcon />}
+                    title="Duplicates"
+                    tooltip="Find duplicated photos in this album"
+                    aria-label="duplicates" />
+                <Divider />
+            </>}
             <ToolbarItem
                 onClick={() => dialog.newAlbum()}
                 icon={<AddAlbumIcon />}

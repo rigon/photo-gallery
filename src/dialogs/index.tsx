@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import DeleteAlbumDialog from './DeleteAlbum';
 import DeleteDialog from './Delete';
+import DuplicatesDialog from './Duplicates';
 import Lightbox from './Lightbox';
 import MoveDialog from './Move';
 import NewAlbumDialog from './NewAlbum';
@@ -16,6 +17,7 @@ interface DialogContext {
     move(collection: string, album: string, photos: PhotoImageType[]): void;
     delete(collection: string, album: string, photos: PhotoImageType[]): void;
     deleteAlbum(collection: string, album: string): void;
+    duplicates(collection: string, album: string): void;
 }
 
 const DialogContext = React.createContext<DialogContext>({
@@ -25,6 +27,7 @@ const DialogContext = React.createContext<DialogContext>({
     move: function (): void {},
     delete: function (): void {},
     deleteAlbum: function (): void {},
+    duplicates: function (): void {},
 });
 
 interface DialogProviderProps {
@@ -47,6 +50,11 @@ interface SelectedPhotos {
     selected: number;
 }
 
+interface DuplicatesData {
+    collection: string;
+    album: string;
+}
+
 const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
     const [lightbox, setLightbox] = useState<SelectedPhotos | null>(null);
     const [newAlbum, setNewAlbum] = useState<boolean>(false);
@@ -54,6 +62,7 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
     const [move, setMove] = useState<CollectionAlbumPhotos | null>(null);
     const [del, setDelete] = useState<CollectionAlbumPhotos | null>(null);
     const [deleteAlbum, setDeleteAlbum] = useState<CollectionAlbum | null>(null);
+    const [duplicates, setDuplicates] = useState<DuplicatesData | null>(null);
 
     // Lightbox
     const openLightbox = (photos: PhotoImageType[], selected: number) => {
@@ -97,6 +106,13 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
     const closeDeleteAlbum = () => {
         setDeleteAlbum(null);
     }
+    // Duplicates
+    const openDuplicates = (collection: string, album: string) => {
+        setDuplicates({collection, album});
+    }
+    const closeDuplicates = () => {
+        setDuplicates(null);
+    }
     
     return (
         <DialogContext.Provider value={{
@@ -106,6 +122,7 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
                 move: openMove,
                 delete: openDelete,
                 deleteAlbum: openDeleteAlbum,
+                duplicates: openDuplicates,
             }}>
             
             { children }
@@ -145,6 +162,12 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
                 collection={deleteAlbum?.collection || ""}
                 album={deleteAlbum?.album || ""}
                 onClose={closeDeleteAlbum} />
+
+            <DuplicatesDialog
+                open={duplicates !== null}
+                collection={duplicates?.collection || ""}
+                album={duplicates?.album || ""}
+                onClose={closeDuplicates} />
             
         </DialogContext.Provider>
     );
