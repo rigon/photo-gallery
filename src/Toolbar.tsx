@@ -1,13 +1,17 @@
 import React, {FC, useContext, useState, forwardRef } from "react";
-import { useTheme, styled } from '@mui/material/styles';
+import { useParams } from "react-router-dom";
 import { useDispatch } from 'react-redux';
+import { useTheme, styled } from '@mui/material/styles';
 
 import useMediaQuery from '@mui/material/useMediaQuery';
 import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import Box from "@mui/material/Box";
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import DeselectIcon from '@mui/icons-material/Deselect';
 import Divider from "@mui/material/Divider";
+import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import FavoriteMenu from './FavoriteMenu';
 import IconButton from "@mui/material/IconButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
@@ -20,7 +24,9 @@ import Tooltip from "@mui/material/Tooltip";
 import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
 import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 
+import { Upload } from "./Upload";
 import { useDialog } from './dialogs';
+import { useSelectionContext } from './Selection';
 import { increaseZoom, decreaseZoom } from "./services/app";
 
 const StyledButton = styled(IconButton)(({ theme }) => ({
@@ -123,8 +129,10 @@ export const ToolbarProvider: FC<ToolbarMenuProps> = ({ children }) => {
 }
 
 const ToolbarMenu : FC = () => {
+    const {collection = "", album = ""} = useParams();
     const dispatch = useDispatch();
     const dialog = useDialog();
+    const { get: getSelection, cancel: cancelSelection } = useSelectionContext();
 
     const zoomIn = () => {
         dispatch(increaseZoom());
@@ -135,6 +143,28 @@ const ToolbarMenu : FC = () => {
 
     return (
         <ToolbarProvider>
+            <ToolbarItem
+                onClick={cancelSelection}
+                icon={<DeselectIcon />}
+                title="Clear selection"
+                tooltip="Clear current photo selection in the gallery"
+                aria-label="cancel selection" />
+            <ToolbarItem
+                onClick={() => dialog.move(collection, album, getSelection())}
+                icon={<DriveFileMoveIcon />}
+                title="Move photos"
+                tooltip="Move selected photos to another album"
+                aria-label="move photos" />
+            
+            <ToolbarItem
+                onClick={() => dialog.delete(collection, album, getSelection())}
+                icon={<DeleteForeverIcon />}
+                title="Delete photos"
+                tooltip="Delete selected photos"
+                aria-label="delete photos" />
+            <Divider />
+            <Upload />
+            
             <ToolbarItem
                 onClick={() => dialog.newAlbum()}
                 icon={<AddAlbumIcon />}

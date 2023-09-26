@@ -1,16 +1,12 @@
 import { FC, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
 import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import DeselectIcon from '@mui/icons-material/Deselect';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -26,24 +22,20 @@ import PhotoAlbum from 'react-photo-album';
 
 import {
     QueryAddAlbum,
-    QueryDeletePhotos,
     QueryMovePhotos,
     useAddAlbumMutation,
-    useDeletePhotosMutation,
     useGetAlbumsQuery,
     useGetCollectionsQuery,
     useMovePhotosMutation
-} from './services/api';
-import useNotification from './Notification';
-import { useSelectionContext } from './Selection';
-import { PhotoImageType, MoveConflictMode } from './types';
-import { ToolbarItem } from './Toolbar';
+} from '../services/api';
+import useNotification from '../Notification';
+import { PhotoImageType, MoveConflictMode } from '../types';
 
 interface DialogProps {
+    open: boolean;
     collection: string;
     album: string;
     photos: PhotoImageType[];
-    open: boolean;
     onClose: () => void;
 }
 
@@ -78,7 +70,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
 
     const { successNotification, errorNotification } = useNotification();
     const { data: collections = [], isFetching } = useGetCollectionsQuery();
-    const { data: tmpAlbums = [] } = useGetAlbumsQuery({ collection: targetCollection }, { skip: isFetching });
+    const { data: tmpAlbums = [] } = useGetAlbumsQuery({ collection: targetCollection }, { skip: !open || isFetching });
     const albums = tmpAlbums.filter(v => !v.pseudo && v.name !== album);
 
     // Find out if it is a new album
@@ -93,13 +85,15 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
         setIsNewAlbum(albums.find(a => a.name === targetAlbum) === undefined);
     }, [collection, targetCollection, album, albums, targetAlbum, setIsNewAlbum]);
 
-    // Initial album name
+    // Set initial values
     useEffect(() => {
+        setTargetCollection(collection);
+
         const dates = photos
-            .filter(v => !v.date.startsWith("0001-01-01"))
+            .filter(v => !v?.date?.startsWith("0001-01-01"))
             .map(v => v.date.slice(0, v.date.lastIndexOf('T')));
         setTargetAlbum(mostCommon(dates));
-    }, [open, photos, setTargetAlbum]);
+    }, [open, photos, collection, setTargetCollection, setTargetAlbum]);
     
     const changeCollection = (event: SelectChangeEvent<string>) => {
         setTargetCollection(event.target.value);
@@ -221,139 +215,4 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
         </Dialog>);
 }
 
-/* Dialog for delete action */
-const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose}) => {
-    const [deletePhotos] = useDeletePhotosMutation();
-    const [answer, setAnswer] = useState<string>();
-    const [processingAction, setProcessingAction] = useState<boolean>(false);
-
-    const { successNotification, errorNotification } = useNotification();
-
-    const answerOk = (answer?.toLocaleLowerCase() === "yes");
-
-    const handleAnswer = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setAnswer(event.target.value)
-    }
-    const handleClose = () => {
-        setAnswer("");
-        onClose();
-    }
-
-    const handleDelete = async () => {
-        const query: QueryDeletePhotos = {
-            collection,
-            album,
-            target: {
-                photos: photos.map(photo => photo.id),
-            }
-        };
-        
-        setProcessingAction(true);
-        try {
-            await deletePhotos(query).unwrap();
-            successNotification(`${photos.length} photos were deleted`);
-            handleClose();
-        }
-        catch(error) {
-            errorNotification("An error occured while deleting photos!");
-            console.log(error);
-        }
-        setProcessingAction(false);
-    }
-
-    return (
-        <Dialog open={open} onClose={handleClose}>
-            <DialogTitle color="error">Delete photos</DialogTitle>
-            <DialogContent>
-                <DialogContentText>
-                    Photos to be deleted:
-                </DialogContentText>
-                <FormControl variant="filled" fullWidth margin="normal">
-                    <PhotoAlbum
-                        photos={photos}
-                        layout="rows"
-                        targetRowHeight={48}
-                        rowConstraints={{ singleRowMaxHeight: 48 }}
-                        spacing={1} />
-                </FormControl>
-                <DialogContentText>
-                    This will permanently delete the selected photos. If you are sure about that,
-                    please type "yes" in the box bellow and press "Delete":
-                </DialogContentText>
-                <TextField
-                    autoFocus
-                    fullWidth
-                    margin="normal"
-                    variant="standard"
-                    label='Type "yes" to delete'
-                    color={answerOk ? "success" : "error"}
-                    onChange={handleAnswer}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={handleClose} color="inherit">Cancel</Button>
-                <Button onClick={handleDelete} disabled={!answerOk || processingAction} color="error" variant="contained" disableElevation>Delete</Button>
-            </DialogActions>
-        </Dialog>
-    )
-}
-
-
-const Organize: FC = () => {
-    const { collection, album } = useParams();
-    const { isSelecting, cancel, get } = useSelectionContext();
-    const [movePhotos, setMovePhotos] = useState<PhotoImageType[]>();
-    const [deletePhotos, setDeletePhotos] = useState<PhotoImageType[]>();
-
-    const showMove = () => {
-        setMovePhotos(get());
-    };
-
-    const showDelete = () => {
-        setDeletePhotos(get());
-    };
-
-    const closeMove = () => {
-        setMovePhotos(undefined);
-    };
-
-    const closeDelete = () => {
-        setDeletePhotos(undefined);
-    };
-    
-    return !isSelecting || collection === undefined || album === undefined ? null : (<>
-        <ToolbarItem
-            onClick={cancel}
-            icon={<DeselectIcon />}
-            title="Clear selection"
-            tooltip="Clear current photo selection in the gallery"
-            aria-label="cancel selection" />
-
-        <ToolbarItem
-            onClick={showMove}
-            icon={<DriveFileMoveIcon />}
-            title="Move photos"
-            tooltip="Move selected photos to another album"
-            aria-label="move photos" />
-        
-        <ToolbarItem
-            onClick={showDelete}
-            icon={<DeleteForeverIcon />}
-            title="Delete photos"
-            tooltip="Delete selected photos"
-            aria-label="delete photos" />
-        
-        <MoveDialog open={movePhotos !== undefined}
-            collection={collection}
-            album={album}
-            photos={movePhotos || []}
-            onClose={closeMove} />
-        <DeleteDialog open={deletePhotos !== undefined}
-            collection={collection}
-            album={album}
-            photos={deletePhotos || []}
-            onClose={closeDelete} />
-    </>);
-}
-
-export default Organize;
+export default MoveDialog;
