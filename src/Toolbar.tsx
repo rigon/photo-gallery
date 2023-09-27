@@ -8,10 +8,7 @@ import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import Box from "@mui/material/Box";
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import DeselectIcon from '@mui/icons-material/Deselect';
 import Divider from "@mui/material/Divider";
-import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import FavoriteMenu from './FavoriteMenu';
 import IconButton from "@mui/material/IconButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
@@ -26,7 +23,6 @@ import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 
 import { Upload } from "./Upload";
 import { useDialog } from './dialogs';
-import { useSelectionContext } from './Selection';
 import { increaseZoom, decreaseZoom } from "./services/app";
 
 const StyledButton = styled(IconButton)(({ theme }) => ({
@@ -132,7 +128,6 @@ const ToolbarMenu : FC = () => {
     const { collection, album} = useParams();
     const dispatch = useDispatch();
     const dialog = useDialog();
-    const { get: getSelection, cancel: cancelSelection } = useSelectionContext();
 
     // Do not add buttons that require an album to be opened
     const inAlbum = (collection && album);
