@@ -18,8 +18,9 @@ import Typography from "@mui/material/Typography";
 
 import PhotoAlbum from "react-photo-album";
 
+import SelectionToolbar from "./SelectionToolbar";
 import Thumb from "./Thumb";
-import { SelectionContext } from "./Selection";
+import { SelectionProvider } from "./Selection";
 import { PhotoType, PhotoImageType, urls, AlbumType } from "./types";
 import { useDeleteAlbumMutation, useGetAlbumQuery } from "./services/api";
 import { selectZoom } from "./services/app";
@@ -127,7 +128,7 @@ const Gallery: FC = () => {
 
     return (<>
         {hasSubAlbums && subAlbumsComponent}
-        <SelectionContext<PhotoType> key={`${collection}:${album}`} transformItemToId={item => item.id}>
+        <SelectionProvider<PhotoType> key={`${collection}:${album}`} itemToId={i => i.id}>
             <PhotoAlbum
                 photos={photos}
                 layout="rows"
@@ -135,7 +136,8 @@ const Gallery: FC = () => {
                 rowConstraints={{ singleRowMaxHeight: zoom*2 }}
                 spacing={1}
                 renderPhoto={RenderPhoto} />
-        </SelectionContext>
+                <SelectionToolbar />
+        </SelectionProvider>
     </>);
 }
 
