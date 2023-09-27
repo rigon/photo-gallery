@@ -3,14 +3,14 @@ import { useParams } from "react-router-dom";
 
 import { selectFavorite } from "./services/app";
 import { QuerySaveFavorite, useSavePhotoToPseudoMutation } from './services/api';
-import { useSelectionContext } from "./Selection";
+import { useSelection } from "./Selection";
 import { PhotoImageType, PhotoType, PseudoAlbumType } from './types';
 import useNotification from "./Notification";
 
 const useFavorite = () => {
     const favorite = useSelector(selectFavorite);
     const { collection, album } = useParams();
-    const { getIndexes: getSelection } = useSelectionContext();
+    const { indexes: getSelection } = useSelection();
     const [saveFavorite] = useSavePhotoToPseudoMutation();
     const { infoNotification, errorNotification } = useNotification();
 
