@@ -111,6 +111,27 @@ func deleteAlbum(c echo.Context) error {
 	}
 	return c.JSON(http.StatusCreated, map[string]bool{"ok": true})
 }
+func duplicates(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+
+	collection, err := GetCollection(collectionName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Fetch album from disk
+	album, err := collection.GetAlbumWithPhotos(albumName, true, false)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	list, err := album.Duplicates(collection)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, list)
+}
 
 func thumb(c echo.Context) error {
 	collectionName := c.Param("collection")
@@ -446,6 +467,7 @@ func main() {
 	api.PUT("/collections/:collection/albums", addAlbum)
 	api.GET("/collections/:collection/albums/:album", album)
 	api.DELETE("/collections/:collection/albums/:album", deleteAlbum)
+	api.GET("/collections/:collection/albums/:album/duplicates", duplicates)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/info", info)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
