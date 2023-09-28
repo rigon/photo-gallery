@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useRef, useState } from 'react';
 import { SxProps, Theme } from "@mui/material/styles";
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -17,7 +17,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import { useDialog } from '.';
 import { useDuplicatedPhotosQuery } from '../services/api';
-import { Selectable, SelectionContext, useSelectionContext } from '../Selection';
+import { SelectionProvider, Selectable, useSelection } from '../Selection';
 import { DuplicatedType, PhotoImageType, urls } from '../types';
 
 const selectedStyle: SxProps<Theme> = {
@@ -27,11 +27,11 @@ const selectedStyle: SxProps<Theme> = {
     // boxSizing: "border-box",
 };
 
-interface ItemsProps {
+interface ItemProps {
     item: DuplicatedType;
 }
 
-const Item: FC<ItemsProps> = ({item}) => {
+const Item: FC<ItemProps> = ({item}) => {
     const [selected, setSelected] = useState<boolean>(false);
 
     const handleSelect = (state: boolean) => {
@@ -53,6 +53,24 @@ const Item: FC<ItemsProps> = ({item}) => {
         </Selectable>);
 }
 
+
+interface ListItemsProps {
+    items: DuplicatedType[];
+    fn: (cb: () => DuplicatedType[]) => void;
+}
+
+const ListItems: FC<ListItemsProps> = ({items, fn}) => {
+    const { get } = useSelection<DuplicatedType>();
+
+    fn(() => get());
+
+    return (
+        <List sx={{ bgcolor: 'background.paper' }}>
+            {items.map(item => (<Item item={item} />))}
+        </List>
+    );
+}
+
 interface DialogProps {
     open: boolean;
     collection: string;
@@ -63,7 +81,7 @@ interface DialogProps {
 const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) => {
     const dialog = useDialog();
     const { data } = useDuplicatedPhotosQuery({ collection, album }, {skip: !open});
-    const { get: getSelection } = useSelectionContext("duplicates");
+    const fnRef = useRef<() => DuplicatedType[]>(() => []);
     
     const dups = data || [];
     
@@ -72,31 +90,33 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
     };
 
     const handleMove = () => {
-        const selection: DuplicatedType[] = getSelection();
+        const selection = fnRef.current();
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(item => ({ ...item.photo, src: urls.thumb(item.photo) }));
         dialog.move(collection, album, photos);
     };
 
     const handleDelete = () => {
-        const selection: DuplicatedType[] = getSelection();
+        const selection = fnRef.current();
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(item => ({ ...item.photo, src: urls.thumb(item.photo) }));
         dialog.delete(collection, album, photos);
     };
+
+    const handleFn = (cb: () => DuplicatedType[]) => {
+        fnRef.current = cb;
+    }
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>Duplicated photos</DialogTitle>
             <DialogContent>
                 <DialogContentText>
-                    Select the destination for your photos:
+                    Select duplicated photos:
                 </DialogContentText>
-                <SelectionContext<DuplicatedType> name="duplicates" transformItemToId={item => item.photo.id}>
-                    <List sx={{ bgcolor: 'background.paper' }}>
-                        {dups.map(item => (<Item item={item} />))}
-                    </List>
-                </SelectionContext>
+                <SelectionProvider<DuplicatedType> itemToId={i => i.photo.id}>
+                    <ListItems items={dups} fn={handleFn} />
+                </SelectionProvider>
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose} color='inherit'>Cancel</Button>

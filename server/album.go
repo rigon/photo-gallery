@@ -189,3 +189,56 @@ func (album Album) MarshalJSON() ([]byte, error) {
 	// Marshal the preprocessed struct to JSON
 	return json.Marshal(alias)
 }
+
+type DuplicateFound struct {
+	File       string `json:"file"`
+	Collection string `json:"collection"`
+	Album      string `json:"album"`
+	Photo      string `json:"photo"`
+}
+type Duplicate struct {
+	Photo *Photo           `json:"photo"`
+	Found []DuplicateFound `json:"found"`
+}
+
+func (album *Album) Duplicates(collection *Collection) ([]Duplicate, error) {
+	a, _ := collection.GetAlbumWithPhotos(album.Name, false, false)
+
+	var x []Duplicate
+	for _, p := range a.photosMap {
+		x = append(x, Duplicate{Photo: p, Found: []DuplicateFound{{
+			File:       "file",
+			Collection: "collection",
+			Album:      "album",
+			Photo:      "photo"}}})
+	}
+
+	return x, nil
+
+	//collection.cache
+
+	// result, err := collection.cache.store.Find(nil, bolthold.Where("HasThumb").Not().Eq(true).Index("hasthumb").SortBy("Title"))
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, albumResult := range result {
+	// 	var photos []*Photo
+	// 	var albumName string
+
+	// 	// Get album
+	// 	albumResult.Group(&albumName)
+	// 	album, err := collection.GetAlbum(albumName)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 		continue
+	// 	}
+
+	// 	// Get photos to be processed
+	// 	albumResult.Reduction(&photos)
+
+	// 	// Add work to generate thumbnails in background
+	// 	AddThumbsBackground(collection, album, photos...)
+	// }
+	// return nil, nil
+}
