@@ -118,8 +118,8 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
             
             <DeleteDialog
                 open={del !== null}
-                collection={move?.collection || ""}
-                album={move?.album || ""}
+                collection={del?.collection || ""}
+                album={del?.album || ""}
                 photos={del?.photos || []}
                 onClose={closeDelete} />
             
