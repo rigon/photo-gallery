@@ -46,10 +46,14 @@ const isValidAlbumName = (function () {
     return (fname: string) => rg1.test(fname) && !rg2.test(fname) && !rg3.test(fname);
 })();
 
-function mostCommon(arr: string[]): string {
+function mostCommon(arr: PhotoImageType[]): string {
+    const dates = arr
+        .filter(v => !v?.date?.startsWith("0001-01-01"))
+        .map(v => v.date.slice(0, v.date.lastIndexOf('T')));
+
     const dist: {[key: string]: number} = {};
     let best = "";
-    arr.forEach((v) => {
+    dates.forEach((v) => {
         dist[v] = (dist[v] || 0) + 1;
         if(dist[v] > (dist[best] || 0))
             best = v;
@@ -70,9 +74,18 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
 
     const { successNotification, errorNotification } = useNotification();
     const { data: collections = [], isFetching } = useGetCollectionsQuery();
-    const { data: tmpAlbums = [] } = useGetAlbumsQuery({ collection: targetCollection }, { skip: !open || isFetching });
+    const { data: tmpAlbums = [] } = useGetAlbumsQuery({ collection: targetCollection }, { skip: !open || isFetching || targetCollection === "" });
     const albums = tmpAlbums.filter(v => !v.pseudo && v.name !== album);
-
+    
+    // Set initial values
+    // collection
+    useEffect(() => {
+        if(!isFetching && targetCollection === "")
+            setTargetCollection(collection)
+    }, [open, collection, targetCollection, isFetching]);
+    // album
+    useEffect(() => setTargetAlbum(mostCommon(photos)), [open, album, photos]);
+    
     // Find out if it is a new album
     useEffect(() => {
         // Check if is not moving for the same album or it is a valid name
@@ -83,18 +96,8 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
         // all good
         setErrorName(false);
         setIsNewAlbum(albums.find(a => a.name === targetAlbum) === undefined);
-    }, [collection, targetCollection, album, albums, targetAlbum, setIsNewAlbum]);
+    }, [collection, targetCollection, album, albums, targetAlbum]);
 
-    // Set initial values
-    useEffect(() => {
-        setTargetCollection(collection);
-
-        const dates = photos
-            .filter(v => !v?.date?.startsWith("0001-01-01"))
-            .map(v => v.date.slice(0, v.date.lastIndexOf('T')));
-        setTargetAlbum(mostCommon(dates));
-    }, [open, photos, collection, setTargetCollection, setTargetAlbum]);
-    
     const changeCollection = (event: SelectChangeEvent<string>) => {
         setTargetCollection(event.target.value);
     };
@@ -166,7 +169,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
                 </DialogContentText>
                 <FormControl variant="filled" fullWidth margin="normal">
                     <InputLabel id="collection-label">Collection</InputLabel>
-                    <Select labelId="collection-label" defaultValue={collection} onChange={changeCollection}>
+                    <Select labelId="collection-label" value={targetCollection} onChange={changeCollection}>
                         {collections.map((c) => <MenuItem key={c.name} value={c.name}>{c.name}</MenuItem>)}
                     </Select>
                 </FormControl>
