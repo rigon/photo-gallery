@@ -202,43 +202,39 @@ type Duplicate struct {
 }
 
 func (album *Album) Duplicates(collection *Collection) ([]Duplicate, error) {
-	a, _ := collection.GetAlbumWithPhotos(album.Name, false, false)
-
-	var x []Duplicate
-	for _, p := range a.photosMap {
-		x = append(x, Duplicate{Photo: p, Found: []DuplicateFound{{
-			File:       "file",
-			Collection: "collection",
-			Album:      "album",
-			Photo:      "photo"}}})
-	}
-
-	return x, nil
-
-	//collection.cache
-
-	// result, err := collection.cache.store.Find(nil, bolthold.Where("HasThumb").Not().Eq(true).Index("hasthumb").SortBy("Title"))
-	// if err != nil {
-	// 	return err
-	// }
-
-	// for _, albumResult := range result {
-	// 	var photos []*Photo
-	// 	var albumName string
-
-	// 	// Get album
-	// 	albumResult.Group(&albumName)
-	// 	album, err := collection.GetAlbum(albumName)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 		continue
+	// var sizes []int64
+	// for _, photo := range album.photosMap {
+	// 	for _, file := range photo.Files {
+	// 		sizes = append(sizes, file.Size)
 	// 	}
-
-	// 	// Get photos to be processed
-	// 	albumResult.Reduction(&photos)
-
-	// 	// Add work to generate thumbnails in background
-	// 	AddThumbsBackground(collection, album, photos...)
 	// }
-	// return nil, nil
+
+	var dups []Duplicate
+
+	err := collection.cache.store.ForEach(nil, func(dbPhoto *Photo) error {
+		for _, photo := range album.photosMap {
+			// Same photo, skip
+			if dbPhoto.Collection == photo.Collection && dbPhoto.Album == photo.Album && dbPhoto.Id == photo.Id {
+				continue
+			}
+			for _, dbFile := range dbPhoto.Files {
+				for _, file := range photo.Files {
+					if dbFile.Size == file.Size {
+						dups = append(dups, Duplicate{
+							Photo: photo,
+							Found: []DuplicateFound{{
+								File:       file.Id,
+								Collection: dbPhoto.Collection,
+								Album:      dbPhoto.Album,
+								Photo:      dbPhoto.Id,
+							},
+							}})
+					}
+				}
+			}
+		}
+		return nil
+	})
+
+	return dups, err
 }

@@ -1,6 +1,7 @@
 import { FC, useRef, useState } from 'react';
 import { SxProps, Theme } from "@mui/material/styles";
 import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import Dialog from '@mui/material/Dialog';
@@ -10,6 +11,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import Divider from '@mui/material/Divider';
+import LinearProgress from '@mui/material/LinearProgress';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
@@ -66,6 +68,7 @@ const ListItems: FC<ListItemsProps> = ({items, fn}) => {
 
     return (
         <List sx={{ bgcolor: 'background.paper' }}>
+            <Divider />
             {items.map(item => (<Item item={item} />))}
         </List>
     );
@@ -80,10 +83,11 @@ interface DialogProps {
 
 const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) => {
     const dialog = useDialog();
-    const { data } = useDuplicatedPhotosQuery({ collection, album }, {skip: !open});
+    const { data, isFetching } = useDuplicatedPhotosQuery({ collection, album }, {skip: !open});
     const fnRef = useRef<() => DuplicatedType[]>(() => []);
     
     const dups = data || [];
+    const noDups = dups.length === 0;
     
     const handleClose = () => {
         onClose();
@@ -94,6 +98,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(item => ({ ...item.photo, src: urls.thumb(item.photo) }));
         dialog.move(collection, album, photos);
+        onClose();
     };
 
     const handleDelete = () => {
@@ -101,6 +106,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(item => ({ ...item.photo, src: urls.thumb(item.photo) }));
         dialog.delete(collection, album, photos);
+        onClose();
     };
 
     const handleFn = (cb: () => DuplicatedType[]) => {
@@ -114,9 +120,18 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                 <DialogContentText>
                     Select duplicated photos:
                 </DialogContentText>
-                <SelectionProvider<DuplicatedType> itemToId={i => i.photo.id}>
-                    <ListItems items={dups} fn={handleFn} />
-                </SelectionProvider>
+                {isFetching ? (
+                    // Render progressbar while loading
+                    <Box sx={{ width: '100%' }}>
+                        <LinearProgress />
+                    </Box>
+                ):(
+                    noDups? <>No duplicated photos found in the current album</> : (
+                    <SelectionProvider<DuplicatedType> itemToId={i => i.photo.id}>
+                        <ListItems items={dups} fn={handleFn} />
+                    </SelectionProvider>
+                    )
+                )}
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose} color='inherit'>Cancel</Button>
