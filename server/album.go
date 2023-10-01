@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/hlubek/readercomp"
 )
 
 type Album struct {
@@ -191,10 +193,10 @@ func (album Album) MarshalJSON() ([]byte, error) {
 }
 
 type DuplicateFound struct {
-	File       string `json:"file"`
 	Collection string `json:"collection"`
 	Album      string `json:"album"`
 	Photo      string `json:"photo"`
+	File       string `json:"file"`
 }
 type Duplicate struct {
 	Photo *Photo           `json:"photo"`
@@ -202,13 +204,6 @@ type Duplicate struct {
 }
 
 func (album *Album) Duplicates(collection *Collection) ([]Duplicate, error) {
-	// var sizes []int64
-	// for _, photo := range album.photosMap {
-	// 	for _, file := range photo.Files {
-	// 		sizes = append(sizes, file.Size)
-	// 	}
-	// }
-
 	var dups []Duplicate
 
 	err := collection.cache.store.ForEach(nil, func(dbPhoto *Photo) error {
@@ -217,20 +212,33 @@ func (album *Album) Duplicates(collection *Collection) ([]Duplicate, error) {
 			if dbPhoto.Collection == photo.Collection && dbPhoto.Album == photo.Album && dbPhoto.Id == photo.Id {
 				continue
 			}
+
+			found := false
+			dup := Duplicate{
+				Photo: photo,
+				Found: []DuplicateFound{},
+			}
 			for _, dbFile := range dbPhoto.Files {
 				for _, file := range photo.Files {
 					if dbFile.Size == file.Size {
-						dups = append(dups, Duplicate{
-							Photo: photo,
-							Found: []DuplicateFound{{
-								File:       file.Id,
+						equal, err := readercomp.FilesEqual(file.Path, dbFile.Path)
+						if err != nil {
+							continue
+						}
+						if equal {
+							found = true
+							dup.Found = append(dup.Found, DuplicateFound{
 								Collection: dbPhoto.Collection,
 								Album:      dbPhoto.Album,
 								Photo:      dbPhoto.Id,
-							},
-							}})
+								File:       dbFile.Id,
+							})
+						}
 					}
 				}
+			}
+			if found {
+				dups = append(dups, dup)
 			}
 		}
 		return nil
