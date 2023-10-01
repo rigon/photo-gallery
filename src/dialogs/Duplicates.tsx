@@ -48,7 +48,7 @@ const Item: FC<ItemProps> = ({item}) => {
                 </ListItemAvatar>
                 <ListItemText
                     primary={item.photo.title}
-                    secondary={item.found.map((found) => <>{found.collection}: {found.album} ({found.photo})<br/></>)}
+                    secondary={item.found.map((found) => <>{found.collection}: {found.album} {found.photo} ({found.file})<br/></>)}
                 />
             </ListItem>
             <Divider />

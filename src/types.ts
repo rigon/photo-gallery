@@ -59,10 +59,10 @@ export type PhotoImageType = PhotoType & Image;
 export interface DuplicatedType {
     photo: PhotoType,
     found: {
-        file: string,
         collection: string,
         album: string,
         photo: string,
+        file: string,
     }[];
 }
 
