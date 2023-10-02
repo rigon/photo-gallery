@@ -11,6 +11,8 @@ import "@fontsource/pt-sans";
 
 import Layout from './Layout';
 import Gallery from './Gallery';
+
+import { DialogProvider } from './dialogs';
 import { selectTheme } from "./services/app";
 
 function Home() {
@@ -21,11 +23,19 @@ function Home() {
         </Box>);
 }
 
+function MainLayout() {
+    return (
+        <DialogProvider>
+            <Layout />
+        </DialogProvider>
+    );
+}
+
 function Router() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Layout />}>
+                <Route path="/" element={<MainLayout />}>
                     <Route index element={<Home />} />
                     <Route path="/:collection" element={<Home />} />
                     <Route path="/:collection/:album" element={<Gallery />} />

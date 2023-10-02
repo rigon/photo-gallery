@@ -14,21 +14,21 @@ import Typography from "@mui/material/Typography";
 import PhotoAlbum from "react-photo-album";
 
 import Lightbox from "./Lightbox";
-import PhotoInfo from "./PhotoInfo";
 import Thumb from "./Thumb";
 import useFavorite from "./favoriteHook";
 import { PhotoImageType, urls } from "./types";
 import { useGetAlbumQuery } from "./services/api";
 import { selectZoom } from "./services/app";
+import { useDialog } from "./dialogs";
 
 const Gallery: FC = () => {
     const { collection = "", album = "" } = useParams();
     const { data, isFetching, isError } = useGetAlbumQuery({ collection, album });
     const [lightboxIndex, setLightboxIndex] = useState<number>(-1);
-    const [infoPhotoIndex, setInfoPhotoIndex] = useState<number>(-1);
     const [subAlbum, setSubAlbum] = useState<string>("");
     const zoom = useSelector(selectZoom);
     const favorite = useFavorite();
+    const dialog = useDialog();
 
     const subAlbums = data?.subalbums || [];
     const hasSubAlbums = subAlbums.length > 0;
@@ -49,11 +49,8 @@ const Gallery: FC = () => {
     const closeLightbox = () => {
         setLightboxIndex(-1);
     }
-    const openInfoPhoto = (index: number) => {
-        setInfoPhotoIndex(index);
-    }
-    const closeInfoPhoto = () => {
-        setInfoPhotoIndex(-1);
+    const handlePhotoInfo = (index: number) => {
+        dialog.info(photos, index);
     }
     const handleSubAlbum = (selected: string) => () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
@@ -62,7 +59,7 @@ const Gallery: FC = () => {
         favorite.toggle(index, photos);
     }
 
-    const RenderPhoto = Thumb(toggleFavorite, setLightboxIndex, setInfoPhotoIndex, zoom >= 100);
+    const RenderPhoto = Thumb(toggleFavorite, setLightboxIndex, handlePhotoInfo, zoom >= 100);
 
     const loading = (
         <Box sx={{ width: '100%' }}>
@@ -102,12 +99,7 @@ const Gallery: FC = () => {
                 photos={photos}
                 selected={lightboxIndex}
                 onClose={closeLightbox}
-                onFavorite={toggleFavorite}
-                onInfo={openInfoPhoto} />
-            <PhotoInfo
-                photos={photos}
-                selected={infoPhotoIndex}
-                onClose={closeInfoPhoto} />
+                onFavorite={toggleFavorite} />
         </>);
 
     return isFetching ? loading :   // Loading

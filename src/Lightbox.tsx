@@ -31,13 +31,13 @@ import "./yarl-plugins/thumbnails.scss";
 
 import { PhotoType } from "./types";
 import { photosToSlides } from "./lightbox-data";
+import { useDialog } from "./dialogs";
 
 interface LightboxProps {
     photos: PhotoType[];
     selected: number;
     onClose?: () => void;
     onFavorite?: (index: number, isFavorite: boolean, slide: Slide) => void;
-    onInfo?: (index: number) => void;
 }
 
 const thumbnailImageClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_image`);
@@ -62,12 +62,17 @@ const renderThumbnail: Render["thumbnail"] = ({ slide }: RenderThumbnailProps) =
         </>);
 };
 
-const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onInfo}) => {
+const Lightbox: FC<LightboxProps> = ({ photos, selected, onClose, onFavorite }) => {
     const [index, setIndex] = useState(selected)
     const theme = useTheme();
+    const dialog = useDialog();
     const slides = useMemo(() => photosToSlides(photos), [photos]);
 
     useEffect(() => setIndex(selected), [selected]);
+
+    const handlePhotoInfo = (index: number) => {
+        dialog.info(photos, index);
+    }
 
     return (
         <YARL
@@ -111,7 +116,7 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onI
                 onChange: onFavorite
             }}
             info={{
-                onClick: onInfo
+                onClick: handlePhotoInfo
             }} />
     );
 }

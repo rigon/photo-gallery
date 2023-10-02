@@ -1,6 +1,5 @@
 import { FC, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import AppBar from '@mui/material/AppBar';
@@ -14,25 +13,17 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Paper from '@mui/material/Paper';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
-import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
 
 import AlbumList from './AlbumList';
 import AlbumTitle from './AlbumTitle';
 import CollectionList from './CollectionList';
-import FavoriteMenu from './FavoriteMenu';
-import NewAlbum from './NewAlbum';
 import Storage from './Storage';
-import ThemeMenu from './ThemeMenu';
-import { ToolbarItem, ToolbarMenu } from './Toolbar';
-
-import { increaseZoom, decreaseZoom } from "./services/app";
+import ToolbarMenu from './Toolbar';
 
 const drawerWidth = 300;
 
 const Layout: FC = () => {
     const theme = useTheme();
-    const dispatch = useDispatch();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
     const [mobileOpen, setMobileOpen] = useState<boolean>(isSmallScreen);
 
@@ -43,12 +34,6 @@ const Layout: FC = () => {
         setMobileOpen(false);
     };
 
-    const zoomIn = () => {
-        dispatch(increaseZoom())
-    }
-    const zoomOut = () => {
-        dispatch(decreaseZoom())
-    }
 
     const drawer = (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -101,14 +86,7 @@ const Layout: FC = () => {
                     </IconButton>
                     <AlbumTitle />
                     <Box sx={{ flexGrow: 1 }} />
-                    <ToolbarMenu>
-                        <NewAlbum />
-                        <FavoriteMenu />
-                        <Divider />
-                        <ThemeMenu />
-                        <ToolbarItem title="Zoom in" tooltip="Increase Zoom" onClick={zoomIn} icon={<ZoomInIcon />} />
-                        <ToolbarItem title="Zoom out" tooltip="Decrease Zoom" onClick={zoomOut} icon={<ZoomOutIcon />} />
-                    </ToolbarMenu>
+                    <ToolbarMenu />
                 </Toolbar>
             </AppBar>
             <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>

@@ -42,7 +42,7 @@ const Badge = styled("span")({
 export default (
     toggleFavorite: (index: number) => void,
     setLightboxIndex: React.Dispatch<React.SetStateAction<number>>,
-    setInfoPhotoIndex: React.Dispatch<React.SetStateAction<number>>,
+    handlePhotoInfo: (selected: number) => void,
     showIcons: boolean,
 ) => ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoImageType>) => {
     const favorite = useFavorite();
@@ -66,7 +66,7 @@ export default (
     }
     const showInfo = (event: React.MouseEvent<Element, MouseEvent>) => {
         event.stopPropagation();
-        setInfoPhotoIndex(layout.index);
+        handlePhotoInfo(layout.index);
     }
 
     const favoriteTooltip = isFavorite ?

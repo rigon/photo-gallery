@@ -1,16 +1,27 @@
 import React, {FC, useContext, useState, forwardRef } from "react";
 import { useTheme, styled } from '@mui/material/styles';
+import { useDispatch } from 'react-redux';
+
 import useMediaQuery from '@mui/material/useMediaQuery';
+import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
+import FavoriteMenu from './FavoriteMenu';
 import IconButton from "@mui/material/IconButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
 import MoreIcon from '@mui/icons-material/MoreVert';
 import MenuItem from "@mui/material/MenuItem";
+import ThemeMenu from './ThemeMenu';
 import Tooltip from "@mui/material/Tooltip";
+import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
+import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
+
+import { useDialog } from './dialogs';
+import { increaseZoom, decreaseZoom } from "./services/app";
 
 const StyledButton = styled(IconButton)(({ theme }) => ({
     textTransform: "none",
@@ -66,7 +77,7 @@ interface ToolbarMenuProps {
     children?: React.ReactNode;
 }
 
-export const ToolbarMenu: FC<ToolbarMenuProps> = ({ children }) => {
+export const ToolbarProvider: FC<ToolbarMenuProps> = ({ children }) => {
     const theme = useTheme();
     const isCollapsed = useMediaQuery(theme.breakpoints.down("lg"));
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -111,3 +122,41 @@ export const ToolbarMenu: FC<ToolbarMenuProps> = ({ children }) => {
     );
 }
 
+const ToolbarMenu : FC = () => {
+    const dispatch = useDispatch();
+    const dialog = useDialog();
+
+    const zoomIn = () => {
+        dispatch(increaseZoom());
+    }
+    const zoomOut = () => {
+        dispatch(decreaseZoom());
+    }
+
+    return (
+        <ToolbarProvider>
+            <ToolbarItem
+                onClick={() => dialog.newAlbum()}
+                icon={<AddAlbumIcon />}
+                title="New album"
+                tooltip="Create a new album"
+                aria-label="create album" />
+            <FavoriteMenu />
+            <Divider />
+            <ThemeMenu />
+            <ToolbarItem
+                title="Zoom in"
+                tooltip="Increase Zoom"
+                onClick={zoomIn}
+                icon={<ZoomInIcon />} />
+            <ToolbarItem
+                title="Zoom out"
+                tooltip="Decrease Zoom"
+                onClick={zoomOut}
+                icon={<ZoomOutIcon />} />
+                
+        </ToolbarProvider>
+    );
+}
+
+export default ToolbarMenu;
