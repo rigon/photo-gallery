@@ -1,11 +1,13 @@
 import { FC, useState } from 'react';
 
 import Button from '@mui/material/Button';
+import CloseIcon from '@mui/icons-material/Close';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import FormControl from '@mui/material/FormControl';
 import TextField from '@mui/material/TextField';
 
@@ -65,7 +67,12 @@ const DeleteDialog: FC<DialogProps> = ({collection, album, photos, open, onClose
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle color="error">Delete photos</DialogTitle>
+            <DialogTitle color="error">
+                Delete photos
+                <IconButton sx={{ position: 'absolute', right: 8, top: 8 }} onClick={handleClose}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
             <DialogContent>
                 <DialogContentText>
                     Photos to be deleted:

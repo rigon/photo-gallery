@@ -2,6 +2,7 @@ import { FC, useEffect, useState } from 'react';
 
 import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
+import CloseIcon from '@mui/icons-material/Close';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -11,6 +12,7 @@ import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormLabel from '@mui/material/FormLabel';
+import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Radio from '@mui/material/Radio';
@@ -110,6 +112,10 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
         setMode(value as MoveConflictMode);
     };
 
+    const handleClose = () => {
+        onClose();
+    }
+
     const handleMove = async () => {
         if(isNewAlbum) {
             const addAlbumData: QueryAddAlbum = {
@@ -162,7 +168,12 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Move photos</DialogTitle>
+            <DialogTitle>
+                Move photos
+                <IconButton sx={{ position: 'absolute', right: 8, top: 8 }} onClick={handleClose}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
             <DialogContent>
                 <DialogContentText>
                     Select the destination for your photos:
@@ -212,7 +223,7 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
                 </FormControl>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} color='inherit'>Cancel</Button>
+                <Button onClick={handleClose} color='inherit'>Cancel</Button>
                 <Button onClick={handleMove} color='warning' variant='contained' disabled={processingAction || errorName} disableElevation>Move</Button>
             </DialogActions>
         </Dialog>);

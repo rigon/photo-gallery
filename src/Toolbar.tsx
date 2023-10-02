@@ -1,4 +1,5 @@
 import React, {FC, useContext, useState, forwardRef } from "react";
+import { useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useTheme, styled } from '@mui/material/styles';
 
@@ -124,8 +125,12 @@ export const ToolbarProvider: FC<ToolbarMenuProps> = ({ children }) => {
 }
 
 const ToolbarMenu : FC = () => {
+    const { collection, album} = useParams();
     const dispatch = useDispatch();
     const dialog = useDialog();
+
+    // Do not add buttons that require an album to be opened
+    const inAlbum = (collection && album);
 
     const zoomIn = () => {
         dispatch(increaseZoom());
@@ -136,7 +141,9 @@ const ToolbarMenu : FC = () => {
 
     return (
         <ToolbarProvider>
-            <Upload />
+            {inAlbum && <>
+                <Upload />
+            </>}
             <ToolbarItem
                 onClick={() => dialog.newAlbum()}
                 icon={<AddAlbumIcon />}
