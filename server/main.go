@@ -255,6 +255,8 @@ func main() {
 	e := echo.New()
 
 	// Middleware
+	e.Use(middleware.Secure())
+	//e.Use(middleware.Recover())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Skipper: func(c echo.Context) bool {
 			skip := []string{
@@ -269,7 +271,6 @@ func main() {
 			return false
 		},
 	}))
-	//e.Use(middleware.Recover())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		CustomTimeFormat: "2006/01/02 15:04:05",
 		Format:           "${time_custom} ${status} ${method} ${latency_human} ${path} (${remote_ip})\n",
@@ -296,6 +297,13 @@ func main() {
 				}
 			}
 			c.SetParamValues(ws...)
+			return next(c)
+		}
+	})
+	// Cache-Control header
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Response().Header().Set(echo.HeaderCacheControl, "private, max-age=31536000")
 			return next(c)
 		}
 	})
