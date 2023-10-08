@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.5.2",
   "type": "module",
+  "description": "Photo Gallery is a self-hosted performant application to organize your photos. Built for speed with React and Go.",
   "scripts": {
     "start": "vite",
     "dev": "vite",
@@ -51,6 +52,7 @@
     "sass": "^1.66.1",
     "typescript": "5.1.6",
     "vite": "^4.4.9",
-    "vite-plugin-eslint": "^1.8.1"
+    "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-pwa": "^0.16.5"
   }
 }
