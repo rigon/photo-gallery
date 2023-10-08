@@ -150,10 +150,10 @@ const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }
                                 <Typography textAlign="center" variant='h6'>Metadata</Typography>
                                 <Divider />
                                 <StyledList>
-                                    {Object.entries(file.imageinfo.exif).map(([key, value]) => (<>
-                                        <dt key={key}>{key}</dt>
-                                        <dd key={key+"-val"}>{String(value)}</dd>
-                                    </>))}
+                                    {Object.entries(file.imageinfo.exif).map(([key, value]) => [
+                                        (<dt key={key}>{key}</dt>),
+                                        (<dd key={key+"-val"}>{String(value)}</dd>)
+                                    ])}
                                 </StyledList>
                             </>)}
                             <Typography textAlign="center" variant='h6'>File Stat</Typography>

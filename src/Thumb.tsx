@@ -1,4 +1,4 @@
-import { useState, CSSProperties } from "react";
+import React, { useState, CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 import { SxProps, Theme, styled } from "@mui/material/styles";
 
@@ -18,6 +18,7 @@ import BoxBar from "./BoxBar";
 import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoImageType } from "./types";
 import useFavorite from "./favoriteHook";
+import { useDialog } from "./dialogs";
 
 const boxStyle: SxProps<Theme> = {
     position: "relative",
@@ -39,17 +40,14 @@ const Badge = styled("span")({
     lineHeight: 0,
 });
 
-export default (
-    toggleFavorite: (index: number) => void,
-    setLightboxIndex: React.Dispatch<React.SetStateAction<number>>,
-    handlePhotoInfo: (selected: number) => void,
-    showIcons: boolean,
-) => ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoImageType>) => {
-    const favorite = useFavorite();
+export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layout, wrapperStyle, renderDefaultPhoto }: RenderPhotoProps<PhotoImageType>) => {
     const { collection } = useParams();
+    const dialog = useDialog();
     const [mouseOver, setMouseOver] = useState<boolean>(false);
-    const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
+
+    const favorite = useFavorite();
     const selectedFavorite = favorite.get();
+    const { isFavorite, isFavoriteThis, isFavoriteAnother } = favorite.photo(photo);
 
     const mouseEnter = () => {
         setMouseOver(true);
@@ -57,31 +55,33 @@ export default (
     const mouseLeave = () => {
         setMouseOver(false);
     }
-    const openLightbox = () => {
-        setLightboxIndex(layout.index);
+    const openLightbox = (event: React.MouseEvent<Element, MouseEvent>) => {
+        event.stopPropagation();
+        dialog.lightbox(photos, layout.index);
     }
     const saveFavorite = (event: React.MouseEvent<Element, MouseEvent>) => {
         event.stopPropagation();
-        toggleFavorite(layout.index);
+        favorite.toggle(photos, layout.index);
     }
     const showInfo = (event: React.MouseEvent<Element, MouseEvent>) => {
         event.stopPropagation();
-        handlePhotoInfo(layout.index);
+        dialog.info(photos, layout.index);
     }
 
-    const favoriteTooltip = isFavorite ?
-        <>
-            <b>This photo is from album:</b><br />
+    const favoriteTooltip = !isFavorite ? (
+        <>Add as favorite in album {selectedFavorite?.album}</>
+    ):(<>
+        <b>This photo is from album:</b><br />
             &bull; {photo.album} {collection !== photo.collection && <Badge>{photo.collection}</Badge>}<br />
-            <b>And it is favorite in:</b><br />
-            {photo.favorite?.map(f => <>&bull; {f.album}
-                {collection !== f.collection && <Badge>{f.collection}</Badge>}
-                <br /></>
+        <b>And it is favorite in:</b><br />
+            {photo.favorite?.map(favorite => (
+                <React.Fragment key={`${photo.collection}:${photo.album}`}>
+                    &bull; {favorite.album} {collection !== favorite.collection && <Badge>{favorite.collection}</Badge>}<br />
+                </React.Fragment>)
             )}
-            <Divider />
-            Press to {isFavoriteThis ? "remove from" : "add to"} {selectedFavorite?.album}
-        </> :
-        <>Add as favorite in album {selectedFavorite?.album}</>;
+        <Divider />
+        Press to {isFavoriteThis ? "remove from" : "add to"} {selectedFavorite?.album}
+    </>);
 
     const icons = (<>
         {photo.type === "live" &&
@@ -104,7 +104,7 @@ export default (
         {(isFavorite || mouseOver) &&
             <BoxBar bottom right>
                 <Tooltip title={favoriteTooltip} arrow>
-                    <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle}>
+                    <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle} aria-label="favorite">
                         {!isFavorite && <FavoriteBorderIcon />}
                         {isFavoriteThis && <FavoriteIcon />}
                         {isFavoriteAnother && <FavoriteTwoToneIcon />}

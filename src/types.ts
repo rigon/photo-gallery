@@ -23,6 +23,7 @@ export interface AlbumType {
     photos: PhotoType[];
     subalbums: string[];
     pseudo: boolean;
+    count: number;
 }
 
 export interface PhotoType {

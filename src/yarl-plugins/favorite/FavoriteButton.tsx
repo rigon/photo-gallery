@@ -29,7 +29,8 @@ export const FavoriteButton: React.FC = () => {
     } = useLightboxProps();
 
     const { onChange } = { ...defaultProps, ...props };
-    const { isFavorite, isFavoriteThis } = useFavorite().list(slides[currentIndex].favorite);
+    const favoriteList = (slides && slides[currentIndex] ? slides[currentIndex].favorite : []);
+    const { isFavorite, isFavoriteThis } = useFavorite().list(favoriteList);
 
     const toggleFavorite = React.useCallback(() => {
         onChange(currentIndex, !isFavoriteThis, slides[currentIndex]);
