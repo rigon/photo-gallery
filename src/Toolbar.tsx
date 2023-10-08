@@ -147,11 +147,13 @@ const ToolbarMenu : FC = () => {
             <ToolbarItem
                 title="Zoom in"
                 tooltip="Increase Zoom"
+                aria-label="zoom in"
                 onClick={zoomIn}
                 icon={<ZoomInIcon />} />
             <ToolbarItem
                 title="Zoom out"
                 tooltip="Decrease Zoom"
+                aria-label="zoom out"
                 onClick={zoomOut}
                 icon={<ZoomOutIcon />} />
                 

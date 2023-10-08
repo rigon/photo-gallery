@@ -24,7 +24,7 @@ const drawerWidth = 300;
 
 const Layout: FC = () => {
     const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
     const [mobileOpen, setMobileOpen] = useState<boolean>(isSmallScreen);
 
     const handleDrawerToggle = () => {
@@ -90,28 +90,20 @@ const Layout: FC = () => {
                 </Toolbar>
             </AppBar>
             <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-                {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
                 <Drawer
-                    variant="temporary"
-                    open={mobileOpen}
+                    variant={isSmallScreen ? "temporary" : "permanent"}
+                    open={!isSmallScreen || mobileOpen}
                     onClose={handleDrawerToggle}
                     ModalProps={{
                         keepMounted: true, // Better open performance on mobile.
                     }}
                     sx={{
-                        display: { xs: 'block', md: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: "70%", minWidth: drawerWidth },
+                        '& .MuiDrawer-paper': {
+                            boxSizing: 'border-box',
+                            width: { xs: "70%", md: drawerWidth},
+                            minWidth: drawerWidth
+                        },
                     }}
-                >
-                    {drawer}
-                </Drawer>
-                <Drawer
-                    variant="permanent"
-                    sx={{
-                        display: { xs: 'none', md: 'block' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-                    }}
-                    open
                 >
                     {drawer}
                 </Drawer>
