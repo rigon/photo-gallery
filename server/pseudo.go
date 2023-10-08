@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"golang.org/x/exp/slices"
 )
@@ -53,10 +54,15 @@ func (photo *Photo) CopyForPseudoAlbum() *Photo {
 	}
 }
 
+var mux sync.Mutex
+
 func readPseudoAlbum(collection *Collection, album *Album) ([]PseudoAlbumEntry, error) {
 	if !album.IsPseudo {
 		return nil, errors.New("the destination must be a pseudo album")
 	}
+
+	mux.Lock()
+	defer mux.Unlock()
 
 	filename := filepath.Join(collection.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
 	file, err := os.Open(filename)
@@ -91,6 +97,9 @@ func writePseudoAlbum(collection *Collection, album *Album, entries ...PseudoAlb
 	if !album.IsPseudo {
 		return errors.New("the destination must be a pseudo album")
 	}
+
+	mux.Lock()
+	defer mux.Unlock()
 
 	filename := filepath.Join(collection.PhotosPath, album.Name+PSEUDO_ALBUM_EXT)
 	file, err := os.OpenFile(filename, os.O_TRUNC|os.O_WRONLY, 0644)
