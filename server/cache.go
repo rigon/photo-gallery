@@ -60,7 +60,11 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 			err := c.store.Bolt().Update(func(tx *bolt.Tx) error {
 				tx.DeleteBucket([]byte("DbInfo"))
 				tx.DeleteBucket([]byte("Photo"))
+				tx.DeleteBucket([]byte("AlbumSaved"))
 				tx.DeleteBucket([]byte("_index:Photo:date"))
+				tx.DeleteBucket([]byte("_index:Photo:hasthumb"))
+				tx.DeleteBucket([]byte("_index:Photo:location"))
+				tx.DeleteBucket([]byte("_index:Photo:size"))
 				return c.store.TxInsert(tx, "DbInfo", dbInfo)
 			})
 			if err != nil {
