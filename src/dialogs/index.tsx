@@ -50,11 +50,6 @@ interface SelectedPhotos {
     selected: number;
 }
 
-interface DuplicatesData {
-    collection: string;
-    album: string;
-}
-
 const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
     const [lightbox, setLightbox] = useState<SelectedPhotos | null>(null);
     const [newAlbum, setNewAlbum] = useState<boolean>(false);
@@ -62,7 +57,7 @@ const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
     const [move, setMove] = useState<CollectionAlbumPhotos | null>(null);
     const [del, setDelete] = useState<CollectionAlbumPhotos | null>(null);
     const [deleteAlbum, setDeleteAlbum] = useState<CollectionAlbum | null>(null);
-    const [duplicates, setDuplicates] = useState<DuplicatesData | null>(null);
+    const [duplicates, setDuplicates] = useState<CollectionAlbum | null>(null);
 
     // Lightbox
     const openLightbox = (photos: PhotoImageType[], selected: number) => {

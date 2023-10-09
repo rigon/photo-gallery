@@ -142,16 +142,18 @@ const ToolbarMenu : FC = () => {
 
     return (
         <ToolbarProvider>
-            {inAlbum && <>
-                <Upload />
-                <ToolbarItem
+            {inAlbum && [
+                (<Upload key="upload"/>),
+                (<ToolbarItem
+                    key="duplicates"
                     onClick={() => dialog.duplicates(collection, album)}
                     icon={<DifferenceIcon />}
                     title="Duplicates"
                     tooltip="Find duplicated photos in this album"
-                    aria-label="duplicates" />
-                <Divider />
-            </>}
+                    aria-label="duplicates" />),
+                (<Divider key="div"/>),
+            ]}
+            
             <ToolbarItem
                 onClick={() => dialog.newAlbum()}
                 icon={<AddAlbumIcon />}
