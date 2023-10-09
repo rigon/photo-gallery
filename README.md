@@ -68,10 +68,10 @@ Main features:
   - [X] Delete photos
   - [X] Save favorites
   - [X] Easy selection
+- [X] Search for duplicates
 - [ ] Authentication
 - [ ] Photos timeline with virtual scroll
 - [ ] View all places from photos in a map
-- [ ] Search for duplicates
 - [ ] Tool for renaming files
 - [ ] Image resizing according with screen
 

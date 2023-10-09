@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CollectionType, PseudoAlbumType, AlbumType, PhotoType, MoveConflictMode, DuplicatedType } from "../types";
+import { CollectionType, PseudoAlbumType, AlbumType, PhotoType, MoveConflictMode } from "../types";
 import { changeFavorite } from "./app";
 
 export interface ResponseError {
@@ -65,6 +65,21 @@ export interface QuerySaveFavorite {
     }
 }
 
+export interface ResponseDuplicates {
+    total: number;
+	countDup: number;
+    countUniq: number;
+    duplicates: {
+        photo: PhotoType;
+        found: {
+            collection: string;
+            album: string;
+            photo: string;
+            file: string;
+        }[];
+    }[];
+}
+
 const albumId = (arg: { collection: string, album: string }) => arg.collection + ":" + arg.album;
 
 export const api = createApi({
@@ -104,7 +119,7 @@ export const api = createApi({
             }),
             invalidatesTags: (_result, _error, arg) => ['Pseudo', 'Albums', { type: 'Album', id: albumId(arg) }],
         }),
-        duplicatedPhotos: builder.query<DuplicatedType[], QueryAlbum>({
+        duplicatedPhotos: builder.query<ResponseDuplicates, QueryAlbum>({
             query: ({ collection, album }) => `/collections/${collection}/albums/${album}/duplicates`
         }),
         movePhotos: builder.mutation<ResponseMovePhotos, QueryMovePhotos>({

@@ -3,13 +3,16 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/hlubek/readercomp"
+	"github.com/timshannon/bolthold"
 )
 
 type Album struct {
@@ -203,46 +206,73 @@ type Duplicate struct {
 	Found []DuplicateFound `json:"found"`
 }
 
-func (album *Album) Duplicates(collection *Collection) ([]Duplicate, error) {
+func (album *Album) Duplicates(collection *Collection) (map[string]interface{}, error) {
 	var dups []Duplicate
 
-	err := collection.cache.store.ForEach(nil, func(dbPhoto *Photo) error {
-		for _, photo := range album.photosMap {
+	for _, photo := range album.photosMap {
+		total := time.Now()
+
+		var size int64 = 0
+		for _, file := range photo.Files {
+			size += file.Size
+		}
+
+		var dbPhotos []*Photo
+		start := time.Now()
+		err := collection.cache.store.Find(&dbPhotos, bolthold.Where("Size").Eq(size).Index("size"))
+		fmt.Println("SEARCH:", time.Since(start).String())
+		//fmt.Println(size, dbPhotos)
+		if err != nil {
+			continue
+		}
+
+		var dupFiles []DuplicateFound
+		for _, dbPhoto := range dbPhotos {
 			// Same photo, skip
 			if dbPhoto.Collection == photo.Collection && dbPhoto.Album == photo.Album && dbPhoto.Id == photo.Id {
 				continue
 			}
 
 			found := false
-			dup := Duplicate{
-				Photo: photo,
-				Found: []DuplicateFound{},
-			}
 			for _, dbFile := range dbPhoto.Files {
 				for _, file := range photo.Files {
 					if dbFile.Size == file.Size {
+						start := time.Now()
 						equal, err := readercomp.FilesEqual(file.Path, dbFile.Path)
 						if err != nil {
 							continue
 						}
+						fmt.Println("COMPARE:", time.Since(start).String())
+						//fmt.Println("COMPARE:", file.Path, dbFile.Path, equal)
 						if equal {
-							found = true
-							dup.Found = append(dup.Found, DuplicateFound{
+							dupFiles = append(dupFiles, DuplicateFound{
 								Collection: dbPhoto.Collection,
 								Album:      dbPhoto.Album,
 								Photo:      dbPhoto.Id,
 								File:       dbFile.Id,
 							})
+							found = true
 						}
 					}
 				}
 			}
-			if found {
-				dups = append(dups, dup)
+			if !found {
+				log.Println("Missed duplicate [", photo.Collection, photo.Album, photo.Id, "] - [", dbPhoto.Collection, dbPhoto.Album, dbPhoto.Id, "]")
 			}
 		}
-		return nil
-	})
+		if len(dupFiles) > 0 {
+			dups = append(dups, Duplicate{
+				Photo: photo,
+				Found: dupFiles,
+			})
+		}
+		fmt.Println("TOTAL:", time.Since(total).String(), photo.Id)
+	}
 
-	return dups, err
+	return map[string]interface{}{
+		"total":      len(album.photosMap),
+		"countDup":   len(dups),
+		"countUniq":  len(album.photosMap) - len(dups),
+		"duplicates": dups,
+	}, nil
 }
