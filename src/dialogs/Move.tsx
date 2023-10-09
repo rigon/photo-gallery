@@ -179,8 +179,8 @@ const MoveDialog: FC<DialogProps> = ({collection, album, photos, open, onClose})
                     Select the destination for your photos:
                 </DialogContentText>
                 <FormControl variant="filled" fullWidth margin="normal">
-                    <InputLabel id="collection-label">Collection</InputLabel>
-                    <Select labelId="collection-label" value={targetCollection} onChange={changeCollection}>
+                    <InputLabel id="move-photos-collection-label">Collection</InputLabel>
+                    <Select labelId="move-photos-collection-label" value={targetCollection} onChange={changeCollection}>
                         {collections.map((c) => <MenuItem key={c.name} value={c.name}>{c.name}</MenuItem>)}
                     </Select>
                 </FormControl>

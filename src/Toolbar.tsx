@@ -141,9 +141,9 @@ const ToolbarMenu : FC = () => {
 
     return (
         <ToolbarProvider>
-            {inAlbum && <>
+            {inAlbum &&
                 <Upload />
-            </>}
+            }
             <ToolbarItem
                 onClick={() => dialog.newAlbum()}
                 icon={<AddAlbumIcon />}
