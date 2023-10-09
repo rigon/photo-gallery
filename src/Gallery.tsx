@@ -35,7 +35,7 @@ const Gallery: FC = () => {
 
     const isEmpty = data.count < 1;
     const hasSubAlbums = data.subalbums?.length > 0;
-    const hasRootSubAlbumPhotos = useMemo(() => data.photos.some(photo => photo.subalbum === ""), [data.photos]);
+    const hasRootSubAlbumPhotos = useMemo(() => data.photos?.some(photo => photo.subalbum === ""), [data.photos]);
 
     const photos = useMemo((): PhotoImageType[] => {
         let list = data?.photos || [];
