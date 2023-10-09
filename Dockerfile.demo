@@ -1,4 +1,4 @@
-FROM rigon/photo-gallery:latest
+FROM rigon/photo-gallery:dev
 
 RUN touch /photos/Favorites.PG-ALBUM; \
     set -- Nature Film Animals Travel People "Machu Picchu" "The Grand Canyon" "Great Barrier Reef" Maldives Paris Iceland \
