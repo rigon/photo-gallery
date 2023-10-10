@@ -13,6 +13,8 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+const HeaderCacheControl = "private, max-age=31536000"
+
 var config CmdArgs
 
 func GetCollection(collection string) (*Collection, error) {
@@ -106,7 +108,8 @@ func thumb(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	c.Set("Content-Type", "image/jpeg")
+	c.Response().Header().Set(echo.HeaderContentType, "image/jpeg")
+	c.Response().Header().Set(echo.HeaderCacheControl, HeaderCacheControl)
 	AddThumbForeground(collection, album, photo, c.Response())
 	return nil
 }
@@ -177,6 +180,7 @@ func file(c echo.Context) error {
 
 	c.Response().Header().Set(echo.HeaderContentType, file.MIME)
 	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename=\""+file.Name()+"\"")
+	c.Response().Header().Set(echo.HeaderCacheControl, HeaderCacheControl)
 	return c.File(file.Path)
 }
 
@@ -300,13 +304,6 @@ func main() {
 			return next(c)
 		}
 	})
-	// Cache-Control header
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Response().Header().Set(echo.HeaderCacheControl, "private, max-age=31536000")
-			return next(c)
-		}
-	})
 
 	// API
 	api := e.Group("/api")
@@ -342,8 +339,12 @@ func main() {
 		Index: "index.html", // This is the default html page for your SPA
 		HTML5: true,
 		Skipper: func(c echo.Context) bool {
-			return strings.HasPrefix(c.Path(), "/api") ||
+			isNotStatic := strings.HasPrefix(c.Path(), "/api") ||
 				strings.HasPrefix(c.Path(), "/webdav")
+			if !isNotStatic { // Cache-Control header
+				c.Response().Header().Set(echo.HeaderCacheControl, HeaderCacheControl)
+			}
+			return isNotStatic
 		},
 	}))
 
