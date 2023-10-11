@@ -126,7 +126,7 @@ func duplicates(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	list, err := album.Duplicates(collection)
+	list, err := album.Duplicates()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

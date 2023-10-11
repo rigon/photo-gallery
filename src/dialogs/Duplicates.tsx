@@ -54,7 +54,10 @@ const Item: FC<ItemProps> = ({item}) => {
                 </ListItemAvatar>
                 <ListItemText
                     primary={item.photo.title}
-                    secondary={item.found.map((found) => <>{found.collection}: {found.album} {found.photo} ({found.file})<br/></>)}
+                    secondary={item.found.map(({collection, album, photo, files}) => (<>
+                        {collection}: {album} {photo}<br/>
+                        {files.map(file => <>&bull; {file}<br/></>)}
+                    </>))}
                 />
             </ListItem>
             <Divider />
@@ -124,8 +127,6 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                 }
             });
         });
-        
-        console.log("resultArray", resultArray);
 
         resultArray.forEach(item => favorite.save(item, [], true));
     };
