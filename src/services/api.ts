@@ -75,7 +75,7 @@ export interface ResponseDuplicates {
             collection: string;
             album: string;
             photo: string;
-            file: string;
+            files: string[];
         }[];
     }[];
 }
