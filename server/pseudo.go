@@ -261,7 +261,7 @@ func (album *Album) GetPhotosForPseudo(collection *Collection, isAdd bool, runni
 				}
 				// Update info about cached photos if there is a change
 				if result {
-					collection.cache.AddPhotoInfo(photo)
+					srcCollection.cache.AddPhotoInfo(photo)
 				}
 
 				photos = append(photos, photo)
