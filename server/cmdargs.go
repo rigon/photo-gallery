@@ -25,7 +25,7 @@ type CmdArgs struct {
 }
 
 func parseCollectionOptions(collectionOption string, defaultIndex int) (collection *Collection, err error) {
-	collection = new(Collection)
+	collection = NewCollection()
 	collection.Index = defaultIndex
 	collection.Hide = false
 	collection.ReadOnly = false
