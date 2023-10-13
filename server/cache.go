@@ -91,6 +91,7 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 
 // Release all caching resources
 func (c *Cache) End() error {
+	c.FinishFlush()
 	c.mem.Purge()
 	return c.store.Close()
 }

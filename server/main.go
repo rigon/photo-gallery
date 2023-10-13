@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"os/signal"
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -350,5 +354,22 @@ func main() {
 
 	// Start server
 	log.Println("Starting server: http://" + serverAddr)
-	e.Logger.Fatal(e.Start(serverAddr))
+	go func() {
+		if err := e.Start(serverAddr); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal("shutting down the server")
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
+	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
+	log.Println("Press Ctrl-C to stop the server")
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Shutting down the server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
