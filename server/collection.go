@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/dustin/go-humanize"
 	"github.com/shirou/gopsutil/disk"
@@ -25,6 +26,8 @@ type Collection struct {
 	ReadOnly        bool
 	RenameOnReplace bool
 	cache           Cache
+	muxAlbumMap     sync.Mutex
+	muxsAlbums      map[string]*sync.Mutex
 }
 
 type CollectionInfo struct {
@@ -41,6 +44,12 @@ type CollectionStorage struct {
 type AddAlbumQuery struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+func NewCollection() *Collection {
+	return &Collection{
+		muxsAlbums: make(map[string]*sync.Mutex),
+	}
 }
 
 // List all collections
@@ -151,7 +160,22 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool, runn
 		if err == nil { // Is cached
 			return cachedAlbum, nil
 		}
+
+		// If we try to get the cached album whilst another scan is in progress, it will fail.
+		// So we try again but locking until the running scan is completed.
+		// That way we do not need to lock getting albums from the cache in the first attempt.
+		c.LockAlbum(albumName)
+		cachedAlbum, err = c.cache.GetAlbum(albumName)
+		c.UnlockAlbum(albumName)
+		if err == nil { // Is cached
+			return cachedAlbum, nil
+		}
 	}
+
+	// Lock album to avoid concurrent scans
+	c.LockAlbum(albumName)
+	defer c.UnlockAlbum(albumName)
+
 	// If not in cache, read from disk
 	album, err := c.GetAlbum(albumName)
 	if err != nil {
@@ -214,4 +238,25 @@ func (collection *Collection) StorageUsage() (CollectionStorage, error) {
 		Used:       humanize.IBytes(di.Total - di.Free),
 		Percentage: int(math.Round(percentage)),
 	}, nil
+}
+
+func (c *Collection) LockAlbum(id string) {
+	c.muxAlbumMap.Lock()
+	mux, ok := c.muxsAlbums[id]
+	if !ok {
+		mux = new(sync.Mutex)
+		c.muxsAlbums[id] = mux
+	}
+	c.muxAlbumMap.Unlock()
+	mux.Lock()
+}
+
+func (c *Collection) UnlockAlbum(id string) {
+	c.muxAlbumMap.Lock()
+	mux, ok := c.muxsAlbums[id]
+	if ok {
+		mux.Unlock()
+		//delete(c.muxsAlbums, id)
+	}
+	c.muxAlbumMap.Unlock()
 }
