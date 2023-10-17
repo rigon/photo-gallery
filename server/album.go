@@ -272,10 +272,18 @@ func (album *Album) Duplicates() (map[string]interface{}, error) {
 		}
 	}
 
+	var uniq []*Photo
+	for key, photo := range album.photosMap {
+		if _, ok := dups[key]; !ok {
+			uniq = append(uniq, photo)
+		}
+	}
+
 	return map[string]interface{}{
 		"total":      len(album.photosMap),
 		"countDup":   len(dups),
-		"countUniq":  len(album.photosMap) - len(dups),
+		"countUniq":  len(uniq),
 		"duplicates": maps.Values(dups),
+		"uniq":       uniq,
 	}, nil
 }

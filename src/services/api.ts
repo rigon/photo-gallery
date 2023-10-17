@@ -78,6 +78,7 @@ export interface ResponseDuplicates {
             files: string[];
         }[];
     }[];
+    uniq: PhotoType[];
 }
 
 const albumId = (arg: { collection: string, album: string }) => arg.collection + ":" + arg.album;
