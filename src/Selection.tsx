@@ -10,9 +10,11 @@ interface SelectionContextProps<T> {
     indexes: () => number[];
     // Selected items
     get: () => T[];
+    // Select all items
+    all: () => void;
     // Cancel current selection
     cancel: () => void;
-    // Cancel current selection
+    // Is currently selecting
     isSelecting: boolean;
 }
 
@@ -21,13 +23,16 @@ const SelectionContext = React.createContext<SelectionContextProps<any>>({
     onEvent: () => () => undefined,
     indexes: () => [],
     get: () => [],
-    cancel: () => [],
+    all: () => undefined,
+    cancel: () => undefined,
     isSelecting: false,
 });
 
 interface SelectionProviderProps<T> {
     children?: React.ReactNode;
     itemToId?(item: T): string;
+    onChange?(selection: T[]): void;
+    onIsSelecting?(isSelecting: boolean): void;
 }
 
 interface SelectionData<T> {
@@ -54,7 +59,7 @@ interface SelectionData<T> {
     firstsMoves: number;
 }
 
-function SelectionProvider<T>({ children, itemToId }: SelectionProviderProps<T>) {
+function SelectionProvider<T>({ children, itemToId, onChange, onIsSelecting }: SelectionProviderProps<T>) {
     const [isSelecting, setSelecing] = useState<boolean>(false);
 
     const itemToIdFn = itemToId ? itemToId : (item: T) => String(item);
@@ -73,10 +78,20 @@ function SelectionProvider<T>({ children, itemToId }: SelectionProviderProps<T>)
 
     const updateCount = (add: boolean) => {
         d.count += add ? 1 : -1;
-        if(d.count > 0 && !isSelecting)
+        if(d.count > 0 && !isSelecting) {
             setSelecing(true);
-        else if(d.count < 1 && isSelecting)
+            if(onIsSelecting)   // Trigger event onIsSelecting if is set
+                onIsSelecting(true);
+        }
+        else if(d.count < 1 && isSelecting) {
             setSelecing(false);
+            if(onIsSelecting)   // Trigger event onIsSelecting if is set
+                onIsSelecting(false);
+        }
+
+        // Trigger event onChange if is set
+        if(onChange)
+            onChange(get());
     };
 
     const start = (index: number) => {
@@ -104,8 +119,8 @@ function SelectionProvider<T>({ children, itemToId }: SelectionProviderProps<T>)
         if(prevIndex === index) {
             // Special case for startIndex, select it if not selected
             if(index === startIndex && items[index].selected !== value) {
-                updateCount(value);
                 items[index].selected = value;
+                updateCount(value);
                 items[index].cb(value);
             }
             return;
@@ -131,10 +146,10 @@ function SelectionProvider<T>({ children, itemToId }: SelectionProviderProps<T>)
             const newVal = (hasCrossed ? !dir : dir) === value;
             // Selection has changed
             if(items[i].selected !== newVal) {
-                // Update counter
-                updateCount(newVal);
                 // Select or deselect
                 items[i].selected = newVal;
+                // Update counter
+                updateCount(newVal);
                 // Trigger event on the component
                 items[i].cb(newVal);
             }
@@ -158,11 +173,20 @@ function SelectionProvider<T>({ children, itemToId }: SelectionProviderProps<T>)
     const get = () => {
         return d.items.filter(({selected}) => selected).map(({v}) => v);
     };
+    const all = () => {
+        d.items.forEach(({selected, cb}, index) => {
+            if(!selected) {
+                d.items[index].selected = true;
+                updateCount(true);
+                cb(true);
+            }
+        });
+    };
     const cancel = () => {
         d.items.forEach(({selected, cb}, index) => {
             if(selected) {
-                updateCount(false);
                 d.items[index].selected = false;
+                updateCount(false);
                 cb(false);
             }
         });
@@ -195,7 +219,7 @@ function SelectionProvider<T>({ children, itemToId }: SelectionProviderProps<T>)
     }
 
     return (
-        <SelectionContext.Provider value={{ register, onEvent, indexes, get, cancel, isSelecting }}>
+        <SelectionContext.Provider value={{ register, onEvent, indexes, get, all, cancel, isSelecting }}>
             <div className="selection__not-draggable">
                 {children}
             </div>
