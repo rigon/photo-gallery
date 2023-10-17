@@ -6,7 +6,7 @@ import pkg from './package.json';
 
 const chunks = {
     "vendor": ['react', 'react-router-dom', 'react-dom', 'react-redux', '@reduxjs/toolkit'],
-    "material": ['@mui/.*', '@emotion/.*', '@fontsource/.*'],
+    "material": ['@mui/.*', '@emotion/.*', '@fontsource/.*', '@tabler/icons-react'],
     "uploady": ['@rpldy/.*'],
     "react-window": ['react-window', 'react-virtualized-auto-sizer'],
     "leaflet": ['leaflet', 'react-leaflet'],

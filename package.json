@@ -21,6 +21,7 @@
     "@mui/icons-material": "^5.14.3",
     "@mui/material": "^5.14.5",
     "@reduxjs/toolkit": "^1.9.5",
+    "@tabler/icons-react": "^2.39.0",
     "leaflet": "^1.9.4",
     "notistack": "v3.0.1",
     "react": "^18.2.0",

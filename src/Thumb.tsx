@@ -12,10 +12,10 @@ import InfoIcon from '@mui/icons-material/Info';
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Tooltip from "@mui/material/Tooltip";
 
+import { IconLivePhoto } from '@tabler/icons-react';
 import { RenderPhotoProps } from "react-photo-album";
 
 import BoxBar from "./BoxBar";
-import LivePhotoIcon from "./icons/LivePhotoIcon";
 import { PhotoImageType } from "./types";
 import useFavorite from "./favoriteHook";
 import { useDialog } from "./dialogs";
@@ -86,7 +86,7 @@ export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layou
     const icons = (<>
         {photo.type === "live" &&
             <BoxBar top left>
-                <LivePhotoIcon fontSize="small" style={iconsStyle} />
+                <IconLivePhoto size={20} style={iconsStyle} />
             </BoxBar>
         }
         {photo.type === "video" &&
