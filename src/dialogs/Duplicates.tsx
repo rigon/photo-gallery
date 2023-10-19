@@ -65,10 +65,7 @@ const ItemUnique: FC<ItemProps<Unique>> = ({item}) => {
         <ListItemAvatar>
             <Avatar alt={item.title} src={urls.thumb(item)} variant='square' />
         </ListItemAvatar>
-        <ListItemText
-            primary={item.title}
-            secondary={item.collection + ": " + item.album}
-        />
+        <ListItemText primary={item.title} />
     </>);
 }
 
