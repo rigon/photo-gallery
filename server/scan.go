@@ -80,7 +80,7 @@ func (collection *Collection) Scan(fullScan bool) error {
 
 func (collection *Collection) CreateThumbnails() error {
 	result, err := collection.cache.store.FindAggregate(Photo{},
-		bolthold.Where("HasThumb").Not().Eq(true).Index("hasthumb").SortBy("Title"), "Album")
+		bolthold.Where("HasThumb").Not().Eq(true).Index("HasThumb").SortBy("Title"), "Album")
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func CleanupThumbnails(collections map[string]*Collection) error {
 	for _, collection := range collections {
 		var photos []*Photo
 		err := collection.cache.store.Find(&photos,
-			bolthold.Where("HasThumb").Eq(true).Index("hasthumb").SortBy("Title"))
+			bolthold.Where("HasThumb").Eq(true).Index("HasThumb").SortBy("Title"))
 		if err != nil {
 			return err
 		}

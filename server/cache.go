@@ -11,7 +11,7 @@ import (
 )
 
 var dbInfo = DbInfo{
-	Version: 8,
+	Version: 9,
 }
 
 type DbInfo struct {
@@ -61,10 +61,10 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 				tx.DeleteBucket([]byte("DbInfo"))
 				tx.DeleteBucket([]byte("Photo"))
 				tx.DeleteBucket([]byte("AlbumSaved"))
-				tx.DeleteBucket([]byte("_index:Photo:date"))
-				tx.DeleteBucket([]byte("_index:Photo:hasthumb"))
-				tx.DeleteBucket([]byte("_index:Photo:location"))
-				tx.DeleteBucket([]byte("_index:Photo:size"))
+				tx.DeleteBucket([]byte("_index:Photo:Date"))
+				tx.DeleteBucket([]byte("_index:Photo:HasThumb"))
+				tx.DeleteBucket([]byte("_index:Photo:Location"))
+				tx.DeleteBucket([]byte("_index:Photo:Size"))
 				return c.store.TxInsert(tx, "DbInfo", dbInfo)
 			})
 			if err != nil {

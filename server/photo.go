@@ -26,10 +26,11 @@ type Photo struct {
 	Favorite   []PseudoAlbum `json:"favorite"`
 	Width      int           `json:"width"`
 	Height     int           `json:"height"`
-	Date       time.Time     `json:"date" boltholdIndex:"date"`
-	Location   GPSLocation   `json:"location" boltholdIndex:"location"`
+	Date       time.Time     `json:"date" boltholdIndex:"Date"`
+	Location   GPSLocation   `json:"location" boltholdIndex:"Location"`
 	Files      []*File       `json:"files"`
-	HasThumb   bool          `json:"-" boltholdIndex:"hasthumb"` // Indicates if the thumbnail was generated
+	HasThumb   bool          `json:"-" boltholdIndex:"HasThumb"` // Indicates if the thumbnail was generated
+	Size       int64         `json:"-" boltholdIndex:"Size"`     // Photo total size, used to find duplicates
 }
 
 // Add pseudo album to the favorites list
@@ -140,22 +141,27 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 func (photo *Photo) FillInfo() error {
 	var countImages = 0
 	var countVideos = 0
+	var size int64 = 0
 	for _, file := range photo.Files {
+		// Type
 		switch file.Type {
 		case "image":
 			countImages++
 		case "video":
 			countVideos++
 		}
+		// Size
+		size += file.Size
 	}
+	photo.Size = size
 
 	// Determine photo type
-	size := len(photo.Files)
-	if size == 1 {
+	nfiles := len(photo.Files)
+	switch {
+	case nfiles == 1:
 		file := photo.Files[0]
 		photo.Type = file.Type
-	}
-	if size > 1 {
+	case nfiles > 1:
 		if countImages > 0 && countVideos > 0 {
 			photo.Type = "live"
 		} else {
