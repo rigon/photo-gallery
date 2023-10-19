@@ -210,19 +210,37 @@ type Duplicate struct {
 func (album *Album) Duplicates() (map[string]interface{}, error) {
 	var dups = make(map[string]Duplicate)
 
+	var sizes []interface{}
+	for _, photo := range album.photosMap {
+		sizes = append(sizes, photo.Size)
+	}
+
 	for _, collection := range config.collections {
 		fmt.Println("#################", collection.Name)
-		for _, photo := range album.photosMap {
-			total := time.Now()
+		i := 0
+		total := time.Now()
 
-			var dbPhotos []*Photo
-			start := time.Now()
-			err := collection.cache.store.Find(&dbPhotos, bolthold.Where("Size").Eq(photo.Size).Index("size")) //.And("Collection").Eq(collection.Name))
-			fmt.Println("SEARCH:", time.Since(start).String())
-			if err != nil {
+		var dbPhotosList []*Photo
+		start := time.Now()
+		err := collection.cache.store.Find(&dbPhotosList, bolthold.Where("Size").In(sizes...).Index("Size"))
+		fmt.Println("SEARCHING:", time.Since(start).String())
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		dbPhotosMap := make(map[int64][]*Photo)
+		for _, dbPhoto := range dbPhotosList {
+			dbPhotosMap[dbPhoto.Size] = append(dbPhotosMap[dbPhoto.Size], dbPhoto)
+		}
+
+		for _, photo := range album.photosMap {
+			dbPhotos, ok := dbPhotosMap[photo.Size]
+			if !ok { // Photo with same size not found
 				continue
 			}
 
+			var compareTime time.Duration = 0
 			for _, dbPhoto := range dbPhotos {
 				// Same photo, skip
 				if dbPhoto.Collection == photo.Collection && dbPhoto.Album == photo.Album && dbPhoto.Id == photo.Id {
@@ -235,10 +253,10 @@ func (album *Album) Duplicates() (map[string]interface{}, error) {
 						if dbFile.Size == file.Size {
 							start := time.Now()
 							equal, err := readercomp.FilesEqual(file.Path, dbFile.Path)
+							compareTime += time.Since(start)
 							if err != nil {
 								continue
 							}
-							fmt.Println("COMPARE:", time.Since(start).String())
 							if equal {
 								files = append(files, dbFile.Id)
 							}
@@ -248,7 +266,6 @@ func (album *Album) Duplicates() (map[string]interface{}, error) {
 
 				// Found files that are equal
 				if len(files) > 0 {
-					fmt.Println("ADD", dbPhoto.Collection, dbPhoto.Album, dbPhoto.Id, dbPhoto.Favorite)
 					if _, ok := dups[photo.Id]; !ok {
 						dups[photo.Id] = Duplicate{
 							Photo: photo,
@@ -268,8 +285,12 @@ func (album *Album) Duplicates() (map[string]interface{}, error) {
 					log.Println("Missed duplicate [", photo.Collection, photo.Album, photo.Id, "] - [", dbPhoto.Collection, dbPhoto.Album, dbPhoto.Id, "]")
 				}
 			}
-			fmt.Println("TOTAL:", time.Since(total).String(), photo.Id)
+
+			i++
+			fmt.Printf("COMPARING (%d/%d) %15s\n", i, len(album.photosMap), compareTime.String())
 		}
+
+		fmt.Println("TOTAL:", time.Since(total).String())
 	}
 
 	var uniq []*Photo
