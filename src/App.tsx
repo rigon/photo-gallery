@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ThemeProvider, ThemeOptions, createTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -42,6 +42,8 @@ function Router() {
                     <Route index element={<Home />} />
                     <Route path="/:collection" element={<Home />} />
                     <Route path="/:collection/:album" element={<Gallery />} />
+                    <Route path="/:collection/:album/:photo" element={<Gallery />} />
+                    <Route path="*" element={<Navigate to="/" />} />
                 </Route>
             </Routes>
         </BrowserRouter>
