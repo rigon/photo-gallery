@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, Fragment, useState } from 'react';
 import { useTheme, SxProps, Theme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -53,10 +53,15 @@ const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item}) => {
         </ListItemAvatar>
         <ListItemText
             primary={item.photo.title}
-            secondary={item.found.map(({collection, album, photo, files}) => (<>
-                {collection}: {album} {photo}<br/>
-                {files.map(file => <>&bull; {file}<br/></>)}
-            </>))}
+            secondary={item.found.map(({collection, album, photo, files}, index) => (
+                <Fragment key={index}>
+                    <Link href={`/${collection}/${album}/${photo}`} target="_blank">
+                        {collection}: {album} - {photo}
+                    </Link>
+                    <br />
+                    {files.map((f, i) => <Fragment key={i}>&bull; {f}<br /></Fragment>)}
+                </Fragment>)
+            )}
         />
     </>);
 }
