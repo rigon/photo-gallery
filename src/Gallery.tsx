@@ -1,4 +1,4 @@
-import { FC, useState, useMemo, useEffect } from "react";
+import { FC, useState, useMemo, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from 'react-redux';
 
@@ -18,6 +18,7 @@ import { SelectionContext } from "./Selection";
 import { PhotoType, PhotoImageType, urls, AlbumType } from "./types";
 import { useGetAlbumQuery } from "./services/api";
 import { selectZoom } from "./services/app";
+import { useDialog } from "./dialogs";
 
 const rootSubAlbum = "/";
 const defaultData: AlbumType = {
@@ -29,10 +30,12 @@ const defaultData: AlbumType = {
 };
 
 const Gallery: FC = () => {
-    const { collection = "", album = "" } = useParams();
-    const { data = defaultData, isFetching, isError } = useGetAlbumQuery({ collection, album });
+    const { collection = "", album = "", photo } = useParams();
+    const { data = defaultData, isFetching, isSuccess, isError } = useGetAlbumQuery({ collection, album });
     const [subAlbum, setSubAlbum] = useState<string>("");
+    const showPhoto = useRef<string | undefined>(photo);
     const zoom = useSelector(selectZoom);
+    const dialog = useDialog();
 
     const isEmpty = data.count < 1;
     const hasSubAlbums = data.subalbums?.length > 0;
@@ -49,8 +52,18 @@ const Gallery: FC = () => {
         return list.map(v => ({ ...v, src: urls.thumb(v) }));
     }, [data, subAlbum]);
 
-    // Clear sub-album selection when album changed
+    // Clear sub-album selection when album changes
     useEffect(() => setSubAlbum(""), [collection, album, setSubAlbum]);
+
+    // Open lightbox only after loading if a photo is provided from path parameters
+    useEffect(() => {
+        if(showPhoto.current !== undefined && isSuccess) {
+            const index = photos.findIndex(i => i.id === showPhoto.current);
+            if(index >= 0)
+                dialog.lightbox(photos, index);
+            showPhoto.current = undefined;
+        }
+    }, [dialog, photos, isSuccess]);
 
     const handleSubAlbum = (selected: string) => () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
