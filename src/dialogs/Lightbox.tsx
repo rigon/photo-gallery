@@ -32,12 +32,13 @@ import { PhotoImageType } from "../types";
 import { photosToSlides } from "../lightbox-data";
 import { useDialog } from ".";
 import useFavorite from "../favoriteHook";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface LightboxProps {
     open: boolean;
     photos: PhotoImageType[];
     selected: number;
-    onClose?: () => void;
+    onClose: () => void;
 }
 
 const thumbnailImageClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_image`);
@@ -63,10 +64,12 @@ const renderThumbnail: Render["thumbnail"] = ({ slide }: RenderThumbnailProps) =
 };
 
 const Lightbox: FC<LightboxProps> = ({ open, photos, selected, onClose }) => {
+    const { collection, album } = useParams();
     const theme = useTheme();
     const dialog = useDialog();
     const slides = useMemo(() => photosToSlides(photos), [photos]);
     const favorite = useFavorite();
+    const navigate = useNavigate();
 
     const handlePhotoInfo = (index: number) => {
         dialog.info(photos, index);
@@ -74,6 +77,13 @@ const Lightbox: FC<LightboxProps> = ({ open, photos, selected, onClose }) => {
     const handleFavorite = (index: number) => {
         favorite.toggle(photos, index);
     }
+    const handlePhotoChange = (index: number) => {
+        navigate(`/${collection}/${album}/${photos[index].id}`);
+    };
+    const handleClose = () => {
+        navigate(`/${collection}/${album}`);
+        onClose();
+    };
 
     return (
         <YARL
@@ -81,13 +91,16 @@ const Lightbox: FC<LightboxProps> = ({ open, photos, selected, onClose }) => {
             slides={slides}
             index={selected}
             animation={{ swipe: 0 }}
-            close={onClose}
+            close={handleClose}
             // Fix lightbox over snackbar
             styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
             // enable optional lightbox plugins
             plugins={[Captions, Fullscreen, Slideshow, Info, Favorite, LivePhoto, Video, Thumbnails, Zoom]}
             render={{
                 thumbnail: renderThumbnail
+            }}
+            on={{
+                view: ({ index }) => handlePhotoChange(index),
             }}
             carousel={{
                 finite: true,
