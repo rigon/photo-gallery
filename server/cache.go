@@ -137,14 +137,17 @@ func (c *Cache) GetAlbum(albumName string) (*Album, error) {
 }
 
 func (c *Cache) SaveAlbum(album *Album) error {
-	// Flag this album as loaded
-	type AlbumSaved struct{}
-	go c.store.Upsert(album.Name, AlbumSaved{})
 	// Cache album in memory
 	return c.mem.Set(album.Name, album)
 }
 
-func (c *Cache) WasAlbumSaved(album *Album) bool {
+func (c *Cache) SetAlbumFullyScanned(album *Album) error {
+	// Flag this album as loaded
+	type AlbumSaved struct{}
+	return c.store.Upsert(album.Name, AlbumSaved{})
+}
+
+func (c *Cache) IsAlbumFullyScanned(album *Album) bool {
 	type AlbumSaved struct{}
 	var a AlbumSaved
 	return c.store.Get(album.Name, &a) == nil
