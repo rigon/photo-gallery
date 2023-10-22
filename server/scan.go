@@ -20,8 +20,8 @@ func (collection *Collection) Scan(fullScan bool) error {
 	// Quick scan
 	if !fullScan {
 		for _, album := range albums {
-			if !collection.cache.WasAlbumSaved(album) { // Skip album if it was already scanned
-				collection.GetAlbumWithPhotos(album.Name, false, true)
+			if !collection.cache.IsAlbumFullyScanned(album) { // Skip album if it was already scanned
+				collection.GetAlbumWithPhotos(album.Name, true, true)
 			}
 		}
 		return nil
