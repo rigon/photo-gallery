@@ -81,26 +81,28 @@ export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layou
 
     const favoriteTooltip = !isFavorite ? (
         <>Add as favorite in album {selectedFavorite?.album}</>
-    ):(<>
-        <b>This photo is from album:</b><br />
-            &bull;
-            <Link href={`/${photo.collection}/${photo.album}/${photo.id}`} target="_blank" color="inherit" underline="hover">
-                {photo.album} {collection !== photo.collection && <Badge>{photo.collection}</Badge>}
-            </Link>
-            <br />
-        <b>And it is favorite in:</b><br />
-            {photo.favorite?.map(favorite => (
-                <React.Fragment key={`${photo.collection}:${photo.album}`}>
-                    &bull;
-                    <Link href={`/${favorite.collection}/${favorite.album}`} target="_blank" color="inherit" underline="hover">
-                        {favorite.album} {collection !== favorite.collection && <Badge>{favorite.collection}</Badge>}
-                    </Link>
-                    <br />
-                </React.Fragment>)
-            )}
-        <Divider />
-        Press to {isFavoriteThis ? "remove from" : "add to"} {selectedFavorite?.album}
-    </>);
+    ):(
+        <div onClick={e => e.stopPropagation()}>
+            <b>This photo is from album:</b><br />
+                &bull;
+                <Link href={`/${photo.collection}/${photo.album}/${photo.id}`} target="_blank" color="inherit" underline="hover">
+                    {photo.album} {collection !== photo.collection && <Badge>{photo.collection}</Badge>}
+                </Link>
+                <br />
+            <b>And it is favorite in:</b><br />
+                {photo.favorite?.map(favorite => (
+                    <React.Fragment key={`${photo.collection}:${photo.album}`}>
+                        &bull;
+                        <Link href={`/${favorite.collection}/${favorite.album}`} target="_blank" color="inherit" underline="hover">
+                            {favorite.album} {collection !== favorite.collection && <Badge>{favorite.collection}</Badge>}
+                        </Link>
+                        <br />
+                    </React.Fragment>)
+                )}
+            <Divider />
+            Press to {isFavoriteThis ? "remove from" : "add to"} {selectedFavorite?.album}
+        </div>
+    );
 
     const icons = (<>
         {photo.type === "live" &&
@@ -121,7 +123,7 @@ export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layou
             </BoxBar>
         }
         {(isFavorite || mouseOver) &&
-            <BoxBar bottom right onClick={e => e.stopPropagation()}>
+            <BoxBar bottom right>
                 <Tooltip title={favoriteTooltip} arrow>
                     <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle} aria-label="favorite">
                         {!isFavorite && <FavoriteBorderIcon />}
