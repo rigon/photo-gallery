@@ -29,6 +29,13 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, 
 	subAlbums := make(map[string]bool)
 	album.photosMap = make(map[string]*Photo)
 
+	// Convert photosToLoad to a map for improved performance
+	photosToLoadMap := make(map[string]bool)
+	for _, entry := range photosToLoad {
+		key := entry.Collection + ":" + entry.Album + ":" + entry.Photo
+		photosToLoadMap[key] = true
+	}
+
 	if album.IsPseudo {
 		// Read pseudo album
 		log.Printf("Scanning pseudo-album %s[%s]...", collection.Name, album.Name)
@@ -68,15 +75,9 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, 
 
 			// Load only the selected photos
 			if len(photosToLoad) > 0 {
-				found := false
-				for _, entry := range photosToLoad {
-					if entry.Collection == collection.Name && entry.Album == album.Name && entry.Photo == fileId {
-						found = true
-						break
-					}
-				}
-				if !found { // if not in the list, skip
-					return nil
+				keyToFind := collection.Name + ":" + album.Name + ":" + fileId
+				if _, found := photosToLoadMap[keyToFind]; !found {
+					return nil // Entry not found in the map, skip
 				}
 			}
 

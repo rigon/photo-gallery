@@ -1,7 +1,7 @@
 import { FC, CSSProperties } from "react";
 import Box, { BoxProps } from "@mui/material/Box";
 
-interface BoxBarProps {
+interface BoxBarProps extends Omit<BoxProps, "top" | "right" | "bottom" | "left"> {
     /** Align vertically to the top */
     top?: boolean;
     /** Align vertically to the middle */
@@ -14,32 +14,29 @@ interface BoxBarProps {
     center?: boolean;
     /** Align horizontally to the right */
     right?: boolean;
-    
-    children?: React.ReactNode;
-    sx?: BoxProps["sx"];
 }
 
-const BoxBar: FC<BoxBarProps> = (props) => {
+const BoxBar: FC<BoxBarProps> = ({top, middle, bottom, left, center, right, sx, children, ...remaining}) => {
     let inset: CSSProperties["inset"];
     let transform: CSSProperties["transform"];
     let textAlign: CSSProperties["textAlign"];
     
     // Vertical align
-    if(props.top === true)
+    if(top === true)
         inset = "0 0 auto 0";
-    else if(props.middle === true) {
+    else if(middle === true) {
         inset = "50% auto auto 50%";
         transform = "translate(-50%, -50%)";
     }
-    else if(props.bottom === true)
+    else if(bottom === true)
         inset = "auto 0 0 0";
 
     // Horizontal align
-    if(props.left === true)
+    if(left === true)
         textAlign = "left";
-    else if(props.center === true)
+    else if(center === true)
         textAlign = "center";
-    else if(props.right === true)
+    else if(right === true)
         textAlign = "right";
 
     return (
@@ -50,9 +47,9 @@ const BoxBar: FC<BoxBarProps> = (props) => {
             inset,
             transform,
             textAlign,
-            ...props.sx
-        }}>
-            {props.children}
+            ...sx
+        }} {...remaining}>
+            {children}
         </Box>
     );
 }

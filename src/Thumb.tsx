@@ -9,6 +9,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteTwoToneIcon from '@mui/icons-material/FavoriteTwoTone';
 import IconButton from '@mui/material/IconButton';
 import InfoIcon from '@mui/icons-material/Info';
+import Link from "@mui/material/Link";
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 import Tooltip from "@mui/material/Tooltip";
 
@@ -82,11 +83,19 @@ export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layou
         <>Add as favorite in album {selectedFavorite?.album}</>
     ):(<>
         <b>This photo is from album:</b><br />
-            &bull; {photo.album} {collection !== photo.collection && <Badge>{photo.collection}</Badge>}<br />
+            &bull;
+            <Link href={`/${photo.collection}/${photo.album}/${photo.id}`} target="_blank" color="inherit" underline="hover">
+                {photo.album} {collection !== photo.collection && <Badge>{photo.collection}</Badge>}
+            </Link>
+            <br />
         <b>And it is favorite in:</b><br />
             {photo.favorite?.map(favorite => (
                 <React.Fragment key={`${photo.collection}:${photo.album}`}>
-                    &bull; {favorite.album} {collection !== favorite.collection && <Badge>{favorite.collection}</Badge>}<br />
+                    &bull;
+                    <Link href={`/${favorite.collection}/${favorite.album}`} target="_blank" color="inherit" underline="hover">
+                        {favorite.album} {collection !== favorite.collection && <Badge>{favorite.collection}</Badge>}
+                    </Link>
+                    <br />
                 </React.Fragment>)
             )}
         <Divider />
@@ -112,7 +121,7 @@ export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layou
             </BoxBar>
         }
         {(isFavorite || mouseOver) &&
-            <BoxBar bottom right>
+            <BoxBar bottom right onClick={e => e.stopPropagation()}>
                 <Tooltip title={favoriteTooltip} arrow>
                     <IconButton color="inherit" onClick={saveFavorite} style={iconsStyle} aria-label="favorite">
                         {!isFavorite && <FavoriteBorderIcon />}
