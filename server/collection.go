@@ -186,6 +186,10 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool, runn
 	album.GetPhotos(c, runningInBackground, photosToLoad...)
 	// ...and save to cache
 	c.cache.SaveAlbum(album)
+	// Set album as fully scanned
+	if len(photosToLoad) < 1 { // only when partial load is not performed
+		c.cache.SetAlbumFullyScanned(album)
+	}
 
 	return album, nil
 }
