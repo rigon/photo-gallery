@@ -27,7 +27,9 @@ import ListItemText from '@mui/material/ListItemText';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import WarningIcon from '@mui/icons-material/Warning';
 
 import { useDialog } from '.';
 import { ResponseDuplicates, useDuplicatedPhotosQuery } from '../services/api';
@@ -53,8 +55,17 @@ const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item}) => {
         </ListItemAvatar>
         <ListItemText
             primary={item.photo.title}
-            secondary={item.found.map(({collection, album, photo, files}, index) => (
+            secondary={item.found.map(({collection, album, photo, partial, samealbum, files}, index) => (
                 <Fragment key={index}>
+                    {(partial || samealbum) &&
+                        <Tooltip title={
+                            <ol style={{paddingLeft: 12}}>
+                                {partial && <li>Not all files were matched</li>}
+                                {samealbum && <li>This photo is duplicated in the same album<br /><b>Do not delete all matches!</b></li>}
+                            </ol>}>
+                            <WarningIcon fontSize="small" color="error" />
+                        </Tooltip>
+                    }
                     <Link href={`/${collection}/${album}/${photo}`} target="_blank">
                         {collection}: {album} - {photo}
                     </Link>
@@ -280,8 +291,8 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                     </DialogContentText>
 
                     <Tabs value={tab} onChange={handleChangeTab} sx={{ borderBottom: 1, borderColor: 'divider' }} aria-label="selection duplicates or unique">
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero badgeContent={data.countDup}><FileCopyIcon /></Badge>} iconPosition="start" label="Duplicates" />
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero badgeContent={data.countUniq}><InsertDriveFileIcon /></Badge>} iconPosition="start" label="Unique" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={10000} badgeContent={data.countDup}><FileCopyIcon /></Badge>} iconPosition="start" label="Duplicates" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={10000} badgeContent={data.countUniq}><InsertDriveFileIcon /></Badge>} iconPosition="start" label="Unique" />
                         <Tab sx={{flexGrow: 1, minHeight: 0, alignItems: "end", textTransform: "none"}} label={"Total of " + data.total + " photos"} disabled />
                     </Tabs>
                     <TabPanel value={tab} index={0}>
