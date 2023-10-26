@@ -76,6 +76,8 @@ export interface ResponseDuplicates {
             album: string;
             photo: string;
             files: string[];
+            partial: boolean;
+            samealbum: boolean;
         }[];
     }[];
     uniq: PhotoType[];
