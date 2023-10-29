@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/hlubek/readercomp"
 	"github.com/timshannon/bolthold"
 )
@@ -195,13 +197,16 @@ func (album Album) MarshalJSON() ([]byte, error) {
 	return json.Marshal(alias)
 }
 
+type DuplicateFile struct {
+	From int `json:"from"`
+	To   int `json:"to"`
+}
+
 type DuplicateFound struct {
-	Collection string   `json:"collection"`
-	Album      string   `json:"album"`
-	Photo      string   `json:"photo"`
-	Files      []string `json:"files"`
-	Partial    bool     `json:"partial"`
-	SameAlbum  bool     `json:"samealbum"`
+	Photo     *Photo          `json:"photo"`
+	Files     []DuplicateFile `json:"files"`
+	Partial   bool            `json:"partial"`
+	SameAlbum bool            `json:"samealbum"`
 }
 type Duplicate struct {
 	Photo *Photo           `json:"photo"`
@@ -259,30 +264,39 @@ func (album *Album) Duplicates() (map[string]interface{}, error) {
 
 			var compareTime = time.Now()
 			for _, dbPhoto := range dbPhotos {
-				var files []string
-				for _, dbFile := range dbPhoto.Files {
-					for _, file := range photo.Files {
+				var matchAny = false
+				var files []DuplicateFile
+				for dbFileNr, dbFile := range dbPhoto.Files {
+					var matchFile = false
+					for fileNr, file := range photo.Files {
 						if dbFile.Size == file.Size {
 							equal, err := readercomp.FilesEqual(file.Path, dbFile.Path)
 							if err != nil {
 								continue
 							}
-
 							if equal {
-								files = append(files, dbFile.Id)
+								matchAny, matchFile = true, true
+								files = append(files, DuplicateFile{From: fileNr, To: dbFileNr})
 							} else {
 								log.Printf("Missed file comparison:\n- Source: %s\n- Target: %s\n", file.Path, dbFile.Path)
 							}
 						}
 					}
+					if !matchFile {
+						files = append(files, DuplicateFile{From: -1, To: dbFileNr})
+					}
 				}
 				// Any file found?
-				if len(files) > 0 {
+				if matchAny {
+					// Find files from album that did not match anything in the search
+					for fileNr := range photo.Files {
+						if slices.IndexFunc(files, func(f DuplicateFile) bool { return f.From == fileNr }) < 0 {
+							files = append(files, DuplicateFile{From: fileNr, To: -1})
+						}
+					}
 					dupsMap[photo.Id] = append(dupsMap[photo.Id], DuplicateFound{
-						Collection: dbPhoto.Collection,
-						Album:      dbPhoto.Album,
-						Photo:      dbPhoto.Id,
-						Files:      files,
+						Photo: dbPhoto,
+						Files: files,
 						Partial: len(files) != len(photo.Files) || // Different number files were matched
 							len(photo.Files) != len(dbPhoto.Files), // Different number of files
 						SameAlbum: dbPhoto.Collection == photo.Collection && dbPhoto.Album == photo.Album, // Same album

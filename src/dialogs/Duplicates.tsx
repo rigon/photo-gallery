@@ -48,14 +48,26 @@ type Unique = ResponseDuplicates['uniq'][0];
 interface ItemProps<T extends Duplicated | Unique> {
     item: T;
 }
-const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item}) => {
+const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item: {photo, found}}) => {
+    const dialog = useDialog();
+
+    const handleOpenPhoto = () => {
+        dialog.lightbox([photo, ...found.map(i => i.photo)], 0);
+    }
+
     return (<>
         <ListItemAvatar>
-            <Avatar alt={item.photo.title} src={urls.thumb(item.photo)} variant='square' />
+            <Avatar
+                alt={photo.title}
+                src={urls.thumb(photo)}
+                variant='square'
+                onClick={handleOpenPhoto}
+                style={{cursor: 'pointer'}}
+            />
         </ListItemAvatar>
         <ListItemText
-            primary={item.photo.title}
-            secondary={item.found.map(({collection, album, photo, partial, samealbum, files}, index) => (
+            primary={photo.title}
+            secondary={found.map(({photo: {collection, album, id, files: foundFiles}, partial, samealbum, files}, index) => (
                 <Fragment key={index}>
                     {(partial || samealbum) &&
                         <Tooltip title={
@@ -65,23 +77,39 @@ const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item}) => {
                             </ol>}>
                             <WarningIcon fontSize="small" color="error" />
                         </Tooltip>
-                    }
-                    <Link href={`/${collection}/${album}/${photo}`} target="_blank">
-                        {collection}: {album} - {photo}
+                    } <Link href={`/${collection}/${album}/${id}`} target="_blank">
+                        {collection}: {album} - {id}
                     </Link>
                     <br />
-                    {files.map((f, i) => <Fragment key={i}>&bull; {f}<br /></Fragment>)}
+                    {files.map((f, i) => <Fragment key={i}>
+                        {f.from < 0 ? <>&empty;</> : photo.files[f.from].id} &harr; {f.to < 0 ? <>&empty;</> : foundFiles[f.to].id}<br />
+                    </Fragment>)}
                 </Fragment>)
             )}
         />
     </>);
 }
 const ItemUnique: FC<ItemProps<Unique>> = ({item}) => {
+    const dialog = useDialog();
+
+    const handleOpenPhoto = () => {
+        dialog.lightbox([item], 0);
+    }
+
     return (<>
         <ListItemAvatar>
-            <Avatar alt={item.title} src={urls.thumb(item)} variant='square' />
+            <Avatar
+                alt={item.title}
+                src={urls.thumb(item)}
+                variant='square'
+                onClick={handleOpenPhoto}
+                style={{cursor: 'pointer'}}
+            />
         </ListItemAvatar>
-        <ListItemText primary={item.title} />
+        <ListItemText
+            primary={item.title}
+            secondary={<>{item.files.map((f, i) => <Fragment key={i}>{f.id}<br /></Fragment>)}</>}
+        />
     </>);
 }
 
@@ -195,17 +223,17 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
 
         if(tab === 0) {
             selDups.forEach(duplicate => {
-                duplicate.found.forEach(entry => {
+                duplicate.found.forEach(({photo}) => {
                     // Collection
-                    const collection = grouped.get(entry.collection) || new Map<string, Set<string>>();
-                    if (!grouped.has(entry.collection))
-                        grouped.set(entry.collection, collection);
+                    const collection = grouped.get(photo.collection) || new Map<string, Set<string>>();
+                    if (!grouped.has(photo.collection))
+                        grouped.set(photo.collection, collection);
                     // Album
-                    const album = collection.get(entry.album) || new Set<string>();
-                    if (!collection.has(entry.album))
-                        collection.set(entry.album, album);
+                    const album = collection.get(photo.album) || new Set<string>();
+                    if (!collection.has(photo.album))
+                        collection.set(photo.album, album);
                     // Photo
-                    album.add(entry.photo);
+                    album.add(photo.id);
                 });
             });
         } else if(tab === 1) {
@@ -284,15 +312,16 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                     </Box>
                 ):(<>
                     <DialogContentText>
-                        The following photos were found in another albums:
+                        The following photos were found duplicated in another places. From the list bellow,
+                        please select which photos you want to bookmark, move or delete.
                     </DialogContentText>
-                    <DialogContentText>
-                        Please select which photos you want to bookmark, move or delete:
-                    </DialogContentText>
+                    <Typography variant='body2'>
+                        <b>Note well:</b> moving and deleting are performed on photos of this album, while bookmarking is over the photos found.
+                    </Typography>
 
                     <Tabs value={tab} onChange={handleChangeTab} sx={{ borderBottom: 1, borderColor: 'divider' }} aria-label="selection duplicates or unique">
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={10000} badgeContent={data.countDup}><FileCopyIcon /></Badge>} iconPosition="start" label="Duplicates" />
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={10000} badgeContent={data.countUniq}><InsertDriveFileIcon /></Badge>} iconPosition="start" label="Unique" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={data.countDup}><FileCopyIcon /></Badge>} iconPosition="start" label="Duplicates" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={data.countUniq}><InsertDriveFileIcon /></Badge>} iconPosition="start" label="Unique" />
                         <Tab sx={{flexGrow: 1, minHeight: 0, alignItems: "end", textTransform: "none"}} label={"Total of " + data.total + " photos"} disabled />
                     </Tabs>
                     <TabPanel value={tab} index={0}>

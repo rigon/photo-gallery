@@ -72,12 +72,13 @@ export interface ResponseDuplicates {
     duplicates: {
         photo: PhotoType;
         found: {
-            collection: string;
-            album: string;
-            photo: string;
-            files: string[];
+            photo: PhotoType;
             partial: boolean;
             samealbum: boolean;
+            files: {
+                from: number;
+                to: number;
+            }[];
         }[];
     }[];
     uniq: PhotoType[];
