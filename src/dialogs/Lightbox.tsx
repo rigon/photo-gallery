@@ -78,7 +78,9 @@ const Lightbox: FC<LightboxProps> = ({ open, photos, selected, onClose }) => {
         favorite.toggle(photos, index);
     }
     const handlePhotoChange = (index: number) => {
-        navigate(`/${collection}/${album}/${photos[index].id}`);
+        const photo = photos[index];
+        navigate(`/${collection}/${album}/${photo.id}`);
+        // TODO: navigate(`/${photo.collection}/${photo.album}/${photo.id}`);
     };
     const handleClose = () => {
         navigate(`/${collection}/${album}`);
@@ -93,7 +95,7 @@ const Lightbox: FC<LightboxProps> = ({ open, photos, selected, onClose }) => {
             animation={{ swipe: 0 }}
             close={handleClose}
             // Fix lightbox over snackbar
-            styles={{ root: { zIndex: theme.zIndex.modal - 1} }}
+            styles={{ root: { zIndex: theme.zIndex.modal } }}
             // enable optional lightbox plugins
             plugins={[Captions, Fullscreen, Slideshow, Info, Favorite, LivePhoto, Video, Thumbnails, Zoom]}
             render={{

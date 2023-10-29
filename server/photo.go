@@ -29,8 +29,8 @@ type Photo struct {
 	Date       time.Time     `json:"date" boltholdIndex:"Date"`
 	Location   GPSLocation   `json:"location" boltholdIndex:"Location"`
 	Files      []*File       `json:"files"`
-	HasThumb   bool          `json:"-" boltholdIndex:"HasThumb"` // Indicates if the thumbnail was generated
-	Size       int64         `json:"-" boltholdIndex:"Size"`     // Photo total size, used to find duplicates
+	HasThumb   bool          `json:"-" boltholdIndex:"HasThumb"`       // Indicates if the thumbnail was generated
+	FileSizes  []int64       `json:"-" boltholdSliceIndex:"FileSizes"` // Photo total size, used to find duplicates
 }
 
 // Add pseudo album to the favorites list
@@ -141,7 +141,6 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 func (photo *Photo) FillInfo() error {
 	var countImages = 0
 	var countVideos = 0
-	var size int64 = 0
 	for _, file := range photo.Files {
 		// Type
 		switch file.Type {
@@ -150,10 +149,9 @@ func (photo *Photo) FillInfo() error {
 		case "video":
 			countVideos++
 		}
-		// Size
-		size += file.Size
+		// File sizes
+		photo.FileSizes = append(photo.FileSizes, file.Size)
 	}
-	photo.Size = size
 
 	// Determine photo type
 	nfiles := len(photo.Files)
