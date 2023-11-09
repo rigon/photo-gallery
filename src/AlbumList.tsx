@@ -27,20 +27,25 @@ interface AlbumListProps {
 const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     const { collection, album } = useParams();
     const { data = [], isFetching } = useGetAlbumsQuery({collection}, {skip: collection === undefined});
-    const [ searchTerm, setSearchTerm ] = useState<string[]>([]);
+    const [ searchTerm, setSearchTerm ] = useState<string>("");
 
-    const albums = useMemo(() => searchTerm.length < 1 ? data :
-        data.filter(album => {
+    const albums = useMemo(() => {
+        if (searchTerm.length < 1)  // Empty search, don't filter
+            return data;
+
+        const terms = searchTerm.toLowerCase().split(/\s+/);
+        return data.filter(album => {
             const low = album.name.toLowerCase();
-            return searchTerm.reduce((acc, term) => acc && low.includes(term), true);
-    }), [searchTerm, data]);
+            return terms.reduce((acc, term) => acc && low.includes(term), true);
+        });
+    }, [searchTerm, data]);
     const isEmptyList = albums.length < 1;
 
     const onSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(event.target.value.toLowerCase().split(/\s+/));
+        setSearchTerm(event.target.value);
     };
     const clearSearch = () => {
-        setSearchTerm([]);
+        setSearchTerm("");
     };
 
     const renderRow = ({ index, style }: ListChildComponentProps<AlbumType>) => {
@@ -79,6 +84,7 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     return <>
         <TextField
             label="Search albums"
+            value={searchTerm}
             onChange={onSearch}
             fullWidth
             variant="filled"

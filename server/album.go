@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
 	"github.com/hlubek/readercomp"
@@ -312,8 +313,16 @@ func (album *Album) Duplicates() (map[string]interface{}, error) {
 
 	var dups []Duplicate
 	var uniq []*Photo
+	var albums = make(map[string]PseudoAlbum)
 	for key, photo := range album.photosMap {
 		if found, ok := dupsMap[key]; ok {
+			// Lists which albums contain duplicated photos
+			for _, f := range found {
+				keyAlbum := f.Photo.Collection + ":" + f.Photo.Album
+				if _, ok := albums[keyAlbum]; !ok {
+					albums[keyAlbum] = PseudoAlbum{f.Photo.Collection, f.Photo.Album}
+				}
+			}
 			dups = append(dups, Duplicate{Photo: photo, Found: found})
 		} else {
 			uniq = append(uniq, photo)
@@ -321,10 +330,11 @@ func (album *Album) Duplicates() (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{
+		"albums":     maps.Values(albums),
 		"total":      len(album.photosMap),
 		"countDup":   len(dups),
 		"countUniq":  len(uniq),
 		"duplicates": dups,
-		"uniq":       uniq,
+		"unique":     uniq,
 	}, nil
 }

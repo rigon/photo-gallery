@@ -2,10 +2,12 @@ import { FC, Fragment, useState } from 'react';
 import { useTheme, SxProps, Theme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 
+import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import Dialog from '@mui/material/Dialog';
@@ -16,15 +18,22 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import Divider from '@mui/material/Divider';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import FileCopyIcon from '@mui/icons-material/FileCopy';
+import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import InputLabel from '@mui/material/InputLabel';
 import LinearProgress from '@mui/material/LinearProgress';
 import Link from '@mui/material/Link';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemText from '@mui/material/ListItemText';
-import FileCopyIcon from '@mui/icons-material/FileCopy';
+import MenuItem from '@mui/material/MenuItem';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import PinDropIcon from '@mui/icons-material/PinDrop';
+import RuleIcon from '@mui/icons-material/Rule';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Tooltip from '@mui/material/Tooltip';
@@ -34,7 +43,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { useDialog } from '.';
 import { ResponseDuplicates, useDuplicatedPhotosQuery } from '../services/api';
 import { SelectionProvider, Selectable, useSelection } from '../Selection';
-import { PhotoImageType, urls } from '../types';
+import { PhotoImageType, PseudoAlbumType, urls } from '../types';
 import useFavorite from '../favoriteHook';
 
 const selectedStyle: SxProps<Theme> = {
@@ -43,7 +52,7 @@ const selectedStyle: SxProps<Theme> = {
 };
 
 type Duplicated = ResponseDuplicates['duplicates'][0];
-type Unique = ResponseDuplicates['uniq'][0];
+type Unique = ResponseDuplicates['unique'][0];
 
 interface ItemProps<T extends Duplicated | Unique> {
     item: T;
@@ -143,7 +152,7 @@ function ListItems<T extends Duplicated | Unique>({ items, component }: ListItem
     const { all, cancel } = useSelection();
 
     if(items.length < 1)
-        return <Typography p="15px 0">No items to display</Typography>;
+        return <Alert severity="success" variant="outlined" sx={{m: "15px 0"}}>No items to display</Alert>;
 
     return (<>
         <List sx={{ bgcolor: 'background.paper', overflow: "auto" }}>
@@ -186,11 +195,12 @@ interface DialogProps {
 }
 
 const defaultData: ResponseDuplicates = {
+    albums: [],
     total: 0,
     countDup: 0,
     countUniq: 0,
     duplicates: [],
-    uniq: [],
+    unique: [],
 }
 
 const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) => {
@@ -199,6 +209,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
     const dialog = useDialog();
     const favorite = useFavorite();
     const { data = defaultData, isFetching } = useDuplicatedPhotosQuery({ collection, album }, {skip: !open});
+    const [albumsFilter, setAlbumsFilter] = useState<string[]>([]);
     const [tab, setTab] = useState(0);
     const [isSelectingDups, setSelectingDups] = useState<boolean>(false);
     const [isSelectingUniq, setSelectingUniq] = useState<boolean>(false);
@@ -206,22 +217,39 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
     const [selUniq, setSelUniq] = useState<Unique[]>([]);
     
     const noSelection = isFetching ||
-        (tab === 0 && !isSelectingDups) ||  // Duplicates
-        (tab === 1 && !isSelectingUniq);    // Unique
+        // Duplicates, Partial, Same
+        ((tab === 0 || tab === 1 || tab === 2) && !isSelectingDups) ||
+        // Unique
+        (tab === 3 && !isSelectingUniq);
 
+    const filter = albumsFilter.map(album => JSON.parse(album) as PseudoAlbumType);
+    const filtered = filter.length < 1 ? data.duplicates :
+        data.duplicates.map(d => ({ ...d, found: d.found.filter(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album))}));
+    // const filtered = filter.length < 1 ? data.duplicates :
+    //     data.duplicates.filter(d => d.found.some(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album)));
+    const duplicates = filtered.filter(d => d.found.some(v => !v.partial && !v.samealbum));
+    const partial = filtered.filter(d => d.found.length > 0 && d.found.every(v => v.partial));
+    const same = filtered.filter(d => d.found.length > 0 && d.found.every(v => v.samealbum));
+
+    const handleChangeAlbumsFilter = (event: SelectChangeEvent<string[]>) => {
+        const val = event.target.value;
+        // On autofill we get a stringified value.
+        setAlbumsFilter(typeof val === "string" ? [val] : val);
+      };
+ 
     const handleClose = () => {
         onClose();
     };
 
     const handleFavorite = async () => {
-        const isSelectingDupsBack = isSelectingDups;
+        const isSelectingDupsBak = isSelectingDups;
         const isSelectingUniqBak = isSelectingUniq;
         setSelectingDups(false);
         setSelectingUniq(false);
         
         const grouped = new Map<string, Map<string, Set<string>>>();
 
-        if(tab === 0) {
+        if(tab === 0 || tab === 1 || tab === 2) {
             selDups.forEach(duplicate => {
                 duplicate.found.forEach(({photo}) => {
                     // Collection
@@ -236,7 +264,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                     album.add(photo.id);
                 });
             });
-        } else if(tab === 1) {
+        } else if(tab === 3) {
             selUniq.forEach(entry => {
                 // Collection
                 const collection = grouped.get(entry.collection) || new Map<string, Set<string>>();
@@ -261,14 +289,14 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
         });
         await Promise.all(promises);
 
-        setSelectingDups(isSelectingDupsBack);
+        setSelectingDups(isSelectingDupsBak);
         setSelectingUniq(isSelectingUniqBak);
     };
 
     const handleMove = () => {
         const selection =
-            tab === 0 ? selDups.map(item => item.photo) :
-            tab === 1 ? selUniq : [];
+            tab === 0 || tab === 1 || tab === 2 ? selDups.map(item => item.photo) :
+            tab === 3 ? selUniq : [];
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(photo => ({ ...photo, src: urls.thumb(photo) }));
         // Show move dialog
@@ -278,8 +306,8 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
 
     const handleDelete = () => {
         const selection =
-            tab === 0 ? selDups.map(item => item.photo) :
-            tab === 1 ? selUniq : [];
+            tab === 0 || tab === 1 || tab === 2 ? selDups.map(item => item.photo) :
+            tab === 3 ? selUniq : [];
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(photo => ({ ...photo, src: urls.thumb(photo) }));
         // Show delete dialog
@@ -297,7 +325,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
     };
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={fullScreen} PaperProps={{sx: {minHeight: "calc(100% - 64px)"}}}>
             <DialogTitle>
                 Duplicated photos
                 <IconButton sx={{ position: 'absolute', right: 8, top: 8 }} onClick={handleClose}>
@@ -318,20 +346,53 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                     <Typography variant='body2'>
                         <b>Note well:</b> moving and deleting are performed on photos of this album, while bookmarking is over the photos found.
                     </Typography>
-
+                    
+                    <FormControl sx={{ margin: "1em 0", width: "100%" }}>
+                        <InputLabel id="demo-multiple-chip-label">Filter albums</InputLabel>
+                        <Select
+                            labelId="demo-multiple-chip-label"
+                            id="demo-multiple-chip"
+                            multiple
+                            value={albumsFilter}
+                            onChange={handleChangeAlbumsFilter}
+                            input={<OutlinedInput id="select-multiple-chip" label="Filter albums" />}
+                            renderValue={(selected) => (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {selected.map((value) => (
+                                        <Chip key={value} label={JSON.parse(value).album} />
+                                    ))}
+                                </Box>
+                            )}
+                        >
+                            {data.albums.map((a) => (<MenuItem key={a.collection+":"+a.album} value={JSON.stringify(a)}>{a.album}</MenuItem>))}
+                        </Select>
+                    </FormControl>
+                    
                     <Tabs value={tab} onChange={handleChangeTab} sx={{ borderBottom: 1, borderColor: 'divider' }} aria-label="selection duplicates or unique">
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={data.countDup}><FileCopyIcon /></Badge>} iconPosition="start" label="Duplicates" />
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={data.countUniq}><InsertDriveFileIcon /></Badge>} iconPosition="start" label="Unique" />
-                        <Tab sx={{flexGrow: 1, minHeight: 0, alignItems: "end", textTransform: "none"}} label={"Total of " + data.total + " photos"} disabled />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={duplicates.length}><FileCopyIcon /></Badge>} iconPosition="start" label="Duplicates" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={partial.length}><RuleIcon /></Badge>} iconPosition="start" label="Partial" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={same.length}><PinDropIcon /></Badge>} iconPosition="start" label="Same" />
+                        <Tab sx={{minHeight: 0, ml: "auto"}} icon={<Badge showZero max={9999} badgeContent={data.countUniq}><NewReleasesIcon /></Badge>} iconPosition="start" label="Unique" />
+                        {/* <Tab sx={{minHeight: 0, textTransform: "none"}} label={"Total of " + data.total + " photos"} disabled /> */}
                     </Tabs>
                     <TabPanel value={tab} index={0}>
                         <SelectionProvider<Duplicated> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
-                            <ListItems items={data.duplicates || []} component={ItemDuplicated} />
+                            <ListItems items={duplicates} component={ItemDuplicated} />
                         </SelectionProvider>
                     </TabPanel>
                     <TabPanel value={tab} index={1}>
+                        <SelectionProvider<Duplicated> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
+                            <ListItems items={partial} component={ItemDuplicated} />
+                        </SelectionProvider>
+                    </TabPanel>
+                    <TabPanel value={tab} index={2}>
+                        <SelectionProvider<Duplicated> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
+                            <ListItems items={same} component={ItemDuplicated} />
+                        </SelectionProvider>
+                    </TabPanel>
+                    <TabPanel value={tab} index={3}>
                         <SelectionProvider<Unique> onChange={setSelUniq} onIsSelecting={setSelectingUniq} itemToId={i => `${i.collection}:${i.album}:${i.id}`}>
-                            <ListItems items={data.uniq || []} component={ItemUnique} />
+                            <ListItems items={data.unique || []} component={ItemUnique} />
                         </SelectionProvider>
                     </TabPanel>
                 </>)}
