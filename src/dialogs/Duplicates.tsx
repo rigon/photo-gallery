@@ -1,4 +1,4 @@
-import { FC, Fragment, useState } from 'react';
+import { FC, Fragment, useEffect, useState } from 'react';
 import { useTheme, SxProps, Theme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -222,14 +222,19 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
         // Unique
         (tab === 3 && !isSelectingUniq);
 
+    // Filter by selected albums
     const filter = albumsFilter.map(album => JSON.parse(album) as PseudoAlbumType);
-    const filtered = filter.length < 1 ? data.duplicates :
-        data.duplicates.map(d => ({ ...d, found: d.found.filter(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album))}));
-    // const filtered = filter.length < 1 ? data.duplicates :
-    //     data.duplicates.filter(d => d.found.some(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album)));
+    const dataDuplicates = data.duplicates || [];
+    const filtered = filter.length < 1 ? dataDuplicates :
+        dataDuplicates.map(d => ({ ...d, found: d.found.filter(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album))}));
+    // const filtered = filter.length < 1 ? dataDuplicates :
+    //     dataDuplicates.filter(d => d.found.some(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album)));
     const duplicates = filtered.filter(d => d.found.some(v => !v.partial && !v.samealbum));
     const partial = filtered.filter(d => d.found.length > 0 && d.found.every(v => v.partial));
     const same = filtered.filter(d => d.found.length > 0 && d.found.every(v => v.samealbum));
+
+    // Clear album filter when opening
+    useEffect(() => setAlbumsFilter([]), [open]);
 
     const handleChangeAlbumsFilter = (event: SelectChangeEvent<string[]>) => {
         const val = event.target.value;
