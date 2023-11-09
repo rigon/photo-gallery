@@ -66,6 +66,7 @@ export interface QuerySaveFavorite {
 }
 
 export interface ResponseDuplicates {
+    albums: PseudoAlbumType[];
     total: number;
 	countDup: number;
     countUniq: number;
@@ -81,7 +82,7 @@ export interface ResponseDuplicates {
             }[];
         }[];
     }[];
-    uniq: PhotoType[];
+    unique: PhotoType[];
 }
 
 const albumId = (arg: { collection: string, album: string }) => arg.collection + ":" + arg.album;
