@@ -13,7 +13,7 @@ const useFavorite = () => {
     const { infoNotification, errorNotification } = useNotification();
 
     const favoriteStatus = (favorites: PseudoAlbumType[]) => {
-        const list = favorites && Array.isArray(favorites) ? favorites : [];
+        const list = Array.isArray(favorites) ? favorites : [];
         const isFavorite = list.length > 0;
         const isFavoriteThis = isFavorite && list.some(
             entry => entry.collection === favorite.collection && entry.album === favorite.album);
