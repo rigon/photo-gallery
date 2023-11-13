@@ -3,10 +3,12 @@ import { useTheme, SxProps, Theme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
@@ -20,6 +22,8 @@ import Divider from '@mui/material/Divider';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormGroup from '@mui/material/FormGroup';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -33,17 +37,17 @@ import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import PinDropIcon from '@mui/icons-material/PinDrop';
 import RuleIcon from '@mui/icons-material/Rule';
+import SaveIcon from '@mui/icons-material/Save';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import WarningIcon from '@mui/icons-material/Warning';
 
 import { useDialog } from '.';
-import { ResponseDuplicates, useDuplicatedPhotosQuery } from '../services/api';
+import { Duplicate, ResponseDuplicates, useDuplicatedPhotosQuery } from '../services/api';
 import { SelectionProvider, Selectable, useSelection } from '../Selection';
-import { PhotoImageType, PseudoAlbumType, urls } from '../types';
+import { PhotoImageType, PhotoType, PseudoAlbumType, urls } from '../types';
 import useFavorite from '../favoriteHook';
 
 const selectedStyle: SxProps<Theme> = {
@@ -51,13 +55,10 @@ const selectedStyle: SxProps<Theme> = {
     outlineOffset: "-5px",
 };
 
-type Duplicated = ResponseDuplicates['duplicates'][0];
-type Unique = ResponseDuplicates['unique'][0];
-
-interface ItemProps<T extends Duplicated | Unique> {
+interface ItemProps<T extends Duplicate | PhotoType> {
     item: T;
 }
-const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item: {photo, found}}) => {
+const ItemDuplicated: FC<ItemProps<Duplicate>> = ({item: {photo, found}}) => {
     const dialog = useDialog();
 
     const handleOpenPhoto = () => {
@@ -76,13 +77,15 @@ const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item: {photo, found}}) => {
         </ListItemAvatar>
         <ListItemText
             primary={photo.title}
-            secondary={found.map(({photo: {collection, album, id, files: foundFiles}, partial, samealbum, files}, index) => (
+            secondary={found.map(({photo: {collection, album, id, files: foundFiles}, partial, incomplete, conflict, samealbum, files}, index) => (
                 <Fragment key={index}>
-                    {(partial || samealbum) &&
+                    {(partial || incomplete || conflict || samealbum) &&
                         <Tooltip title={
                             <ol style={{paddingLeft: 12}}>
-                                {partial && <li>Not all files were matched</li>}
-                                {samealbum && <li>This photo is duplicated in the same album<br /><b>Do not delete all matches!</b></li>}
+                                {partial && <li><b>Partial:</b> found photo does not have all files</li>}
+                                {incomplete && <li><b>Incomplete:</b> the photo is missing some files, found entry is more complete</li>}
+                                {conflict && <li><b>Conflict:</b> the photo and the found entry both have missing files</li>}
+                                {samealbum && <li><b>Same Album:</b> duplicated in the same album<br /><b>Do not delete all matches!</b></li>}
                             </ol>}>
                             <WarningIcon fontSize="small" color="error" />
                         </Tooltip>
@@ -98,7 +101,7 @@ const ItemDuplicated: FC<ItemProps<Duplicated>> = ({item: {photo, found}}) => {
         />
     </>);
 }
-const ItemUnique: FC<ItemProps<Unique>> = ({item}) => {
+const ItemUnique: FC<ItemProps<PhotoType>> = ({item}) => {
     const dialog = useDialog();
 
     const handleOpenPhoto = () => {
@@ -122,11 +125,11 @@ const ItemUnique: FC<ItemProps<Unique>> = ({item}) => {
     </>);
 }
 
-interface SelectableItemProps<T extends Duplicated | Unique> {
+interface SelectableItemProps<T extends Duplicate | PhotoType> {
     item: T;
     component: FC<ItemProps<T>>;
 }
-function SelectableItem<T extends Duplicated | Unique>({ item, component }: SelectableItemProps<T>) {
+function SelectableItem<T extends Duplicate | PhotoType>({ item, component }: SelectableItemProps<T>) {
     const [selected, setSelected] = useState<boolean>(false);
     const Item = component;
 
@@ -144,11 +147,11 @@ function SelectableItem<T extends Duplicated | Unique>({ item, component }: Sele
     );
 }
 
-interface ListItemsProps<T extends Duplicated | Unique> {
+interface ListItemsProps<T extends Duplicate | PhotoType> {
     items: T[];
     component: FC<ItemProps<T>>;
 }
-function ListItems<T extends Duplicated | Unique>({ items, component }: ListItemsProps<T>) {
+function ListItems<T extends Duplicate | PhotoType>({ items, component }: ListItemsProps<T>) {
     const { all, cancel } = useSelection();
 
     if(items.length < 1)
@@ -195,12 +198,32 @@ interface DialogProps {
 }
 
 const defaultData: ResponseDuplicates = {
-    albums: [],
     total: 0,
-    countDup: 0,
-    countUniq: 0,
-    duplicates: [],
+    albums: [],
+    keep: [],
     unique: [],
+    delete: [],
+    conflict: [],
+    samealbum: [],
+    countKeep: 0,
+    countDelete: 0,
+    countUnique: 0,
+    countConflict: 0,
+    countSameAlbum: 0
+}
+
+function filterList(list: Duplicate[], filter: PseudoAlbumType[], onlyMultiple: boolean): Duplicate[] {
+    const validList = list || [];
+
+    const filteredAlbums = filter.length < 1 ? validList :
+        validList.map(d => ({
+            ...d,
+            found: d.found.filter(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album))
+        })).filter(d => d.found.length > 0);
+
+    return onlyMultiple ?
+        filteredAlbums.filter(d => d.found.length > 1) :
+        filteredAlbums;
 }
 
 const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) => {
@@ -210,28 +233,26 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
     const favorite = useFavorite();
     const { data = defaultData, isFetching } = useDuplicatedPhotosQuery({ collection, album }, {skip: !open});
     const [albumsFilter, setAlbumsFilter] = useState<string[]>([]);
+    const [onlyMultiple, setOnlyMultiple] = useState<boolean>(false);
     const [tab, setTab] = useState(0);
     const [isSelectingDups, setSelectingDups] = useState<boolean>(false);
     const [isSelectingUniq, setSelectingUniq] = useState<boolean>(false);
-    const [selDups, setSelDups] = useState<Duplicated[]>([]);
-    const [selUniq, setSelUniq] = useState<Unique[]>([]);
+    const [selDups, setSelDups] = useState<Duplicate[]>([]);
+    const [selUniq, setSelUniq] = useState<PhotoType[]>([]);
     
     const noSelection = isFetching ||
-        // Duplicates, Partial, Same
-        ((tab === 0 || tab === 1 || tab === 2) && !isSelectingDups) ||
+        // Delete, Keep, Conflict, Same
+        ((tab === 0 || tab === 1 || tab === 2 || tab === 3) && !isSelectingDups) ||
         // Unique
-        (tab === 3 && !isSelectingUniq);
+        (tab === 4 && !isSelectingUniq);
 
     // Filter by selected albums
     const filter = albumsFilter.map(album => JSON.parse(album) as PseudoAlbumType);
-    const dataDuplicates = data.duplicates || [];
-    const filtered = filter.length < 1 ? dataDuplicates :
-        dataDuplicates.map(d => ({ ...d, found: d.found.filter(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album))}));
-    // const filtered = filter.length < 1 ? dataDuplicates :
-    //     dataDuplicates.filter(d => d.found.some(p => filter.some(f => f.collection === p.photo.collection && f.album === p.photo.album)));
-    const duplicates = filtered.filter(d => d.found.some(v => !v.partial && !v.samealbum));
-    const partial = filtered.filter(d => d.found.length > 0 && d.found.every(v => v.partial));
-    const same = filtered.filter(d => d.found.length > 0 && d.found.every(v => v.samealbum));
+    const listDelete = filterList(data.delete, filter, onlyMultiple);
+    const listKeep = filterList(data.keep, filter, onlyMultiple);
+    const listConflict = filterList(data.conflict, filter, onlyMultiple);
+    const listSameAlbum = filterList(data.samealbum, filter, onlyMultiple);
+    const listUnique = data.unique || [];
 
     // Clear album filter when opening
     useEffect(() => setAlbumsFilter([]), [open]);
@@ -240,7 +261,11 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
         const val = event.target.value;
         // On autofill we get a stringified value.
         setAlbumsFilter(typeof val === "string" ? [val] : val);
-      };
+    };
+
+    const handleOnlyMultiple = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setOnlyMultiple(event.target.checked);
+    };
  
     const handleClose = () => {
         onClose();
@@ -254,7 +279,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
         
         const grouped = new Map<string, Map<string, Set<string>>>();
 
-        if(tab === 0 || tab === 1 || tab === 2) {
+        if(tab === 0 || tab === 1 || tab === 2 || tab === 3) {
             selDups.forEach(duplicate => {
                 duplicate.found.forEach(({photo}) => {
                     // Collection
@@ -269,7 +294,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                     album.add(photo.id);
                 });
             });
-        } else if(tab === 3) {
+        } else if(tab === 4) {
             selUniq.forEach(entry => {
                 // Collection
                 const collection = grouped.get(entry.collection) || new Map<string, Set<string>>();
@@ -300,8 +325,8 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
 
     const handleMove = () => {
         const selection =
-            tab === 0 || tab === 1 || tab === 2 ? selDups.map(item => item.photo) :
-            tab === 3 ? selUniq : [];
+            tab === 0 || tab === 1 || tab === 2 || tab === 3 ? selDups.map(item => item.photo) :
+            tab === 4 ? selUniq : [];
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(photo => ({ ...photo, src: urls.thumb(photo) }));
         // Show move dialog
@@ -311,8 +336,8 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
 
     const handleDelete = () => {
         const selection =
-            tab === 0 || tab === 1 || tab === 2 ? selDups.map(item => item.photo) :
-            tab === 3 ? selUniq : [];
+            tab === 0 || tab === 1 || tab === 2 || tab === 3 ? selDups.map(item => item.photo) :
+            tab === 4 ? selUniq : [];
         // Create urls for thumbnails
         const photos: PhotoImageType[] = selection.map(photo => ({ ...photo, src: urls.thumb(photo) }));
         // Show delete dialog
@@ -348,19 +373,15 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                         The following photos were found duplicated in another places. From the list bellow,
                         please select which photos you want to bookmark, move or delete.
                     </DialogContentText>
-                    <Typography variant='body2'>
-                        <b>Note well:</b> moving and deleting are performed on photos of this album, while bookmarking is over the photos found.
-                    </Typography>
                     
-                    <FormControl sx={{ margin: "1em 0", width: "100%" }}>
-                        <InputLabel id="demo-multiple-chip-label">Filter albums</InputLabel>
+                    <FormControl fullWidth sx={{mt: 2}}>
+                        <InputLabel id="duplicates-filter-albums-label">Filter albums</InputLabel>
                         <Select
-                            labelId="demo-multiple-chip-label"
-                            id="demo-multiple-chip"
+                            labelId="duplicates-filter-albums-label"
                             multiple
                             value={albumsFilter}
                             onChange={handleChangeAlbumsFilter}
-                            input={<OutlinedInput id="select-multiple-chip" label="Filter albums" />}
+                            input={<OutlinedInput label="Filter albums" />}
                             renderValue={(selected) => (
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                     {selected.map((value) => (
@@ -372,34 +393,49 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
                             {data.albums.map((a) => (<MenuItem key={a.collection+":"+a.album} value={JSON.stringify(a)}>{a.album}</MenuItem>))}
                         </Select>
                     </FormControl>
+                    <FormGroup>
+                        <FormControlLabel control={<Checkbox checked={onlyMultiple} onChange={handleOnlyMultiple} />} label="Show only photos with multiple matches" />
+                    </FormGroup>
                     
                     <Tabs value={tab} onChange={handleChangeTab} sx={{ borderBottom: 1, borderColor: 'divider' }} aria-label="selection duplicates or unique">
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={duplicates.length}><FileCopyIcon /></Badge>} iconPosition="start" label="Duplicates" />
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={partial.length}><RuleIcon /></Badge>} iconPosition="start" label="Partial" />
-                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={same.length}><PinDropIcon /></Badge>} iconPosition="start" label="Same" />
-                        <Tab sx={{minHeight: 0, ml: "auto"}} icon={<Badge showZero max={9999} badgeContent={data.countUniq}><NewReleasesIcon /></Badge>} iconPosition="start" label="Unique" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={listDelete.length}><FileCopyIcon /></Badge>} iconPosition="start" label="Delete" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={listKeep.length}><SaveIcon /></Badge>} iconPosition="start" label="Keep" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={listConflict.length}><RuleIcon /></Badge>} iconPosition="start" label="Conflict" />
+                        <Tab sx={{minHeight: 0}} icon={<Badge showZero max={9999} badgeContent={listSameAlbum.length}><PinDropIcon /></Badge>} iconPosition="start" label="Same" />
+                        <Tab sx={{minHeight: 0, ml: "auto"}} icon={<Badge showZero max={9999} badgeContent={listUnique.length}><NewReleasesIcon /></Badge>} iconPosition="start" label="Unique" />
                         {/* <Tab sx={{minHeight: 0, textTransform: "none"}} label={"Total of " + data.total + " photos"} disabled /> */}
                     </Tabs>
                     <TabPanel value={tab} index={0}>
-                        <SelectionProvider<Duplicated> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
-                            <ListItems items={duplicates} component={ItemDuplicated} />
+                        <SelectionProvider<Duplicate> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
+                            <ListItems items={listDelete} component={ItemDuplicated} />
                         </SelectionProvider>
                     </TabPanel>
                     <TabPanel value={tab} index={1}>
-                        <SelectionProvider<Duplicated> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
-                            <ListItems items={partial} component={ItemDuplicated} />
+                        <SelectionProvider<Duplicate> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
+                            <ListItems items={listKeep} component={ItemDuplicated} />
                         </SelectionProvider>
                     </TabPanel>
                     <TabPanel value={tab} index={2}>
-                        <SelectionProvider<Duplicated> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
-                            <ListItems items={same} component={ItemDuplicated} />
+                        <SelectionProvider<Duplicate> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
+                            <ListItems items={listConflict} component={ItemDuplicated} />
                         </SelectionProvider>
                     </TabPanel>
                     <TabPanel value={tab} index={3}>
-                        <SelectionProvider<Unique> onChange={setSelUniq} onIsSelecting={setSelectingUniq} itemToId={i => `${i.collection}:${i.album}:${i.id}`}>
-                            <ListItems items={data.unique || []} component={ItemUnique} />
+                        <SelectionProvider<Duplicate> onChange={setSelDups} onIsSelecting={setSelectingDups} itemToId={i => `${i.photo.collection}:${i.photo.album}:${i.photo.id}`}>
+                            <ListItems items={listSameAlbum} component={ItemDuplicated} />
                         </SelectionProvider>
                     </TabPanel>
+                    <TabPanel value={tab} index={4}>
+                        <SelectionProvider<PhotoType> onChange={setSelUniq} onIsSelecting={setSelectingUniq} itemToId={i => `${i.collection}:${i.album}:${i.id}`}>
+                            <ListItems items={listUnique} component={ItemUnique} />
+                        </SelectionProvider>
+                    </TabPanel>
+                    {!noSelection &&
+                        <Alert severity="info" variant="outlined" sx={{mt: 2}}>
+                            <AlertTitle>Note well</AlertTitle>
+                            Moving and deleting are performed on photos of this album, whilst bookmarking is over the photos found.
+                        </Alert>
+                    }
                 </>)}
             </DialogContent>
             <DialogActions>
