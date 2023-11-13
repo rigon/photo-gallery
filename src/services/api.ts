@@ -65,24 +65,35 @@ export interface QuerySaveFavorite {
     }
 }
 
+export interface Duplicate {
+    photo: PhotoType;
+    found: {
+        photo: PhotoType;
+        files: {
+            from: number;
+            to: number;
+        }[];
+        // Flags
+        equal: boolean;         // All files were matched
+        partial: boolean;       // Only some files were matched
+        incomplete: boolean;    // Found photos with more files
+        conflict: boolean;      // Combination of Partial and Incomplete
+        samealbum: boolean;     // Photos are in the same album
+    }[];
+}
 export interface ResponseDuplicates {
     albums: PseudoAlbumType[];
-    total: number;
-	countDup: number;
-    countUniq: number;
-    duplicates: {
-        photo: PhotoType;
-        found: {
-            photo: PhotoType;
-            partial: boolean;
-            samealbum: boolean;
-            files: {
-                from: number;
-                to: number;
-            }[];
-        }[];
-    }[];
+    keep: Duplicate[];
+    delete: Duplicate[];
     unique: PhotoType[];
+    conflict: Duplicate[];
+    samealbum: Duplicate[];
+    countKeep: number;
+    countDelete: number;
+    countUnique: number;
+    countConflict: number;
+    countSameAlbum: number;
+    total: number;
 }
 
 const albumId = (arg: { collection: string, album: string }) => arg.collection + ":" + arg.album;
