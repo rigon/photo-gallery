@@ -355,7 +355,7 @@ const DuplicatesDialog: FC<DialogProps> = ({open, collection, album, onClose}) =
     };
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={fullScreen} PaperProps={{sx: {minHeight: "calc(100% - 64px)"}}}>
+        <Dialog open={open} maxWidth="sm" fullWidth fullScreen={fullScreen} PaperProps={{sx: {minHeight: "calc(100% - 64px)"}}}>
             <DialogTitle>
                 Duplicated photos
                 <IconButton sx={{ position: 'absolute', right: 8, top: 8 }} onClick={handleClose}>
