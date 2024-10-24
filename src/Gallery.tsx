@@ -26,6 +26,7 @@ const defaultData: AlbumType = {
     subalbums: [],
     pseudo: false,
     count: 0,
+    title: ""
 };
 
 const Gallery: FC = () => {
