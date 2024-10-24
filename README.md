@@ -1,6 +1,11 @@
 Photo Gallery
 =============
 
+![](https://img.shields.io/github/check-runs/rigon/photo-gallery/master.svg "Build Status")
+![](https://img.shields.io/github/tag/rigon/photo-gallery.svg "Latest version")
+![](https://img.shields.io/docker/image-size/rigon/photo-gallery.svg "Docker image size")
+![](https://img.shields.io/docker/pulls/rigon/photo-gallery.svg "Pulls from DockerHub")
+
 Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can browse through your photos quick and easy.
 
 ## [Live Demo](https://demo.photogallery.rigon.uk/)
