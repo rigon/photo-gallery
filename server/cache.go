@@ -204,6 +204,7 @@ func (c *Cache) addInfoBatcher() {
 				return nil
 			})
 			c.wgFlush.Done()
+			log.Printf("DONE updating cache info (%d items)", len(batch))
 		}
 	}()
 }
@@ -237,6 +238,7 @@ func (c *Cache) delInfoBatcher() {
 				return nil
 			})
 			c.wgFlush.Done()
+			log.Printf("DONE deleting cache info (%d items)", len(batch))
 		}
 	}()
 }
