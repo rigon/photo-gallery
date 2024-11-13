@@ -246,6 +246,7 @@ func main() {
 			}
 			// Clean thumbnails of deleted photos
 			if config.fullScan {
+				log.Println("Cleaning thumbnails...")
 				CleanupThumbnails(config.collections)
 			}
 			// Then create thumbnails

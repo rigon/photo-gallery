@@ -97,7 +97,7 @@ List of possible options:
   readonly=false`, zflag.OptShorthand('c'))
 	zflag.BoolVar(&cmdArgs.cacheThumbnails, "cache-thumbnails", true, "Generate missing thumbnails while scanning", zflag.OptAddNegative(), zflag.OptShorthand('b'))
 	zflag.BoolVar(&cmdArgs.disableScan, "disable-scan", false, "Disable scans on start, by default will cache photo info of new albums")
-	//zflag.BoolVar(&cmdArgs.fullScan, "full-scan", false, "Perform a full scan on start (validates if cached data is up to date)")
+	zflag.BoolVar(&cmdArgs.fullScan, "full-scan", false, "Perform a full scan on start (validates if cached data is up to date)")
 	zflag.BoolVar(&cmdArgs.recreateCacheDB, "recreate-cache", false, "Recreate cache DB, required after DB version upgrade", zflag.OptShorthand('r'))
 	zflag.BoolVar(&cmdArgs.webdavDisabled, "disable-webdav", false, "Disable WebDAV")
 	zflag.StringVar(&cmdArgs.host, "host", "localhost", "Specify a host", zflag.OptShorthand('h'))

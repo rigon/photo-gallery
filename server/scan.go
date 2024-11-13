@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/timshannon/bolthold"
-	"golang.org/x/exp/slices"
 )
 
 func (collection *Collection) Scan(fullScan bool) error {
@@ -117,57 +116,46 @@ func (collection *Collection) CreateThumbnails() error {
 }
 
 func CleanupThumbnails(collections map[string]*Collection) error {
-	var thumbPaths []string
+	keep := map[string]struct{}{}
 
-	// Get thumbs paths for all collections
+	// Step 1: Create a map of files to keep
 	for _, collection := range collections {
-		// Thumbnails filenames are exactly 64 chars long followed by .jpg
-		thumbPath, err := filepath.Abs(filepath.Join(collection.ThumbsPath,
-			"????????????????????????????????????????????????????????????????.jpg"))
-		if err != nil {
-			return err
-		}
-		if !slices.Contains(thumbPaths, thumbPath) {
-			thumbPaths = append(thumbPaths, thumbPath)
-		}
-	}
-
-	// Gather all files from thumbs folders
-	var files []string
-	for _, thumbPath := range thumbPaths {
-		folder, err := filepath.Glob(thumbPath)
-		if err != nil {
-			return err
-		}
-		files = append(files, folder...)
-	}
-
-	// Filter out files for thumbnails that are used
-	for _, collection := range collections {
+		// Get all photos with thumbnail
 		var photos []*Photo
-		err := collection.cache.store.Find(&photos,
-			bolthold.Where("HasThumb").Eq(true).Index("HasThumb").SortBy("Title"))
+		err := collection.cache.store.Find(&photos, bolthold.Where("HasThumb").Eq(true))
 		if err != nil {
 			return err
 		}
 
+		// Get path for the thumbnail for each photo
 		for _, photo := range photos {
-			thumbPath, err := filepath.Abs(photo.ThumbnailPath(collection))
-			if err != nil {
-				return err
-			}
-
-			index := slices.Index(files, thumbPath)
-			if index >= 0 {
-				files = slices.Delete(files, index, index+1)
-			}
+			path := photo.ThumbnailPath(collection)
+			keep[path] = struct{}{}
 		}
 	}
 
-	// Delete remaining files
-	for _, file := range files {
-		log.Println("Deleting thumbnail", file)
-		os.Remove(file)
+	// Step 2: Traverse the thumbnails directory for each collection
+	for _, collection := range collections {
+		// As defined in photo.ThumbnailPath, is exactly "d1/d2/1234567.jpg"
+		path := filepath.Join(collection.ThumbsPath, "??", "??", "???????.jpg")
+		// Gather all files from thumbs folders
+		folder, err := filepath.Glob(path)
+		if err != nil {
+			return err
+		}
+
+		// Files in ThumbsPath that match the pattern
+		for _, file := range folder {
+			// but does not have the corresponding photo
+			if _, ok := keep[file]; !ok {
+				// Delete the file
+				log.Println("Deleting thumbnail", file)
+				err := os.Remove(file)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
 	}
 
 	return nil

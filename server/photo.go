@@ -1,15 +1,14 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,7 +28,7 @@ type Photo struct {
 	Date       time.Time     `json:"date" boltholdIndex:"Date"`
 	Location   GPSLocation   `json:"location" boltholdIndex:"Location"`
 	Files      []*File       `json:"files"`
-	HasThumb   bool          `json:"-" boltholdIndex:"HasThumb"`       // Indicates if the thumbnail was generated
+	HasThumb   bool          `json:"-"`                                // Indicates if the thumbnail was generated
 	FileSizes  []int64       `json:"-" boltholdSliceIndex:"FileSizes"` // Photo total size, used to find duplicates
 }
 
@@ -62,9 +61,11 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 // Returns the path location for the thumbnail
 func (photo *Photo) ThumbnailPath(collection *Collection) string {
 	name := strings.Join([]string{photo.Collection, photo.Album, photo.Id}, ":")
-	hash := sha256.Sum256([]byte(name))
-	encoded := hex.EncodeToString(hash[:])
-	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
+	hasher := fnv.New64a()
+	hasher.Write([]byte(name))
+	hash := strconv.FormatUint(hasher.Sum64(), 36)   // Can produce hashes of up to 13 chars
+	fill := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
+	return filepath.Join(collection.ThumbsPath, fill[:2], fill[2:4], fill[4:]+".jpg")
 }
 
 // Gets a file from the photo
@@ -113,11 +114,17 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 
 	// If the file doesn't exist
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		// Create thumbnail
+		// Select file to create the thumbnail from
 		selected := photo.MainFile()
 		if selected == nil {
 			return errors.New("no source file to generate thumbnail from")
 		}
+		// Ensure the directories exist
+		if err := os.MkdirAll(filepath.Dir(thumbPath), os.ModePerm); err != nil {
+			log.Println(err)
+			return err
+		}
+		// Create thumbnail
 		err := selected.CreateThumbnail(thumbPath, w)
 		if err != nil {
 			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
@@ -126,7 +133,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		}
 	} else {
 		// Cached thumbnail
-		data, err := ioutil.ReadFile(thumbPath)
+		data, err := os.ReadFile(thumbPath)
 		if err != nil {
 			return err
 		}
