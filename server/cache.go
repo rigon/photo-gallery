@@ -11,7 +11,7 @@ import (
 )
 
 var dbInfo = DbInfo{
-	Version: 9,
+	Version: 10,
 }
 
 type DbInfo struct {
