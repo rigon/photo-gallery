@@ -79,15 +79,16 @@ func (collection *Collection) Scan(fullScan bool) error {
 }
 
 func (collection *Collection) CreateThumbnails() error {
-	result, err := collection.cache.store.FindAggregate(Photo{},
-		bolthold.Where("HasThumb").Not().Eq(true).Index("HasThumb").SortBy("Title"), "Album")
+	result, err := collection.cache.store.FindAggregate(ThumbQueue{}, nil, "Album")
 	if err != nil {
 		return err
 	}
 
 	for _, albumResult := range result {
-		var photos []*Photo
 		var albumName string
+		var queue []*ThumbQueue
+		var photoKeys []interface{}
+		var photos []*Photo
 
 		// Get album
 		albumResult.Group(&albumName)
@@ -97,8 +98,17 @@ func (collection *Collection) CreateThumbnails() error {
 			continue
 		}
 
-		// Get photos to be processed
-		albumResult.Reduction(&photos)
+		// Get photo IDs to be processed
+		albumResult.Reduction(&queue)
+		for _, entry := range queue {
+			photoKeys = append(photoKeys, entry.PhotoKey)
+		}
+
+		// Get photos
+		err = collection.cache.store.Find(&photos, bolthold.Where(bolthold.Key).In(photoKeys...))
+		if err != nil {
+			return err
+		}
 
 		// Add work to generate thumbnails in background
 		AddThumbsBackground(collection, album, photos...)

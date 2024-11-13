@@ -29,6 +29,15 @@ type Cache struct {
 	wgFlush   sync.WaitGroup
 }
 
+// Flag album as loaded
+type AlbumSaved struct{}
+
+// Flag photo to be queued for thumbnail creation
+type ThumbQueue struct {
+	Album    string
+	PhotoKey string
+}
+
 // Init cache: boltdb and gcache
 func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 	// Disk cache
@@ -61,8 +70,8 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 				tx.DeleteBucket([]byte("DbInfo"))
 				tx.DeleteBucket([]byte("Photo"))
 				tx.DeleteBucket([]byte("AlbumSaved"))
+				tx.DeleteBucket([]byte("ThumbQueue"))
 				tx.DeleteBucket([]byte("_index:Photo:Date"))
-				tx.DeleteBucket([]byte("_index:Photo:HasThumb"))
 				tx.DeleteBucket([]byte("_index:Photo:Location"))
 				tx.DeleteBucket([]byte("_index:Photo:Size"))
 				return c.store.TxInsert(tx, "DbInfo", dbInfo)
@@ -142,13 +151,10 @@ func (c *Cache) SaveAlbum(album *Album) error {
 }
 
 func (c *Cache) SetAlbumFullyScanned(album *Album) error {
-	// Flag this album as loaded
-	type AlbumSaved struct{}
 	return c.store.Upsert(album.Name, AlbumSaved{})
 }
 
 func (c *Cache) IsAlbumFullyScanned(album *Album) bool {
-	type AlbumSaved struct{}
 	var a AlbumSaved
 	return c.store.Get(album.Name, &a) == nil
 }
@@ -182,6 +188,17 @@ func (c *Cache) addInfoBatcher() {
 					if err != nil {
 						log.Println(err)
 					}
+
+					// Add/remove photo from the thumbnail queue
+					if photo.HasThumb {
+						err = c.store.TxDelete(tx, photo.Key(), ThumbQueue{photo.Album, photo.Key()})
+					} else {
+						err = c.store.TxUpsert(tx, photo.Key(), ThumbQueue{photo.Album, photo.Key()})
+					}
+					if err != nil {
+						log.Println(err)
+					}
+
 					c.wgFlush.Done()
 				}
 				return nil
@@ -206,6 +223,15 @@ func (c *Cache) delInfoBatcher() {
 					if err != nil {
 						log.Println(err)
 					}
+
+					// Remove photo from the thumbnail queue, if still there
+					if !photo.HasThumb {
+						err = c.store.TxDelete(tx, photo.Key(), ThumbQueue{})
+						if err != nil {
+							log.Println(err)
+						}
+					}
+
 					c.wgFlush.Done()
 				}
 				return nil
