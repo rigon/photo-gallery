@@ -34,7 +34,7 @@ type AlbumSaved struct{}
 
 // Flag photo to be queued for thumbnail creation
 type ThumbQueue struct {
-	Album    string
+	Album    string `boltholdIndex:"Album"`
 	PhotoKey string
 }
 

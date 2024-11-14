@@ -242,16 +242,18 @@ func main() {
 			log.Println("Start scanning for photos in background...")
 			// First cache all albums
 			for _, collection := range config.collections {
+				log.Println("Scanning collection:", collection.Name)
 				collection.Scan(config.fullScan)
 			}
 			// Clean thumbnails of deleted photos
 			if config.fullScan {
-				log.Println("Cleaning thumbnails...")
+				log.Println("Cleaning up thumbnails...")
 				CleanupThumbnails(config.collections)
 			}
 			// Then create thumbnails
 			if config.cacheThumbnails {
 				for _, collection := range config.collections {
+					log.Println("Creating thumbnails for collection:", collection.Name)
 					collection.CreateThumbnails()
 				}
 			}

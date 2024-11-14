@@ -4,14 +4,16 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/timshannon/bolthold"
 )
 
-func (collection *Collection) Scan(fullScan bool) error {
+func (collection *Collection) Scan(fullScan bool) {
 	albums, err := collection.GetAlbums()
 	if err != nil {
-		return err
+		log.Println(err)
+		return
 	}
 
 	defer collection.cache.FinishFlush()
@@ -23,7 +25,7 @@ func (collection *Collection) Scan(fullScan bool) error {
 				collection.GetAlbumWithPhotos(album.Name, true, true)
 			}
 		}
-		return nil
+		return
 	}
 
 	// Full scan
@@ -72,18 +74,22 @@ func (collection *Collection) Scan(fullScan bool) error {
 		}))
 	if err == nil {
 		collection.cache.DeletePhotoInfo(photos...)
+	} else {
+		log.Println(err)
 	}
-
-	return err
 }
 
-func (collection *Collection) CreateThumbnails() error {
+func (collection *Collection) CreateThumbnails() {
+	start := time.Now()
 	println("AGGREGATE:", collection.Name)
-	result, err := collection.cache.store.FindAggregate(ThumbQueue{}, nil, "Album")
+
+	q := bolthold.Query{}
+	result, err := collection.cache.store.FindAggregate(ThumbQueue{}, q.Index("Album"), "Album")
 	if err != nil {
-		return err
+		log.Print(err)
+		return
 	}
-	println("DONE AGGREGATE")
+	println("DONE AGGREGATE", time.Since(start).Milliseconds())
 
 	for _, albumResult := range result {
 		var albumName string
@@ -98,7 +104,6 @@ func (collection *Collection) CreateThumbnails() error {
 			continue
 		}
 
-		println("FIND")
 		// Get photos to be processed
 		albumResult.Reduction(&queue)
 		for _, entry := range queue {
@@ -110,15 +115,13 @@ func (collection *Collection) CreateThumbnails() error {
 			}
 			photos = append(photos, photo)
 		}
-		println("DONE FIND")
 
 		// Add work to generate thumbnails in background
 		AddThumbsBackground(collection, album, photos...)
 	}
-	return nil
 }
 
-func CleanupThumbnails(collections map[string]*Collection) error {
+func CleanupThumbnails(collections map[string]*Collection) {
 	keep := map[string]struct{}{}
 
 	// Step 1: Create a map of files to keep
@@ -127,7 +130,8 @@ func CleanupThumbnails(collections map[string]*Collection) error {
 		var photos []*Photo
 		err := collection.cache.store.Find(&photos, bolthold.Where("HasThumb").Eq(true))
 		if err != nil {
-			return err
+			log.Println(err)
+			return
 		}
 
 		// Get path for the thumbnail for each photo
@@ -144,7 +148,8 @@ func CleanupThumbnails(collections map[string]*Collection) error {
 		// Gather all files from thumbs folders
 		folder, err := filepath.Glob(path)
 		if err != nil {
-			return err
+			log.Println(err)
+			continue
 		}
 
 		// Files in ThumbsPath that match the pattern
@@ -160,6 +165,4 @@ func CleanupThumbnails(collections map[string]*Collection) error {
 			}
 		}
 	}
-
-	return nil
 }
