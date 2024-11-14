@@ -26,7 +26,7 @@ type Photo struct {
 	Width      int           `json:"width"`
 	Height     int           `json:"height"`
 	Date       time.Time     `json:"date" boltholdIndex:"Date"`
-	Location   GPSLocation   `json:"location" boltholdIndex:"Location"`
+	Location   GPSLocation   `json:"location"`
 	Files      []*File       `json:"files"`
 	HasThumb   bool          `json:"-"`                                // Indicates if the thumbnail was generated
 	FileSizes  []int64       `json:"-" boltholdSliceIndex:"FileSizes"` // Photo total size, used to find duplicates
