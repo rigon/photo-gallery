@@ -114,6 +114,7 @@ func DecodeImage(filepath string, orientation Orientation) (image.Image, error) 
 	// From: https://github.com/disintegration/imaging/blob/d40f48ce0f098c53ab1fcd6e0e402da682262da5/io.go#L424
 	switch orientation {
 	case orientationNormal:
+		// Nothing to do
 	case orientationFlipH:
 		img = imaging.FlipH(img)
 	case orientationFlipV:
