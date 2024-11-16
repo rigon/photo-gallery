@@ -20,7 +20,7 @@ type Photo struct {
 	Title      string        `json:"title"`
 	Type       string        `json:"type"`
 	Collection string        `json:"collection"`
-	Album      string        `json:"album"`
+	Album      string        `json:"album" boltholdIndex:"Album"`
 	SubAlbum   string        `json:"subalbum"`
 	Favorite   []PseudoAlbum `json:"favorite"`
 	Width      int           `json:"width"`
@@ -60,12 +60,21 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 
 // Returns the path location for the thumbnail
 func (photo *Photo) ThumbnailPath(collection *Collection) string {
-	name := strings.Join([]string{photo.Collection, photo.Album, photo.Id}, ":")
+	name := strings.Join([]string{photo.Album, photo.Id}, ":")
 	hasher := fnv.New64a()
 	hasher.Write([]byte(name))
 	hash := strconv.FormatUint(hasher.Sum64(), 36)   // Can produce hashes of up to 13 chars
 	fill := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
-	return filepath.Join(collection.ThumbsPath, fill[:2], fill[2:4], fill[4:]+".jpg")
+	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", fill[:2], fill[2:4], fill[4:]+".jpg")
+}
+
+// Check if the photo has thumbnail generated
+func (photo *Photo) ThumbnailPresent(collection *Collection) (has bool, path string) {
+	path = photo.ThumbnailPath(collection)
+	// If the file doesn't exist
+	_, err := os.Stat(path)
+	has = !os.IsNotExist(err)
+	return has, path
 }
 
 // Gets a file from the photo
@@ -110,28 +119,8 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		}
 	}()
 
-	thumbPath := photo.ThumbnailPath(collection)
-
-	// If the file doesn't exist
-	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		// Select file to create the thumbnail from
-		selected := photo.MainFile()
-		if selected == nil {
-			return errors.New("no source file to generate thumbnail from")
-		}
-		// Ensure the directories exist
-		if err := os.MkdirAll(filepath.Dir(thumbPath), os.ModePerm); err != nil {
-			log.Println(err)
-			return err
-		}
-		// Create thumbnail
-		err := selected.CreateThumbnail(thumbPath, w)
-		if err != nil {
-			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
-			log.Println(err)
-			return err
-		}
-	} else {
+	hasThumb, thumbPath := photo.ThumbnailPresent(collection)
+	if hasThumb {
 		// Cached thumbnail
 		data, err := os.ReadFile(thumbPath)
 		if err != nil {
@@ -139,6 +128,19 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		}
 		if w != nil {
 			w.Write(data)
+		}
+	} else {
+		// Select file to create the thumbnail from
+		selected := photo.MainFile()
+		if selected == nil {
+			return errors.New("no source file to generate thumbnail from")
+		}
+		// Create thumbnail
+		err := selected.CreateThumbnail(thumbPath, w)
+		if err != nil {
+			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
+			log.Println(err)
+			return err
 		}
 	}
 

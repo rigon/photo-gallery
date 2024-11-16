@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/timshannon/bolthold"
 )
@@ -38,11 +37,7 @@ func (collection *Collection) Scan(fullScan bool) {
 
 		// Validate if photos have thumbnails
 		for _, photo := range album.photosMap {
-			thumbPath := photo.ThumbnailPath(collection)
-
-			// If the file doesn't exist
-			_, err := os.Stat(thumbPath)
-			hasThumb := !os.IsNotExist(err)
+			hasThumb, _ := photo.ThumbnailPresent(collection)
 
 			// Update flag if it is different than stored
 			if photo.HasThumb != hasThumb {
@@ -53,7 +48,7 @@ func (collection *Collection) Scan(fullScan bool) {
 
 		// Validate if all entries in the cacheDB are still valid
 		var photos []*Photo
-		err = collection.cache.store.Find(&photos, bolthold.Where("Album").Eq(album.Name).And("Id").MatchFunc(
+		err = collection.cache.store.Find(&photos, bolthold.Where("Album").Eq(album.Name).Index("Album").And("Id").MatchFunc(
 			func(id string) (bool, error) {
 				p, e := album.GetPhoto(id)
 				if e == nil && p != nil {
@@ -80,44 +75,41 @@ func (collection *Collection) Scan(fullScan bool) {
 }
 
 func (collection *Collection) CreateThumbnails() {
-	start := time.Now()
-	println("AGGREGATE:", collection.Name)
-
+	// List albums with photos missing thumbnails
+	var albums []*AlbumThumbs
 	q := bolthold.Query{}
-	result, err := collection.cache.store.FindAggregate(ThumbQueue{}, q.Index("Album"), "Album")
+	err := collection.cache.store.Find(&albums, q.SortBy("Name"))
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		return
 	}
-	println("DONE AGGREGATE", time.Since(start).Milliseconds())
 
-	for _, albumResult := range result {
-		var albumName string
-		var queue []*ThumbQueue
-		var photos []*Photo
-
+	// For each album
+	for _, albumThumb := range albums {
 		// Get album
-		albumResult.Group(&albumName)
-		album, err := collection.GetAlbum(albumName)
+		album, err := collection.GetAlbum(albumThumb.Name)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
 		// Get photos to be processed
-		albumResult.Reduction(&queue)
-		for _, entry := range queue {
-			var photo *Photo
-			err = collection.cache.store.Get(entry.PhotoKey, &photo)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			photos = append(photos, photo)
+		var photos []*Photo
+		err = collection.cache.store.Find(&photos,
+			bolthold.Where("Album").Eq(album.Name).Index("Album").And("HasThumb").Eq(false).SortBy("Title"))
+		if err != nil {
+			log.Println(err)
+			continue
 		}
 
 		// Add work to generate thumbnails in background
 		AddThumbsBackground(collection, album, photos...)
+
+		// Thumbnails created, remove album from the queue
+		err = collection.cache.store.Delete(albumThumb.Name, albumThumb)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 

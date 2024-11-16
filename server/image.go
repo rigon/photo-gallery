@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -168,10 +167,6 @@ func ExtractImageInfoOpened(fin *os.File) (format string, config image.Config, e
 }
 
 func CreateThumbnailFromImage(img image.Image, thumbpath string, w io.Writer) error {
-	if img == nil {
-		return errors.New("invalid image")
-	}
-
 	// Open output file thumbnail
 	fout, err := os.OpenFile(thumbpath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {

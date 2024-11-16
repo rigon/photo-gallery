@@ -32,10 +32,9 @@ type Cache struct {
 // Flag album as loaded
 type AlbumSaved struct{}
 
-// Flag photo to be queued for thumbnail creation
-type ThumbQueue struct {
-	Album    string `boltholdIndex:"Album"`
-	PhotoKey string
+// Flag album with photos missing thumbnails
+type AlbumThumbs struct {
+	Name string
 }
 
 // Init cache: boltdb and gcache
@@ -189,14 +188,12 @@ func (c *Cache) addInfoBatcher() {
 						log.Println(err)
 					}
 
-					// Add/remove photo from the thumbnail queue
-					if photo.HasThumb {
-						err = c.store.TxDelete(tx, photo.Key(), ThumbQueue{photo.Album, photo.Key()})
-					} else {
-						err = c.store.TxUpsert(tx, photo.Key(), ThumbQueue{photo.Album, photo.Key()})
-					}
-					if err != nil {
-						log.Println(err)
+					// Add album from the thumbnail queue
+					if !photo.HasThumb {
+						err = c.store.TxUpsert(tx, photo.Album, AlbumThumbs{photo.Album})
+						if err != nil {
+							log.Println(err)
+						}
 					}
 
 					c.wgFlush.Done()
@@ -204,7 +201,6 @@ func (c *Cache) addInfoBatcher() {
 				return nil
 			})
 			c.wgFlush.Done()
-			log.Printf("DONE updating cache info (%d items)", len(batch))
 		}
 	}()
 }
@@ -224,21 +220,11 @@ func (c *Cache) delInfoBatcher() {
 					if err != nil {
 						log.Println(err)
 					}
-
-					// Remove photo from the thumbnail queue, if still there
-					if !photo.HasThumb {
-						err = c.store.TxDelete(tx, photo.Key(), ThumbQueue{})
-						if err != nil {
-							log.Println(err)
-						}
-					}
-
 					c.wgFlush.Done()
 				}
 				return nil
 			})
 			c.wgFlush.Done()
-			log.Printf("DONE deleting cache info (%d items)", len(batch))
 		}
 	}()
 }
