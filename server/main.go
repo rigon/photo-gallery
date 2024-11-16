@@ -312,6 +312,9 @@ func main() {
 		}
 	})
 
+	// BdView
+	DbViewInit(e.Group("/db"))
+
 	// API
 	api := e.Group("/api")
 	api.GET("/pseudos", pseudos)
