@@ -147,7 +147,7 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 	return nil
 }
 
-func (photo *Photo) FillInfo() error {
+func (photo *Photo) FillInfo(collection *Collection) error {
 	var countImages = 0
 	var countVideos = 0
 	for _, file := range photo.Files {
@@ -180,6 +180,9 @@ func (photo *Photo) FillInfo() error {
 			}
 		}
 	}
+
+	// Check if already has thumbnail
+	photo.HasThumb, _ = photo.ThumbnailPresent(collection)
 
 	// Main file of the photo
 	selected := photo.MainFile()
