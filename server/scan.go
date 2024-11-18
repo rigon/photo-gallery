@@ -135,8 +135,8 @@ func CleanupThumbnails(collections map[string]*Collection) {
 
 	// Step 2: Traverse the thumbnails directory for each collection
 	for _, collection := range collections {
-		// As defined in photo.ThumbnailPath, is exactly "d1/d2/1234567.jpg"
-		path := filepath.Join(collection.ThumbsPath, "??", "??", "???????.jpg")
+		// As defined in photo.ThumbnailPath, is exactly "1234567890123.jpg"
+		path := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", "?????????????.jpg")
 		// Gather all files from thumbs folders
 		folder, err := filepath.Glob(path)
 		if err != nil {

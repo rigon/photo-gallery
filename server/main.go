@@ -232,7 +232,10 @@ func main() {
 
 	InitWorkers(config)
 	for _, collection := range config.collections {
-		collection.cache.Init(collection, config.recreateCacheDB)
+		err := collection.cache.Init(collection, config.recreateCacheDB)
+		if err != nil {
+			log.Fatal(err)
+		}
 		defer collection.cache.End()
 	}
 

@@ -60,12 +60,11 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 
 // Returns the path location for the thumbnail
 func (photo *Photo) ThumbnailPath(collection *Collection) string {
-	name := strings.Join([]string{photo.Album, photo.Id}, ":")
 	hasher := fnv.New64a()
-	hasher.Write([]byte(name))
+	hasher.Write([]byte(photo.Key()))
 	hash := strconv.FormatUint(hasher.Sum64(), 36)   // Can produce hashes of up to 13 chars
-	fill := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
-	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", fill[:2], fill[2:4], fill[4:]+".jpg")
+	name := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
+	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", name+".jpg")
 }
 
 // Check if the photo has thumbnail generated

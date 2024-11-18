@@ -244,10 +244,5 @@ func (file File) CreateThumbnail(thumbpath string, w io.Writer) (err error) {
 		return
 	}
 
-	// Ensure the directories exist
-	if err = os.MkdirAll(filepath.Dir(thumbpath), os.ModePerm); err != nil {
-		return
-	}
-
 	return CreateThumbnailFromImage(img, thumbpath, w)
 }

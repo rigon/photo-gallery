@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -38,9 +40,13 @@ type AlbumThumbs struct {
 }
 
 // Init cache: boltdb and gcache
-func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
-	// Disk cache
-	var err error
+func (c *Cache) Init(collection *Collection, rebuildCache bool) (err error) {
+	// Ensure the thumbnail folder exist
+	thumbsDir := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs")
+	err = os.MkdirAll(thumbsDir, os.ModePerm)
+	if err != nil {
+		return
+	}
 
 	// Find filename for cache
 	// if collection.DbPath is a filename it will be located in thumbnails directory
@@ -56,7 +62,7 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 
 	c.store, err = bolthold.Open(filename, 0600, &bolthold.Options{Options: &bolt.Options{Timeout: 1}})
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	// Check DB version
 	var current DbInfo
@@ -65,7 +71,7 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 		log.Printf("Current DB version v%d is different than required v%d\n", current.Version, dbInfo.Version)
 		if rebuildCache || err == bolthold.ErrNotFound {
 			log.Printf("Recreating cache DB for collection %s at %s", collection.Name, filename)
-			err := c.store.Bolt().Update(func(tx *bolt.Tx) error {
+			err = c.store.Bolt().Update(func(tx *bolt.Tx) error {
 				tx.DeleteBucket([]byte("DbInfo"))
 				tx.DeleteBucket([]byte("Photo"))
 				tx.DeleteBucket([]byte("AlbumSaved"))
@@ -76,10 +82,11 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 				return c.store.TxInsert(tx, "DbInfo", dbInfo)
 			})
 			if err != nil {
-				log.Fatal(err)
+				return
 			}
 		} else {
-			log.Fatal("Run command with option -r enabled to recreate cache DB")
+			log.Println("Run command with option -r enabled to recreate cache DB")
+			return errors.New("can't use current cache DB")
 		}
 	}
 
