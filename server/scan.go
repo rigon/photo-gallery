@@ -103,57 +103,58 @@ func (collection *Collection) CreateThumbnails() {
 		}
 
 		// Add work to generate thumbnails in background
-		AddThumbsBackground(collection, album, photos...)
+		wg := AddThumbsBackground(collection, album, photos...)
 
-		// Thumbnails created, remove album from the queue
-		err = collection.cache.store.Delete(albumThumb.Name, albumThumb)
-		if err != nil {
-			log.Println(err)
-		}
+		// Wait to complete creating thumbnails without blocking the process
+		go func(collection *Collection, albumThumb *AlbumThumbs) {
+			wg.Wait()
+			// Update flag to indicate that the thumbnail was generated
+			collection.cache.FlushInfo()
+			// Thumbnails created, remove album from the queue
+			err = collection.cache.store.Delete(albumThumb.Name, albumThumb)
+			if err != nil {
+				log.Println(err)
+			}
+		}(collection, albumThumb)
 	}
 }
 
-func CleanupThumbnails(collections map[string]*Collection) {
+func (collection *Collection) CleanupThumbnails() {
+	return
+	// Step 1: Create a map of files to keep
 	keep := map[string]struct{}{}
 
-	// Step 1: Create a map of files to keep
-	for _, collection := range collections {
-		// Get all photos with thumbnail
-		var photos []*Photo
-		err := collection.cache.store.Find(&photos, bolthold.Where("HasThumb").Eq(true))
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		// Get path for the thumbnail for each photo
-		for _, photo := range photos {
-			path := photo.ThumbnailPath(collection)
-			keep[path] = struct{}{}
-		}
+	// Get path for the thumbnail for each photo
+	err := collection.cache.store.ForEach(bolthold.Where("HasThumb").Eq(true), func(photo *Photo) error {
+		path := photo.ThumbnailPath(collection)
+		keep[path] = struct{}{}
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
-	// Step 2: Traverse the thumbnails directory for each collection
-	for _, collection := range collections {
-		// As defined in photo.ThumbnailPath, is exactly "1234567890123.jpg"
-		path := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", "?????????????.jpg")
-		// Gather all files from thumbs folders
-		folder, err := filepath.Glob(path)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
+	// Step 2: Traverse the thumbnails directory
 
-		// Files in ThumbsPath that match the pattern
-		for _, file := range folder {
-			// but does not have the corresponding photo
-			if _, ok := keep[file]; !ok {
-				// Delete the file
-				log.Println("Deleting thumbnail", file)
-				err := os.Remove(file)
-				if err != nil {
-					log.Println(err)
-				}
+	// As defined in photo.ThumbnailPath, is exactly 13 chars (ex: 1234567890123.jpg)
+	path := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", "?????????????.jpg")
+	// Gather all files from thumb folder
+	folder, err := filepath.Glob(path)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Files in ThumbsPath that match the pattern
+	for _, file := range folder {
+		// but does not have the corresponding photo
+		if _, ok := keep[file]; !ok {
+			// Delete the file
+			log.Println("Deleting thumbnail", file)
+			err := os.Remove(file)
+			if err != nil {
+				log.Println(err)
 			}
 		}
 	}

@@ -64,7 +64,7 @@ func (photo *Photo) ThumbnailPath(collection *Collection) string {
 	hasher.Write([]byte(photo.Key()))
 	hash := strconv.FormatUint(hasher.Sum64(), 36)   // Can produce hashes of up to 13 chars
 	name := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
-	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", name+".jpg")
+	return filepath.Join(collection.ThumbsPath /*collection.Name+"-thumbs",*/, name+".jpg")
 }
 
 // Check if the photo has thumbnail generated

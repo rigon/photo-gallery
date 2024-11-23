@@ -1,7 +1,12 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"hash/fnv"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -63,4 +68,26 @@ func TestBenchmarkThumbnailAlbum(t *testing.T) {
 
 	t.Log("Total time (ms):", sum.Milliseconds())
 	t.Log("Total size (b):", bytes)
+}
+
+func TestBenchmarkHashesSHA256(t *testing.T) {
+	name := "somerandomname"
+	start := time.Now()
+	for i := 0; i < 1_000_000; i++ {
+		hash := sha256.Sum256([]byte(name))
+		name = hex.EncodeToString(hash[:])
+	}
+	t.Log("Total time (ms):", time.Since(start).Milliseconds())
+}
+
+func TestBenchmarkHashesFNV(t *testing.T) {
+	name := "somerandomname"
+	start := time.Now()
+	for i := 0; i < 1_000_000; i++ {
+		hasher := fnv.New64a()
+		hasher.Write([]byte(name))
+		hash := strconv.FormatUint(hasher.Sum64(), 36)  // Can produce hashes of up to 13 chars
+		name = hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
+	}
+	t.Log("Total time (ms):", time.Since(start).Milliseconds())
 }
