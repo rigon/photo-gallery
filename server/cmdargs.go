@@ -17,6 +17,7 @@ type CmdArgs struct {
 	fullScan        bool
 	recreateCacheDB bool
 	webdavDisabled  bool
+	debug           bool
 	collections     map[string]*Collection
 	port            int
 	host            string
@@ -100,6 +101,7 @@ List of possible options:
 	zflag.BoolVar(&cmdArgs.fullScan, "full-scan", false, "Perform a full scan on start (validates if cached data is up to date)")
 	zflag.BoolVar(&cmdArgs.recreateCacheDB, "recreate-cache", false, "Recreate cache DB, required after DB version upgrade", zflag.OptShorthand('r'))
 	zflag.BoolVar(&cmdArgs.webdavDisabled, "disable-webdav", false, "Disable WebDAV")
+	zflag.BoolVar(&cmdArgs.debug, "debug", false, "Enable debug")
 	zflag.StringVar(&cmdArgs.host, "host", "localhost", "Specify a host", zflag.OptShorthand('h'))
 	zflag.IntVar(&cmdArgs.port, "port", 3080, "Specify a port", zflag.OptShorthand('p'))
 	zflag.IntVar(&cmdArgs.nWorkersInfo, "workers-info", 2, "Number of concurrent workers to extract photos info")

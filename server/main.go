@@ -245,18 +245,20 @@ func main() {
 			log.Println("Start scanning for photos in background...")
 			// First cache all albums
 			for _, collection := range config.collections {
-				log.Println("Scanning collection:", collection.Name)
+				log.Printf("Scanning collection %s...\n", collection.Name)
 				collection.Scan(config.fullScan)
 			}
 			// Clean thumbnails of deleted photos
 			if config.fullScan {
-				log.Println("Cleaning up thumbnails...")
-				CleanupThumbnails(config.collections)
+				for _, collection := range config.collections {
+					log.Printf("Cleaning up thumbnails for %s...\n", collection.Name)
+					collection.CleanupThumbnails()
+				}
 			}
 			// Then create thumbnails
 			if config.cacheThumbnails {
 				for _, collection := range config.collections {
-					log.Println("Creating thumbnails for collection:", collection.Name)
+					log.Printf("Creating thumbnails for %s...\n", collection.Name)
 					collection.CreateThumbnails()
 				}
 			}
@@ -315,8 +317,10 @@ func main() {
 		}
 	})
 
-	// BdView
-	DbViewInit(e.Group("/db"))
+	// Enable View Status interface
+	if config.debug {
+		ViewStatusInit(e.Group("/status"))
+	}
 
 	// API
 	api := e.Group("/api")

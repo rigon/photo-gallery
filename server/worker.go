@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,6 +21,11 @@ type InfoWork struct {
 	wg   *sync.WaitGroup
 }
 
+type ActiveWorkers struct {
+	thumbs int32
+	info   int32
+}
+
 var (
 	chThumbs chan *ThumbWork
 	chInfo   chan *InfoWork
@@ -28,6 +34,7 @@ var (
 	bgWg    sync.WaitGroup
 	bgTimer = time.NewTimer(0)
 	bgReset = false
+	counter ActiveWorkers
 )
 
 func InitWorkers(config CmdArgs) {
@@ -36,7 +43,9 @@ func InitWorkers(config CmdArgs) {
 	for i := 0; i < config.nWorkersThumb; i++ {
 		go func() {
 			for w := range chThumbs {
+				atomic.AddInt32(&counter.thumbs, 1)
 				w.photo.GetThumbnail(w.collection, w.album, w.writer)
+				atomic.AddInt32(&counter.thumbs, -1)
 				w.wg.Done()
 			}
 		}()
@@ -47,7 +56,9 @@ func InitWorkers(config CmdArgs) {
 	for i := 0; i < config.nWorkersInfo; i++ {
 		go func() {
 			for w := range chInfo {
+				atomic.AddInt32(&counter.info, 1)
 				w.file.ExtractInfo()
+				atomic.AddInt32(&counter.info, -1)
 				w.wg.Done()
 			}
 		}()
@@ -119,7 +130,7 @@ func AddThumbForeground(collection *Collection, album *Album, photo *Photo, writ
 	collection.cache.FinishFlush()
 }
 
-func AddThumbsBackground(collection *Collection, album *Album, photos ...*Photo) {
+func AddThumbsBackground(collection *Collection, album *Album, photos ...*Photo) *sync.WaitGroup {
 	var wg sync.WaitGroup
 	var size = len(photos)
 
@@ -135,7 +146,5 @@ func AddThumbsBackground(collection *Collection, album *Album, photos ...*Photo)
 		w.wg = &wg
 		chThumbs <- w
 	}
-	wg.Wait()
-	// Update flag to indicate that the thumbnail was generated
-	collection.cache.FlushInfo()
+	return &wg
 }
