@@ -8,8 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -58,13 +56,34 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 	return false
 }
 
+func convertBase36(value uint32, n int) string {
+	var s = make([]byte, n)
+	for i := 0; i < n; i++ { // base 36
+		r := byte(value % 36)
+		if r < 10 {
+			s[i] = '0' + r
+		} else {
+			s[i] = 'a' + r - 10
+		}
+		value = value / 36
+	}
+	return string(s)
+}
+
 // Returns the path location for the thumbnail
 func (photo *Photo) ThumbnailPath(collection *Collection) string {
-	hasher := fnv.New64a()
-	hasher.Write([]byte(photo.Key()))
-	hash := strconv.FormatUint(hasher.Sum64(), 36)   // Can produce hashes of up to 13 chars
-	name := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
-	return filepath.Join(collection.ThumbsPath /*collection.Name+"-thumbs",*/, name+".jpg")
+	hasher := fnv.New32a()
+	hasher.Write([]byte(photo.Id))
+	hash1 := hasher.Sum32()
+	hasher.Reset()
+	hasher.Write([]byte(photo.Album))
+	hash2 := hasher.Sum32()
+	hasher.Write([]byte{byte(hash1 % 6)}) // Spread thumbs across 6 different folders
+	hash3 := hasher.Sum32()
+	dir1 := convertBase36(hash2, 2) // Max of 36^2=1296 folders
+	dir2 := convertBase36(hash3, 2) // Max of 36^2=1296 sub-folders
+	name := convertBase36(hash1, 6) // 36^6 is a little more than half of uint32, 7th char only is 0 or 1
+	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", dir1, dir2, name+".jpg")
 }
 
 // Check if the photo has thumbnail generated

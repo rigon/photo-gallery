@@ -120,7 +120,6 @@ func (collection *Collection) CreateThumbnails() {
 }
 
 func (collection *Collection) CleanupThumbnails() {
-	return
 	// Step 1: Create a map of files to keep
 	keep := map[string]struct{}{}
 
@@ -137,8 +136,8 @@ func (collection *Collection) CleanupThumbnails() {
 
 	// Step 2: Traverse the thumbnails directory
 
-	// As defined in photo.ThumbnailPath, is exactly 13 chars (ex: 1234567890123.jpg)
-	path := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", "?????????????.jpg")
+	// As defined in photo.ThumbnailPath, is exactly 12/12/123456.jpg)
+	path := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", "??", "??", "??????.jpg")
 	// Gather all files from thumb folder
 	folder, err := filepath.Glob(path)
 	if err != nil {

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"fmt"
 	"hash/fnv"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +13,7 @@ import (
 
 func TestCreateThumbnails(t *testing.T) {
 	collection := &Collection{
+		Name:       "Photos",
 		PhotosPath: "tests/",
 		ThumbsPath: "tests/.thumbs/"}
 
@@ -70,24 +71,34 @@ func TestBenchmarkThumbnailAlbum(t *testing.T) {
 	t.Log("Total size (b):", bytes)
 }
 
-func TestBenchmarkHashesSHA256(t *testing.T) {
-	name := "somerandomname"
-	start := time.Now()
-	for i := 0; i < 1_000_000; i++ {
-		hash := sha256.Sum256([]byte(name))
-		name = hex.EncodeToString(hash[:])
-	}
-	t.Log("Total time (ms):", time.Since(start).Milliseconds())
+// Returns the path location for the thumbnail
+func (photo *Photo) thumbnailPathOld(collection *Collection) string {
+	hasher := fnv.New64a()
+	hasher.Write([]byte(photo.Key()))
+	hash := strconv.FormatUint(hasher.Sum64(), 36)   // Can produce hashes of up to 13 chars
+	name := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
+	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", name+".jpg")
 }
+func TestMoveOldToNewThumbnailPath(t *testing.T) {
+	collection := &Collection{
+		Name:       "Photos",
+		ThumbsPath: "/tmp/"}
 
-func TestBenchmarkHashesFNV(t *testing.T) {
-	name := "somerandomname"
-	start := time.Now()
-	for i := 0; i < 1_000_000; i++ {
-		hasher := fnv.New64a()
-		hasher.Write([]byte(name))
-		hash := strconv.FormatUint(hasher.Sum64(), 36)  // Can produce hashes of up to 13 chars
-		name = hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
-	}
-	t.Log("Total time (ms):", time.Since(start).Milliseconds())
+	collection.cache.Init(collection, false)
+	collection.cache.store.ForEach(nil, func(photo *Photo) error {
+		source := photo.thumbnailPathOld(collection)
+		destination := photo.ThumbnailPath(collection)
+		println(source, "->", destination)
+		// Ensure the directories exist
+		err := os.MkdirAll(filepath.Dir(destination), os.ModePerm)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		err = os.Rename(source, destination)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return nil
+	})
 }
