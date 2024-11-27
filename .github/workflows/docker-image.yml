@@ -41,12 +41,12 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Add ref_name to version
+    - name: Add to version
       # Run only when it is not a release build
       if: ${{ github.ref_type != 'tag' }}
       run: |
-        echo "Adding to version the ref_name ${{ github.ref_name }}"
-        sed -i 's/"version": "\(.*\)"/"version": "\1-${{ github.ref_name }}"/' package.json
+        echo "Adding to version: ${{ steps.meta.outputs.version }}"
+        sed -i 's/"version": "\(.*\)"/"version": "\1-${{ steps.meta.outputs.version }}"/' package.json
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
       with:
