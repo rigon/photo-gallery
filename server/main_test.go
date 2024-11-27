@@ -1,12 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"hash/fnv"
 	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 )
@@ -69,36 +64,4 @@ func TestBenchmarkThumbnailAlbum(t *testing.T) {
 
 	t.Log("Total time (ms):", sum.Milliseconds())
 	t.Log("Total size (b):", bytes)
-}
-
-// Returns the path location for the thumbnail
-func (photo *Photo) thumbnailPathOld(collection *Collection) string {
-	hasher := fnv.New64a()
-	hasher.Write([]byte(photo.Key()))
-	hash := strconv.FormatUint(hasher.Sum64(), 36)   // Can produce hashes of up to 13 chars
-	name := hash + strings.Repeat("0", 13-len(hash)) // Fill smaller hashes with "0"
-	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", name+".jpg")
-}
-func TestMoveOldToNewThumbnailPath(t *testing.T) {
-	collection := &Collection{
-		Name:       "Photos",
-		ThumbsPath: "/tmp/"}
-
-	collection.cache.Init(collection, false)
-	collection.cache.store.ForEach(nil, func(photo *Photo) error {
-		source := photo.thumbnailPathOld(collection)
-		destination := photo.ThumbnailPath(collection)
-		println(source, "->", destination)
-		// Ensure the directories exist
-		err := os.MkdirAll(filepath.Dir(destination), os.ModePerm)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		err = os.Rename(source, destination)
-		if err != nil {
-			fmt.Println(err)
-		}
-		return nil
-	})
 }
