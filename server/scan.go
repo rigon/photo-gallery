@@ -64,6 +64,7 @@ func (collection *Collection) Scan(fullScan bool) {
 	}
 
 	// Clean entries in the cacheDB of deleted albums
+	log.Printf("Clean entries of deleted albums %s...\n", collection.Name)
 	var photos []*Photo
 	err = collection.cache.store.Find(&photos, bolthold.Where("Album").MatchFunc(
 		func(album string) (bool, error) {

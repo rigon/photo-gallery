@@ -5,13 +5,24 @@ Photo Gallery
 ![](https://img.shields.io/github/tag/rigon/photo-gallery.svg "Latest version")
 ![](https://img.shields.io/docker/image-size/rigon/photo-gallery.svg "Docker image size")
 ![](https://img.shields.io/docker/pulls/rigon/photo-gallery.svg "Pulls from DockerHub")
+[![Docker Hub](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](https://hub.docker.com/r/rigon/photo-gallery)
 
-Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can browse through your photos quick and easy.
+Photo Gallery is a self-hosted performant application to organize your photos. Built for speed with React and Go, explore your photos quick and easy!
 
 ## [Live Demo](https://demo.photogallery.rigon.uk/)
 <p style="text-align: center;">
 <img src="screenshot.jpg" alt="Photo Gallery" style="text-align: center; width: 100%; max-width: 683px"/>
 </p>
+
+## Quick start
+
+Using docker, run:
+
+    docker run -p 3080:3080 --name photo-gallery rigon/photo-gallery:demo
+
+That's it, enjoy! Just open in your browser [http://localhost:3080](http://localhost:3080).
+
+This image however includes a demo gallery, for your own use please use `rigon/photo-gallery`.
 
 ## Motivation
 
@@ -40,9 +51,9 @@ To sum up, the reason for this project is to be open sourced, you owning your ow
 ## Features
 
 First, few concepts to keep in mind about how things are organized:
-- **Albums** are folders in the filesystem and the images inside are the photos of the album
-- **Collection** is a set of albums, in other words, is the location where your collection is stored
-- **Pseudo Album** is special type of album, is file stored in the filesystem which contains links for the photos. This way you can organize your favorites without duplicating them
+- **Albums** are folders in the filesystem and the images inside are the photos of the album.
+- **Collection** is a set of albums, in other words, is the location where your collection is stored.
+- **Pseudo Album** is special type of album, is file stored in the filesystem which contains links for photos. This way you can organize your favorites without duplicating them.
 
 Main features:
 
@@ -80,17 +91,6 @@ Main features:
 - [ ] Tool for renaming files
 - [ ] Image resizing according with screen
 
-## Quick start
-
-Using docker, run:
-
-    docker run -p 3080:3080 --name photo-gallery rigon/photo-gallery:demo
-
-That's it, enjoy! Just open in your browser [http://localhost:3080](http://localhost:3080).
-
-This image however includes a demo gallery, for your own use please use `rigon/photo-gallery`.
-
-
 ## Build and Run
 
 First, clone the project:
@@ -118,24 +118,26 @@ Server help:
 
     Usage of ./server/photo-gallery:
       -b, --[no-]cache-thumbnails   Generate missing thumbnails while scanning (default true)
-      -c, --collection strings      Specify a new collection. Example name=Photos,path=/photos,thumbs=/tmp
+      -c, --collection strings      Define a new collection. The order used will will be the same used in the interface.
+                                    Example: -c name=Photos,path=/photos,thumbs=/tmp
                                     List of possible options:
-                                      index          Position in the collection list
                                       name           Name of the collection
-                                      path           Path to load the albums from
-                                      thumbs         Path to store the thumbnails
+                                      path           Location of the collection, i.e. path where the photos are stored
+                                      thumbs         Path to store the thumbnails (by default is the path set with --thumbs)
                                       db             Path to cache DB, if a filename is provided it will be located in thumbnails directory
                                       hide=false     Hide the collection from the list (does not affect webdav)
                                       rename=true    Rename files instead of overwriting them
                                       readonly=false
-          --disable-scan            Disable scans on start, by default will cache photo info of new albums
+          --debug                   Enable debug
+          --disable-scan            Disable scans on start, by default will run a quick scan (cache info of new albums)
           --disable-webdav          Disable WebDAV
-          --full-scan               Perform a full scan on start (validates if cached data is up to date)
-      -h, --host string             Specify a host (default "localhost")
+          --full-scan               Perform a full scan on start (validates if all cached data is up to date)
+      -H, --host string             Specify a host (default "localhost")
       -p, --port int                Specify a port (default 3080)
       -r, --recreate-cache          Recreate cache DB, required after DB version upgrade
+      -t, --thumbs string           Default path to store thumbnails
           --workers-info int        Number of concurrent workers to extract photos info (default 2)
-          --workers-thumb int       Number of concurrent workers to generate thumbnails, by default number of CPUs
+          --workers-thumb int       Number of concurrent workers to generate thumbnails, by default number of CPUs (default N)
 
 ### Docker
 
