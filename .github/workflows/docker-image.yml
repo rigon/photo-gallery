@@ -41,6 +41,12 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Add ref_name to version
+      # Run only when it is not a release build
+      if: ${{ github.ref_type != 'tag' }}
+      run: |
+        echo "Adding to version the ref_name ${{ github.ref_name }}"
+        sed -i 's/"version": "\(.*\)"/"version": "\1-${{ github.ref_name }}"/' package.json
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
       with:
@@ -57,7 +63,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     # Run only when it is a release build
-    if: github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v')
+    if: github.ref_type == 'tag' && github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v')
 
     steps:
     - name: Checkout

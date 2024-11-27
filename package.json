@@ -1,7 +1,7 @@
 {
   "name": "photo-gallery",
   "private": true,
-  "version": "1.5.2",
+  "version": "1.6.0",
   "type": "module",
   "description": "Photo Gallery is a self-hosted performant application to organize your photos. Built for speed with React and Go.",
   "scripts": {
