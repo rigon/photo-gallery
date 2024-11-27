@@ -237,7 +237,15 @@ func (file File) CreateThumbnail(thumbpath string, w io.Writer) (err error) {
 	}
 
 	// Error decoding image from source
+	if img == nil {
+		return errors.New("invalid image")
+	}
 	if err != nil {
+		return
+	}
+
+	// Ensure the directories exist
+	if err = os.MkdirAll(filepath.Dir(thumbpath), os.ModePerm); err != nil {
 		return
 	}
 

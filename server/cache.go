@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -11,7 +13,7 @@ import (
 )
 
 var dbInfo = DbInfo{
-	Version: 9,
+	Version: 10,
 }
 
 type DbInfo struct {
@@ -29,10 +31,22 @@ type Cache struct {
 	wgFlush   sync.WaitGroup
 }
 
+// Flag album as loaded
+type AlbumSaved struct{}
+
+// Flag album with photos missing thumbnails
+type AlbumThumbs struct {
+	Name string
+}
+
 // Init cache: boltdb and gcache
-func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
-	// Disk cache
-	var err error
+func (c *Cache) Init(collection *Collection, rebuildCache bool) (err error) {
+	// Ensure the thumbnail folder exist
+	thumbsDir := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs")
+	err = os.MkdirAll(thumbsDir, os.ModePerm)
+	if err != nil {
+		return
+	}
 
 	// Find filename for cache
 	// if collection.DbPath is a filename it will be located in thumbnails directory
@@ -48,7 +62,7 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 
 	c.store, err = bolthold.Open(filename, 0600, &bolthold.Options{Options: &bolt.Options{Timeout: 1}})
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	// Check DB version
 	var current DbInfo
@@ -57,21 +71,22 @@ func (c *Cache) Init(collection *Collection, rebuildCache bool) error {
 		log.Printf("Current DB version v%d is different than required v%d\n", current.Version, dbInfo.Version)
 		if rebuildCache || err == bolthold.ErrNotFound {
 			log.Printf("Recreating cache DB for collection %s at %s", collection.Name, filename)
-			err := c.store.Bolt().Update(func(tx *bolt.Tx) error {
+			err = c.store.Bolt().Update(func(tx *bolt.Tx) error {
 				tx.DeleteBucket([]byte("DbInfo"))
 				tx.DeleteBucket([]byte("Photo"))
 				tx.DeleteBucket([]byte("AlbumSaved"))
+				tx.DeleteBucket([]byte("ThumbQueue"))
 				tx.DeleteBucket([]byte("_index:Photo:Date"))
-				tx.DeleteBucket([]byte("_index:Photo:HasThumb"))
 				tx.DeleteBucket([]byte("_index:Photo:Location"))
 				tx.DeleteBucket([]byte("_index:Photo:Size"))
 				return c.store.TxInsert(tx, "DbInfo", dbInfo)
 			})
 			if err != nil {
-				log.Fatal(err)
+				return
 			}
 		} else {
-			log.Fatal("Run command with option -r enabled to recreate cache DB")
+			log.Println("Run command with option -r enabled to recreate cache DB")
+			return errors.New("can't use current cache DB")
 		}
 	}
 
@@ -142,13 +157,10 @@ func (c *Cache) SaveAlbum(album *Album) error {
 }
 
 func (c *Cache) SetAlbumFullyScanned(album *Album) error {
-	// Flag this album as loaded
-	type AlbumSaved struct{}
 	return c.store.Upsert(album.Name, AlbumSaved{})
 }
 
 func (c *Cache) IsAlbumFullyScanned(album *Album) bool {
-	type AlbumSaved struct{}
 	var a AlbumSaved
 	return c.store.Get(album.Name, &a) == nil
 }
@@ -182,6 +194,15 @@ func (c *Cache) addInfoBatcher() {
 					if err != nil {
 						log.Println(err)
 					}
+
+					// Add album from the thumbnail queue
+					if !photo.HasThumb {
+						err = c.store.TxUpsert(tx, photo.Album, AlbumThumbs{photo.Album})
+						if err != nil {
+							log.Println(err)
+						}
+					}
+
 					c.wgFlush.Done()
 				}
 				return nil

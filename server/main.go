@@ -232,7 +232,10 @@ func main() {
 
 	InitWorkers(config)
 	for _, collection := range config.collections {
-		collection.cache.Init(collection, config.recreateCacheDB)
+		err := collection.cache.Init(collection, config.recreateCacheDB)
+		if err != nil {
+			log.Fatal(err)
+		}
 		defer collection.cache.End()
 	}
 
@@ -246,7 +249,9 @@ func main() {
 			}
 			// Clean thumbnails of deleted photos
 			if config.fullScan {
-				CleanupThumbnails(config.collections)
+				for _, collection := range config.collections {
+					collection.CleanupThumbnails()
+				}
 			}
 			// Then create thumbnails
 			if config.cacheThumbnails {
@@ -254,7 +259,6 @@ func main() {
 					collection.CreateThumbnails()
 				}
 			}
-
 			log.Println("Background scan complete!")
 		}()
 	}
@@ -286,8 +290,11 @@ func main() {
 	}))
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			defer ResumeBackgroundWork()
-			SuspendBackgroundWork()
+			// Suspend background work only when requests to the API are received
+			if matched, _ := path.Match("/api/*", c.Path()); matched {
+				defer ResumeBackgroundWork()
+				SuspendBackgroundWork()
+			}
 			return next(c)
 		}
 	})
@@ -308,6 +315,11 @@ func main() {
 			return next(c)
 		}
 	})
+
+	// Enable View Status interface
+	if config.debug {
+		ViewStatusInit(e.Group("/status"))
+	}
 
 	// API
 	api := e.Group("/api")

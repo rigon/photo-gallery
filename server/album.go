@@ -131,7 +131,7 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, 
 			if updatedPhotos[photoId] <= 0 { // Files for this photo were processed
 				photo := album.photosMap[photoId]
 				// Fill photo info
-				photo.FillInfo()
+				photo.FillInfo(collection)
 				// Update cache
 				collection.cache.AddPhotoInfo(photo)
 			}

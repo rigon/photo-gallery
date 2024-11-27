@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -114,6 +113,7 @@ func DecodeImage(filepath string, orientation Orientation) (image.Image, error) 
 	// From: https://github.com/disintegration/imaging/blob/d40f48ce0f098c53ab1fcd6e0e402da682262da5/io.go#L424
 	switch orientation {
 	case orientationNormal:
+		// Nothing to do
 	case orientationFlipH:
 		img = imaging.FlipH(img)
 	case orientationFlipV:
@@ -167,10 +167,6 @@ func ExtractImageInfoOpened(fin *os.File) (format string, config image.Config, e
 }
 
 func CreateThumbnailFromImage(img image.Image, thumbpath string, w io.Writer) error {
-	if img == nil {
-		return errors.New("invalid image")
-	}
-
 	// Open output file thumbnail
 	fout, err := os.OpenFile(thumbpath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {

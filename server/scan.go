@@ -6,13 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/timshannon/bolthold"
-	"golang.org/x/exp/slices"
 )
 
-func (collection *Collection) Scan(fullScan bool) error {
+func (collection *Collection) Scan(fullScan bool) {
+	log.Printf("Scanning collection %s...\n", collection.Name)
+
 	albums, err := collection.GetAlbums()
 	if err != nil {
-		return err
+		log.Println(err)
+		return
 	}
 
 	defer collection.cache.FinishFlush()
@@ -24,7 +26,7 @@ func (collection *Collection) Scan(fullScan bool) error {
 				collection.GetAlbumWithPhotos(album.Name, true, true)
 			}
 		}
-		return nil
+		return
 	}
 
 	// Full scan
@@ -37,11 +39,7 @@ func (collection *Collection) Scan(fullScan bool) error {
 
 		// Validate if photos have thumbnails
 		for _, photo := range album.photosMap {
-			thumbPath := photo.ThumbnailPath(collection)
-
-			// If the file doesn't exist
-			_, err := os.Stat(thumbPath)
-			hasThumb := !os.IsNotExist(err)
+			hasThumb, _ := photo.ThumbnailPresent(collection)
 
 			// Update flag if it is different than stored
 			if photo.HasThumb != hasThumb {
@@ -52,7 +50,7 @@ func (collection *Collection) Scan(fullScan bool) error {
 
 		// Validate if all entries in the cacheDB are still valid
 		var photos []*Photo
-		err = collection.cache.store.Find(&photos, bolthold.Where("Album").Eq(album.Name).And("Id").MatchFunc(
+		err = collection.cache.store.Find(&photos, bolthold.Where("Album").Eq(album.Name).Index("Album").And("Id").MatchFunc(
 			func(id string) (bool, error) {
 				p, e := album.GetPhoto(id)
 				if e == nil && p != nil {
@@ -73,92 +71,96 @@ func (collection *Collection) Scan(fullScan bool) error {
 		}))
 	if err == nil {
 		collection.cache.DeletePhotoInfo(photos...)
+	} else {
+		log.Println(err)
 	}
-
-	return err
 }
 
-func (collection *Collection) CreateThumbnails() error {
-	result, err := collection.cache.store.FindAggregate(Photo{},
-		bolthold.Where("HasThumb").Not().Eq(true).Index("HasThumb").SortBy("Title"), "Album")
+func (collection *Collection) CreateThumbnails() {
+	log.Printf("Creating thumbnails for %s...\n", collection.Name)
+
+	// List albums with photos missing thumbnails
+	var albums []*AlbumThumbs
+	q := bolthold.Query{}
+	err := collection.cache.store.Find(&albums, q.SortBy("Name"))
 	if err != nil {
-		return err
+		log.Println(err)
+		return
 	}
 
-	for _, albumResult := range result {
-		var photos []*Photo
-		var albumName string
-
+	// For each album
+	for _, albumThumb := range albums {
 		// Get album
-		albumResult.Group(&albumName)
-		album, err := collection.GetAlbum(albumName)
+		album, err := collection.GetAlbum(albumThumb.Name)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
 		// Get photos to be processed
-		albumResult.Reduction(&photos)
+		var photos []*Photo
+		err = collection.cache.store.Find(&photos,
+			bolthold.Where("Album").Eq(album.Name).Index("Album").And("HasThumb").Eq(false).SortBy("Title"))
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 
 		// Add work to generate thumbnails in background
-		AddThumbsBackground(collection, album, photos...)
+		wg := AddThumbsBackground(collection, album, photos...)
+
+		// Wait to complete creating thumbnails without blocking the process
+		go func(collection *Collection, albumThumb *AlbumThumbs) {
+			wg.Wait()
+			// Update flag to indicate that the thumbnail was generated
+			collection.cache.FlushInfo()
+			// Thumbnails created, remove album from the queue
+			err = collection.cache.store.Delete(albumThumb.Name, albumThumb)
+			if err != nil {
+				log.Println(err)
+			}
+		}(collection, albumThumb)
 	}
-	return nil
 }
 
-func CleanupThumbnails(collections map[string]*Collection) error {
-	var thumbPaths []string
+func (collection *Collection) CleanupThumbnails() {
+	log.Printf("Cleaning up thumbnails for %s...\n", collection.Name)
 
-	// Get thumbs paths for all collections
-	for _, collection := range collections {
-		// Thumbnails filenames are exactly 64 chars long followed by .jpg
-		thumbPath, err := filepath.Abs(filepath.Join(collection.ThumbsPath,
-			"????????????????????????????????????????????????????????????????.jpg"))
-		if err != nil {
-			return err
-		}
-		if !slices.Contains(thumbPaths, thumbPath) {
-			thumbPaths = append(thumbPaths, thumbPath)
-		}
+	// Step 1: Create a map of files to keep
+	keep := map[string]struct{}{}
+
+	// Get path for the thumbnail for each photo
+	err := collection.cache.store.ForEach(bolthold.Where("HasThumb").Eq(true), func(photo *Photo) error {
+		path := photo.ThumbnailPath(collection)
+		keep[path] = struct{}{}
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
-	// Gather all files from thumbs folders
-	var files []string
-	for _, thumbPath := range thumbPaths {
-		folder, err := filepath.Glob(thumbPath)
-		if err != nil {
-			return err
-		}
-		files = append(files, folder...)
+	// Step 2: Traverse the thumbnails directory
+
+	// As defined in photo.ThumbnailPath, is exactly 12/12/123456.jpg)
+	path := filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", "??", "??", "??????.jpg")
+	// Gather all files from thumb folder
+	folder, err := filepath.Glob(path)
+	if err != nil {
+		log.Println(err)
+		return
 	}
 
-	// Filter out files for thumbnails that are used
-	for _, collection := range collections {
-		var photos []*Photo
-		err := collection.cache.store.Find(&photos,
-			bolthold.Where("HasThumb").Eq(true).Index("HasThumb").SortBy("Title"))
-		if err != nil {
-			return err
-		}
-
-		for _, photo := range photos {
-			thumbPath, err := filepath.Abs(photo.ThumbnailPath(collection))
+	// Files in ThumbsPath that match the pattern
+	for _, file := range folder {
+		// but does not have the corresponding photo
+		if _, ok := keep[file]; !ok {
+			// Delete the file
+			log.Println("Deleting thumbnail", file)
+			err := os.Remove(file)
 			if err != nil {
-				return err
-			}
-
-			index := slices.Index(files, thumbPath)
-			if index >= 0 {
-				files = slices.Delete(files, index, index+1)
+				log.Println(err)
 			}
 		}
 	}
-
-	// Delete remaining files
-	for _, file := range files {
-		log.Println("Deleting thumbnail", file)
-		os.Remove(file)
-	}
-
-	return nil
 }

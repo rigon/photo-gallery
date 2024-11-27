@@ -1,16 +1,13 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -21,15 +18,15 @@ type Photo struct {
 	Title      string        `json:"title"`
 	Type       string        `json:"type"`
 	Collection string        `json:"collection"`
-	Album      string        `json:"album"`
+	Album      string        `json:"album" boltholdIndex:"Album"`
 	SubAlbum   string        `json:"subalbum"`
 	Favorite   []PseudoAlbum `json:"favorite"`
 	Width      int           `json:"width"`
 	Height     int           `json:"height"`
 	Date       time.Time     `json:"date" boltholdIndex:"Date"`
-	Location   GPSLocation   `json:"location" boltholdIndex:"Location"`
+	Location   GPSLocation   `json:"location"`
 	Files      []*File       `json:"files"`
-	HasThumb   bool          `json:"-" boltholdIndex:"HasThumb"`       // Indicates if the thumbnail was generated
+	HasThumb   bool          `json:"-"`                                // Indicates if the thumbnail was generated
 	FileSizes  []int64       `json:"-" boltholdSliceIndex:"FileSizes"` // Photo total size, used to find duplicates
 }
 
@@ -59,12 +56,43 @@ func (photo *Photo) RemoveFavorite(srcCollection *Collection, srcAlbum *Album) b
 	return false
 }
 
+func convertBase36(value uint32, n int) string {
+	var s = make([]byte, n)
+	for i := 0; i < n; i++ { // base 36
+		r := byte(value % 36)
+		if r < 10 {
+			s[i] = '0' + r
+		} else {
+			s[i] = 'a' + r - 10
+		}
+		value = value / 36
+	}
+	return string(s)
+}
+
 // Returns the path location for the thumbnail
 func (photo *Photo) ThumbnailPath(collection *Collection) string {
-	name := strings.Join([]string{photo.Collection, photo.Album, photo.Id}, ":")
-	hash := sha256.Sum256([]byte(name))
-	encoded := hex.EncodeToString(hash[:])
-	return filepath.Join(collection.ThumbsPath, encoded+".jpg")
+	hasher := fnv.New32a()
+	hasher.Write([]byte(photo.Id))
+	hash1 := hasher.Sum32()
+	hasher.Reset()
+	hasher.Write([]byte(photo.Album))
+	hash2 := hasher.Sum32()
+	hasher.Write([]byte{byte(hash1 % 6)}) // Spread thumbs across 6 different folders
+	hash3 := hasher.Sum32()
+	dir1 := convertBase36(hash2, 2) // Max of 36^2=1296 folders
+	dir2 := convertBase36(hash3, 2) // Max of 36^2=1296 sub-folders
+	name := convertBase36(hash1, 6) // 36^6 is a little more than half of uint32, 7th char only is 0 or 1
+	return filepath.Join(collection.ThumbsPath, collection.Name+"-thumbs", dir1, dir2, name+".jpg")
+}
+
+// Check if the photo has thumbnail generated
+func (photo *Photo) ThumbnailPresent(collection *Collection) (has bool, path string) {
+	path = photo.ThumbnailPath(collection)
+	// If the file doesn't exist
+	_, err := os.Stat(path)
+	has = !os.IsNotExist(err)
+	return has, path
 }
 
 // Gets a file from the photo
@@ -109,36 +137,35 @@ func (photo *Photo) GetThumbnail(collection *Collection, album *Album, w io.Writ
 		}
 	}()
 
-	thumbPath := photo.ThumbnailPath(collection)
-
-	// If the file doesn't exist
-	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		// Create thumbnail
-		selected := photo.MainFile()
-		if selected == nil {
-			return errors.New("no source file to generate thumbnail from")
-		}
-		err := selected.CreateThumbnail(thumbPath, w)
-		if err != nil {
-			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
-			log.Println(err)
-			return err
-		}
-	} else {
+	hasThumb, thumbPath := photo.ThumbnailPresent(collection)
+	if hasThumb {
 		// Cached thumbnail
-		data, err := ioutil.ReadFile(thumbPath)
+		data, err := os.ReadFile(thumbPath)
 		if err != nil {
 			return err
 		}
 		if w != nil {
 			w.Write(data)
 		}
+	} else {
+		// Select file to create the thumbnail from
+		selected := photo.MainFile()
+		if selected == nil {
+			return errors.New("no source file to generate thumbnail from")
+		}
+		// Create thumbnail
+		err := selected.CreateThumbnail(thumbPath, w)
+		if err != nil {
+			err := fmt.Errorf("failed to creating thumbnail for [%s] %s: %v", album.Name, photo.Title, err)
+			log.Println(err)
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (photo *Photo) FillInfo() error {
+func (photo *Photo) FillInfo(collection *Collection) error {
 	var countImages = 0
 	var countVideos = 0
 	for _, file := range photo.Files {
@@ -171,6 +198,9 @@ func (photo *Photo) FillInfo() error {
 			}
 		}
 	}
+
+	// Check if already has thumbnail
+	photo.HasThumb, _ = photo.ThumbnailPresent(collection)
 
 	// Main file of the photo
 	selected := photo.MainFile()
