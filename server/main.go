@@ -245,24 +245,20 @@ func main() {
 			log.Println("Start scanning for photos in background...")
 			// First cache all albums
 			for _, collection := range config.collections {
-				log.Printf("Scanning collection %s...\n", collection.Name)
 				collection.Scan(config.fullScan)
 			}
 			// Clean thumbnails of deleted photos
 			if config.fullScan {
 				for _, collection := range config.collections {
-					log.Printf("Cleaning up thumbnails for %s...\n", collection.Name)
 					collection.CleanupThumbnails()
 				}
 			}
 			// Then create thumbnails
 			if config.cacheThumbnails {
 				for _, collection := range config.collections {
-					log.Printf("Creating thumbnails for %s...\n", collection.Name)
 					collection.CreateThumbnails()
 				}
 			}
-
 			log.Println("Background scan complete!")
 		}()
 	}
@@ -294,8 +290,11 @@ func main() {
 	}))
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			defer ResumeBackgroundWork()
-			SuspendBackgroundWork()
+			// Suspend background work only when requests to the API are received
+			if matched, _ := path.Match("/api/*", c.Path()); matched {
+				defer ResumeBackgroundWork()
+				SuspendBackgroundWork()
+			}
 			return next(c)
 		}
 	})

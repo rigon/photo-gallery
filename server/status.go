@@ -19,6 +19,11 @@ func ViewStatusInit(status *echo.Group) {
 	})
 
 	status.GET("/", mainStatusView)
+	// Actions
+	status.GET("/run-quick/", runActionQuickScan)
+	status.GET("/run-full/", runActionFullScan)
+	status.GET("/run-clean-thumbs/", runActionCleanupThumbnails)
+	status.GET("/run-create-thumbs/", runActionCreateThumbnails)
 	// DB
 	status.GET("/db/:collection/", dbViewBuckets)
 	status.GET("/db/:collection/:bucket/", dbViewBucket)
@@ -29,6 +34,13 @@ func ViewStatusInit(status *echo.Group) {
 }
 func mainStatusView(c echo.Context) error {
 	var html string = "<h1>Photo Gallery status</h1>"
+
+	// Actions
+	html += "<h2>Actions</h2>"
+	html += "<ul><li><a href=\"run-quick/\">Quick Scan</a></li>"
+	html += "<li><a href=\"run-full/\">Full Scan</a></li>"
+	html += "<li><a href=\"run-clean-thumbs/\">Cleanup Thumbnails</a></li>"
+	html += "<li><a href=\"run-create-thumbs/\">Create Thumbnails</a></li></ul>"
 
 	// Workers
 	html += "<h2>Workers active</h2>"
@@ -47,6 +59,31 @@ func mainStatusView(c echo.Context) error {
 	}
 	html += "</table>"
 	return c.HTML(http.StatusOK, html)
+}
+
+func runActionQuickScan(c echo.Context) error {
+	for _, collection := range config.collections {
+		collection.Scan(false)
+	}
+	return c.HTML(http.StatusOK, "OK<br><a href=\"..\">&larr; Back</a>")
+}
+func runActionFullScan(c echo.Context) error {
+	for _, collection := range config.collections {
+		collection.Scan(true)
+	}
+	return c.HTML(http.StatusOK, "OK<br><a href=\"..\">&larr; Back</a>")
+}
+func runActionCleanupThumbnails(c echo.Context) error {
+	for _, collection := range config.collections {
+		collection.CleanupThumbnails()
+	}
+	return c.HTML(http.StatusOK, "OK<br><a href=\"..\">&larr; Back</a>")
+}
+func runActionCreateThumbnails(c echo.Context) error {
+	for _, collection := range config.collections {
+		collection.CreateThumbnails()
+	}
+	return c.HTML(http.StatusOK, "OK<br><a href=\"..\">&larr; Back</a>")
 }
 
 func dbViewBuckets(c echo.Context) error {

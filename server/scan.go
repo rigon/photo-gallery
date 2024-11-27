@@ -9,6 +9,8 @@ import (
 )
 
 func (collection *Collection) Scan(fullScan bool) {
+	log.Printf("Scanning collection %s...\n", collection.Name)
+
 	albums, err := collection.GetAlbums()
 	if err != nil {
 		log.Println(err)
@@ -75,6 +77,8 @@ func (collection *Collection) Scan(fullScan bool) {
 }
 
 func (collection *Collection) CreateThumbnails() {
+	log.Printf("Creating thumbnails for %s...\n", collection.Name)
+
 	// List albums with photos missing thumbnails
 	var albums []*AlbumThumbs
 	q := bolthold.Query{}
@@ -120,6 +124,8 @@ func (collection *Collection) CreateThumbnails() {
 }
 
 func (collection *Collection) CleanupThumbnails() {
+	log.Printf("Cleaning up thumbnails for %s...\n", collection.Name)
+
 	// Step 1: Create a map of files to keep
 	keep := map[string]struct{}{}
 
