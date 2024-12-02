@@ -1,12 +1,14 @@
 import React, {FC, useContext, useState, forwardRef } from "react";
-import { useTheme, styled } from '@mui/material/styles';
+import { useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { useTheme, styled } from '@mui/material/styles';
 
 import useMediaQuery from '@mui/material/useMediaQuery';
 import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import Box from "@mui/material/Box";
+import DifferenceIcon from '@mui/icons-material/Difference';
 import Divider from "@mui/material/Divider";
 import FavoriteMenu from './FavoriteMenu';
 import IconButton from "@mui/material/IconButton";
@@ -20,6 +22,7 @@ import Tooltip from "@mui/material/Tooltip";
 import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
 import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
 
+import { Upload } from "./Upload";
 import { useDialog } from './dialogs';
 import { increaseZoom, decreaseZoom } from "./services/app";
 
@@ -123,8 +126,12 @@ export const ToolbarProvider: FC<ToolbarMenuProps> = ({ children }) => {
 }
 
 const ToolbarMenu : FC = () => {
+    const { collection, album} = useParams();
     const dispatch = useDispatch();
     const dialog = useDialog();
+
+    // Do not add buttons that require an album to be opened
+    const inAlbum = (collection && album);
 
     const zoomIn = () => {
         dispatch(increaseZoom());
@@ -135,6 +142,18 @@ const ToolbarMenu : FC = () => {
 
     return (
         <ToolbarProvider>
+            {inAlbum && [
+                (<Upload key="upload"/>),
+                (<ToolbarItem
+                    key="duplicates"
+                    onClick={() => dialog.duplicates(collection, album)}
+                    icon={<DifferenceIcon />}
+                    title="Duplicates"
+                    tooltip="Find duplicated photos in this album"
+                    aria-label="duplicates" />),
+                (<Divider key="div"/>),
+            ]}
+            
             <ToolbarItem
                 onClick={() => dialog.newAlbum()}
                 icon={<AddAlbumIcon />}
@@ -156,7 +175,6 @@ const ToolbarMenu : FC = () => {
                 aria-label="zoom out"
                 onClick={zoomOut}
                 icon={<ZoomOutIcon />} />
-                
         </ToolbarProvider>
     );
 }

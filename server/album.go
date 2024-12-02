@@ -3,11 +3,18 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
+
+	"golang.org/x/exp/maps"
+
+	"github.com/hlubek/readercomp"
+	"github.com/timshannon/bolthold"
 )
 
 type Album struct {
@@ -188,4 +195,209 @@ func (album Album) MarshalJSON() ([]byte, error) {
 
 	// Marshal the preprocessed struct to JSON
 	return json.Marshal(alias)
+}
+
+type DuplicateFile struct {
+	From int `json:"from"`
+	To   int `json:"to"`
+}
+
+type DuplicateFound struct {
+	Photo      *Photo          `json:"photo"`
+	Files      []DuplicateFile `json:"files"`
+	Equal      bool            `json:"equal"`      // All files were matched
+	Partial    bool            `json:"partial"`    // Only some files were matched
+	Incomplete bool            `json:"incomplete"` // Found photos with more files
+	Conflict   bool            `json:"conflict"`   // Combination of Partial and Incomplete
+	SameAlbum  bool            `json:"samealbum"`  // Photos are in the same album
+}
+type Duplicate struct {
+	Photo *Photo           `json:"photo"`
+	Found []DuplicateFound `json:"found"`
+}
+
+const FILE_NOT_FOUND = -1
+
+func (album *Album) Duplicates() (map[string]interface{}, error) {
+	var dups = make(map[string][]DuplicateFound)
+
+	// Collect all file sizes from the album we want to analyze
+	var sizes []interface{}
+	for _, photo := range album.photosMap {
+		for _, size := range photo.FileSizes {
+			sizes = append(sizes, size)
+		}
+	}
+
+	// Iterate through collections (seaching and comparing))
+	for _, collection := range config.collections {
+		fmt.Println("#################", collection.Name)
+		i := 0
+		total := time.Now()
+
+		var dbPhotosList []*Photo
+		start := time.Now()
+		// Search for all files in the collection that have the same size
+		err := collection.cache.store.Find(&dbPhotosList, bolthold.Where("FileSizes").In(sizes...).Index("FileSizes"))
+		fmt.Println("SEARCHING:", time.Since(start).String())
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		// Maps sizes to the corresponding photo
+		dbPhotosMap := make(map[int64][]*Photo)
+		for _, dbPhoto := range dbPhotosList {
+			for _, size := range dbPhoto.FileSizes {
+				dbPhotosMap[size] = append(dbPhotosMap[size], dbPhoto)
+			}
+		}
+
+		// For every photo in the album
+		for _, photo := range album.photosMap {
+			// Select only matching photos from the search results
+			dbPhotos := make(map[string]*Photo)
+			for _, file := range photo.Files {
+				for _, dbPhoto := range dbPhotosMap[file.Size] {
+					// Same photo, skip
+					if dbPhoto.Collection == photo.Collection && dbPhoto.Album == photo.Album && dbPhoto.Id == photo.Id {
+						continue
+					}
+					dbPhotos[dbPhoto.Key()] = dbPhoto
+				}
+			}
+
+			var visited = make(map[string]bool) // Photos visited from search results
+			var compareTime = time.Now()
+			for _, dbPhoto := range dbPhotos {
+				// Avoid comparing the same photos more than once
+				if _, ok := visited[dbPhoto.Key()]; ok {
+					continue
+				}
+				visited[dbPhoto.Key()] = true
+
+				var matchAny = false
+				var allFilesDb = true
+				var files []DuplicateFile
+				var matchFiles = make(map[string]bool) // Files found from the photo were are analyzing
+				for dbFileNr, dbFile := range dbPhoto.Files {
+					var fileNotFound = true
+					for fileNr, file := range photo.Files {
+						if dbFile.Size == file.Size {
+							equal, err := readercomp.FilesEqual(file.Path, dbFile.Path)
+							if err != nil {
+								continue
+							}
+							if equal {
+								matchAny = true
+								fileNotFound = false
+								matchFiles[file.Id] = true
+								files = append(files, DuplicateFile{From: fileNr, To: dbFileNr})
+							} else {
+								log.Printf("Missed file comparison:\n- Source: %s\n- Target: %s\n", file.Path, dbFile.Path)
+							}
+						}
+					}
+					if fileNotFound {
+						allFilesDb = false
+						files = append(files, DuplicateFile{From: FILE_NOT_FOUND, To: dbFileNr})
+					}
+				}
+
+				// Any file found?
+				if matchAny {
+					// Files that were not matched with from file from the search
+					var allFiles = true
+					for fileNr, file := range photo.Files {
+						if _, ok := matchFiles[file.Id]; !ok {
+							allFiles = false
+							files = append(files, DuplicateFile{From: fileNr, To: FILE_NOT_FOUND})
+						}
+					}
+
+					// Add to the list of found photos, determine status of the duplicate
+					dups[photo.Id] = append(dups[photo.Id], DuplicateFound{
+						Photo:      dbPhoto,
+						Files:      files,
+						Equal:      allFiles && allFilesDb,
+						Incomplete: allFiles && !allFilesDb,
+						Partial:    !allFiles && allFilesDb,
+						Conflict:   !allFiles && !allFilesDb,
+						SameAlbum:  dbPhoto.Collection == photo.Collection && dbPhoto.Album == photo.Album,
+					})
+				}
+			}
+
+			i++
+			fmt.Printf("COMPARING (%d/%d) %7s %s\n", i, len(album.photosMap), time.Since(compareTime).Round(time.Millisecond).String(), photo.Id)
+		}
+		fmt.Println("TOTAL:", time.Since(total).String())
+	}
+
+	var listUnique []*Photo
+	var listKeep []Duplicate
+	var listDelete []Duplicate
+	var listConflict []Duplicate
+	var listSameAlbum []Duplicate
+	var listAlbums = make(map[string]PseudoAlbum)
+	for key, photo := range album.photosMap {
+		if found, ok := dups[key]; ok {
+
+			var unique, keep, delete, conflict, sameAlbum = true, false, false, false, false
+			for _, entry := range found {
+				// Keep track of albums where photos were found
+				keyAlbum := entry.Photo.Collection + ":" + entry.Photo.Album
+				if _, ok := listAlbums[keyAlbum]; !ok {
+					listAlbums[keyAlbum] = PseudoAlbum{entry.Photo.Collection, entry.Photo.Album}
+				}
+
+				// Dertermine best action to apply
+				switch {
+				// Delete
+				case !entry.SameAlbum && (entry.Equal || entry.Incomplete):
+					unique, keep, delete, conflict, sameAlbum = false, false, true, false, false
+				// Same album
+				case !delete && entry.SameAlbum:
+					unique, keep, delete, conflict, sameAlbum = false, false, false, false, true
+				// Keep
+				case !delete && !sameAlbum && entry.Partial:
+					unique, keep, delete, conflict, sameAlbum = false, true, false, false, false
+				// Conflict
+				case !delete && !sameAlbum && !keep && entry.Conflict:
+					unique, keep, delete, conflict, sameAlbum = false, false, false, true, false
+				}
+
+			}
+
+			switch {
+			case unique:
+				listUnique = append(listUnique, photo)
+			case keep:
+				listKeep = append(listKeep, Duplicate{Photo: photo, Found: found})
+			case delete:
+				listDelete = append(listDelete, Duplicate{Photo: photo, Found: found})
+			case conflict:
+				listConflict = append(listConflict, Duplicate{Photo: photo, Found: found})
+			case sameAlbum:
+				listSameAlbum = append(listSameAlbum, Duplicate{Photo: photo, Found: found})
+			}
+		} else {
+			listUnique = append(listUnique, photo)
+		}
+	}
+
+	return map[string]interface{}{
+		"albums":         maps.Values(listAlbums),
+		"keep":           listKeep,
+		"delete":         listDelete,
+		"unique":         listUnique,
+		"conflict":       listConflict,
+		"samealbum":      listSameAlbum,
+		"countKeep":      len(listKeep),
+		"countDelete":    len(listDelete),
+		"countUnique":    len(listUnique),
+		"countConflict":  len(listConflict),
+		"countSameAlbum": len(listSameAlbum),
+		"total":          len(album.photosMap),
+	}, nil
 }

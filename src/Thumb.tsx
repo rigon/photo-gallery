@@ -17,6 +17,7 @@ import { IconLivePhoto } from '@tabler/icons-react';
 import { RenderPhotoProps } from "react-photo-album";
 
 import BoxBar from "./BoxBar";
+import { Selectable } from "./Selection";
 import { PhotoImageType } from "./types";
 import useFavorite from "./favoriteHook";
 import { useDialog } from "./dialogs";
@@ -27,6 +28,14 @@ const boxStyle: SxProps<Theme> = {
     backgroundColor: "action.hover",
     cursor: "pointer",
 };
+
+const selectedStyle: SxProps<Theme> = {
+    outline: "5px solid dodgerblue",
+    outlineOffset: "-5px",
+    // border: "5px solid dodgerblue",
+    // boxSizing: "border-box",
+};
+
 const iconsStyle: CSSProperties = {
     WebkitFilter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
     filter: "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))",
@@ -45,6 +54,7 @@ export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layou
     const { collection } = useParams();
     const dialog = useDialog();
     const [mouseOver, setMouseOver] = useState<boolean>(false);
+    const [selected, setSelected] = useState<boolean>(false);
 
     const favorite = useFavorite();
     const selectedFavorite = favorite.get();
@@ -126,14 +136,17 @@ export default (photos: PhotoImageType[], showIcons: boolean) => ({ photo, layou
     </>);
 
     return (
-        <Box
-            sx={{ ...wrapperStyle, ...boxStyle }}
-            onMouseEnter={mouseEnter}
-            onMouseLeave={mouseLeave}
-            onClick={openLightbox}
-            onDoubleClick={saveFavorite}>
-            {renderDefaultPhoto({ wrapped: true })}
-            {showIcons && icons}
-        </Box>
+        <Selectable item={photo} onChange={setSelected}>
+            <Box
+                sx={{ ...wrapperStyle, ...boxStyle, ...(selected ? selectedStyle : {}) }}
+                onMouseEnter={mouseEnter}
+                onMouseLeave={mouseLeave}
+                onClick={openLightbox}
+                //onDoubleClick={saveFavorite}
+                >
+                {renderDefaultPhoto({ wrapped: true })}
+                {showIcons && icons}
+            </Box>
+        </Selectable>
     );
 }
