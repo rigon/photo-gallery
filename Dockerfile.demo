@@ -1,4 +1,4 @@
-FROM python:alpine
+FROM python:alpine AS pixabay
 
 RUN pip install pixabay
 
