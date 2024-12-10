@@ -62,8 +62,8 @@ jobs:
     name: Demo docker image
     needs: build
     runs-on: ubuntu-latest
-    # Run only when it is a release build or updates in dev
-    if: (github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v')) || github.ref == 'refs/heads/dev'
+    # Run only when dev is updated
+    if: github.ref == 'refs/heads/dev'
 
     steps:
     - name: Checkout
