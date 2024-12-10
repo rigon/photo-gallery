@@ -1,9 +1,31 @@
-FROM rigon/photo-gallery:latest
+FROM python:alpine
 
-RUN touch /photos/Favorites.PG-ALBUM; \
-    set -- Nature Film Animals Travel People "Machu Picchu" "The Grand Canyon" "Great Barrier Reef" Maldives Paris Iceland \
-        Wallpapers/Moutains Wallpapers/Rivers Wallpapers/Lanscapes Wallpapers/Abstract Wallpapers/Gradients Wallpapers/Patterns; \
-    for term in "$@"; do \
-        mkdir -p "/photos/$term"; \
-        for i in $(seq 1 50); do wget -O "/photos/$term/$i.jpg" "https://source.unsplash.com/random?$(echo $term | sed 's/ /%20/g')"; done; \
-    done
+RUN pip install pixabay
+
+RUN --mount=type=secret,id=pixabay \
+    PIXABAY_API_KEY=$(cat /run/secrets/pixabay) && \
+    python <<EOF
+import pixabay.core, os
+
+terms=["Nature", "Architecture", "Animals", "Travel", "People", "Autumn", "The Grand Canyon", "Great Barrier Reef", "Maldives", "Paris", "Iceland",
+    "Wallpapers/Moutains", "Wallpapers/Rivers", "Wallpapers/Lanscapes", "Wallpapers/Abstract", "Wallpapers/Gradients", "Wallpapers/Patterns"]
+
+px = pixabay.core(os.environ["PIXABAY_API_KEY"])
+for term in terms:
+    os.makedirs("/photos/"+term)
+    search = px.query(
+        query         = term.replace("/", " "),
+        perPage       = 50,
+        minWidth      = 500,
+        minHeight     = 500,
+        safeSearch    = True,
+    )
+    for i in range(50):
+        filename = "/photos/%s/%d.jpg" % (term, i+1)
+        print(filename)
+        search[i].download(filename, "largeImage")
+EOF
+
+FROM rigon/photo-gallery:latest
+COPY --from=pixabay /photos /photos
+RUN touch /photos/Favorites.PG-ALBUM
