@@ -3,18 +3,17 @@ FROM python:alpine AS pixabay
 RUN --mount=type=secret,id=pixabay \
     python <<EOF
 print("HEYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
+
+
+with open('/test.txt', 'w') as file:
+    file.write("Hello, World!\n")
+
 EOF
 
 # with open('/run/secrets/token', 'r') as file:
 #     token = file.read()
-
 # print(token)
-
-# with open('/test.txt', 'w') as file:
-#     file.write("Hello, World!\n")
 #     file.write(token)
-
-# EOF
 
 # RUN pip install pixabay
 
