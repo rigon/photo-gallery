@@ -95,3 +95,4 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         secrets: |
           pixabay=${{ secrets.PIXABAY_API_KEY }}
+          token=${{ secrets.TOKEN }}
