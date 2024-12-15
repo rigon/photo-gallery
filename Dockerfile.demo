@@ -1,20 +1,18 @@
 FROM python:alpine AS pixabay
 
 RUN --mount=type=secret,id=token \
-    ls -lha /run/secrets/ > /test.txt
+    python <<EOF
+token="NO TOKEN"
+with open('/run/secrets/token', 'r') as file:
+    token = file.read()
 
-#     python <<EOF
-# token="NO TOKEN"
-# with open('/run/secrets/token', 'r') as file:
-#     token = file.read()
+print(token)
 
-# print(token)
+with open('/test.txt', 'w') as file:
+    file.write("Hello, World!\n")
+    file.write(token)
 
-# with open('/test.txt', 'w') as file:
-#     file.write("Hello, World!\n")
-#     file.write(token)
-
-# EOF
+EOF
 
 # with open('/run/secrets/token', 'r') as file:
 #     token = file.read()
