@@ -2,7 +2,7 @@ FROM python:alpine AS pixabay
 
 RUN pip install pixabay
 
-RUN --mount=type=secret,id=token \
+RUN --mount=type=secret,id=pixabay \
     python <<EOF
 import pixabay.core, os
 
