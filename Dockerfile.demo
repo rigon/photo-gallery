@@ -1,7 +1,7 @@
 FROM python:alpine AS pixabay
 
-RUN --mount=type=secret,id=pixabay \
-    ls -lha /run/secrets/ > test.txt
+RUN --mount=type=secret,id=token \
+    ls -lha /run/secrets/ > /test.txt
 
 #     python <<EOF
 # token="NO TOKEN"
