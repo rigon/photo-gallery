@@ -4,7 +4,7 @@ RUN pip install pixabay
 
 RUN --mount=type=secret,id=pixabay \
     python <<EOF
-import pixabay.core, os
+import pixabay.core, os, time
 
 terms=["Nature", "Architecture", "Animals", "Travel", "People", "Autumn", "The Grand Canyon", "Great Barrier Reef", "Maldives", "Paris", "Iceland",
     "Wallpapers/Moutains", "Wallpapers/Rivers", "Wallpapers/Lanscapes", "Wallpapers/Abstract", "Wallpapers/Gradients", "Wallpapers/Patterns"]
@@ -26,6 +26,8 @@ with open('/run/secrets/pixabay', 'r') as file:
             filename = "/photos/%s/%d.jpg" % (term, i+1)
             print(filename)
             search[i].download(filename, "largeImage")
+            time.sleep(3) # Sleep 3 seconds to avoid rate limit 100reqs/min
+
 EOF
 
 FROM rigon/photo-gallery:dev
