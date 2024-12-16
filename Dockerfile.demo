@@ -1,36 +1,3 @@
-FROM python:alpine
-
-RUN pip install pixabay
-
-RUN --mount=type=secret,id=pixabay \
-    PIXABAY_API_KEY=$(cat /run/secrets/pixabay) && \
-    python <<EOF
-import pixabay.core, os, time
-
-terms=["Nature", "Architecture", "Animals", "Travel", "People", "Autumn", "The Grand Canyon", "Great Barrier Reef", "Maldives", "Paris", "Iceland",
-    "Wallpapers/Moutains", "Wallpapers/Rivers", "Wallpapers/Lanscapes", "Wallpapers/Abstract", "Wallpapers/Gradients", "Wallpapers/Patterns"]
-
-with open('/run/secrets/pixabay', 'r') as file:
-    apiKey = file.read()
-
-    px = pixabay.core(apiKey)
-    for term in terms:
-        os.makedirs("/photos/"+term)
-        search = px.query(
-            query         = term.replace("/", " "),
-            perPage       = 50,
-            minWidth      = 500,
-            minHeight     = 500,
-            safeSearch    = True,
-        )
-        for i in range(50):
-            filename = "/photos/%s/%d.jpg" % (term, i+1)
-            print(filename)
-            search[i].download(filename, "largeImage")
-            time.sleep(3) # Sleep 3 seconds to avoid rate limit 100reqs/min
-
-EOF
-
 FROM rigon/photo-gallery:latest
-COPY --from=pixabay /photos /photos
+COPY photos /photos
 RUN touch /photos/Favorites.PG-ALBUM
