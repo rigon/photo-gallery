@@ -1,10 +1,9 @@
-import { FC, useEffect, useMemo, useState } from "react";
+import { FC, useMemo} from "react";
 import { useTheme } from '@mui/material/styles';
 
 import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
 
 import { Lightbox as YARL, Render, RenderThumbnailProps } from "yet-another-react-lightbox";
-import { Slide } from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import {
     cssClass,
@@ -23,21 +22,22 @@ import "yet-another-react-lightbox/plugins/thumbnails.css";
 // import additional lightbox plugins
 // FIXME: LivePhoto must be imported first than other custom plugins,
 // otherwise the project does not build with "npm run build"
-import LivePhoto from "./yarl-plugins/live-photo";
-import Favorite from "./yarl-plugins/favorite";
-import Info from "./yarl-plugins/info";
-import "./yarl-plugins/captions.scss";
-import "./yarl-plugins/thumbnails.scss";
+import Favorite from "../yarl-plugins/favorite";
+import Info from "../yarl-plugins/info";
+import LivePhoto from "../yarl-plugins/live-photo";
+import "../yarl-plugins/captions.scss";
+import "../yarl-plugins/thumbnails.scss";
 
-import { PhotoType } from "./types";
-import { photosToSlides } from "./lightbox-data";
+import { PhotoImageType } from "../types";
+import { photosToSlides } from "../lightbox-data";
+import { useDialog } from ".";
+import useFavorite from "../favoriteHook";
 
 interface LightboxProps {
-    photos: PhotoType[];
+    open: boolean;
+    photos: PhotoImageType[];
     selected: number;
     onClose?: () => void;
-    onFavorite?: (index: number, isFavorite: boolean, slide: Slide) => void;
-    onInfo?: (index: number) => void;
 }
 
 const thumbnailImageClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_image`);
@@ -62,18 +62,24 @@ const renderThumbnail: Render["thumbnail"] = ({ slide }: RenderThumbnailProps) =
         </>);
 };
 
-const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onInfo}) => {
-    const [index, setIndex] = useState(selected)
+const Lightbox: FC<LightboxProps> = ({ open, photos, selected, onClose }) => {
     const theme = useTheme();
+    const dialog = useDialog();
     const slides = useMemo(() => photosToSlides(photos), [photos]);
+    const favorite = useFavorite();
 
-    useEffect(() => setIndex(selected), [selected]);
+    const handlePhotoInfo = (index: number) => {
+        dialog.info(photos, index);
+    }
+    const handleFavorite = (index: number) => {
+        favorite.toggle(photos, index);
+    }
 
     return (
         <YARL
+            open={open}
             slides={slides}
-            open={index >= 0}
-            index={index}
+            index={selected}
             animation={{ swipe: 0 }}
             close={onClose}
             // Fix lightbox over snackbar
@@ -82,9 +88,6 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onI
             plugins={[Captions, Fullscreen, Slideshow, Info, Favorite, LivePhoto, Video, Thumbnails, Zoom]}
             render={{
                 thumbnail: renderThumbnail
-            }}
-            on={{
-                view: ({ index: currentIndex }) => setIndex(currentIndex),
             }}
             carousel={{
                 finite: true,
@@ -108,10 +111,10 @@ const Lightbox: FC<LightboxProps> = ({photos, selected, onClose, onFavorite, onI
                 preload: "none",
             }}
             favorite={{
-                onChange: onFavorite
+                onChange: handleFavorite
             }}
             info={{
-                onClick: onInfo
+                onClick: handlePhotoInfo
             }} />
     );
 }

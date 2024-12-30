@@ -21,15 +21,16 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import Typography from "@mui/material/Typography";
 
-import { PhotoType, urls } from "./types";
-import { useGetPhotoInfoQuery } from "./services/api";
+import { PhotoType, urls } from "../types";
+import { useGetPhotoInfoQuery } from "../services/api";
 
-const Map = lazy(() => import("./Map"));
+const Map = lazy(() => import("../Map"));
 
 interface InfoPanelProps {
+    open: boolean;
     photos: PhotoType[];
     selected: number;
-    onClose?: () => void;
+    onClose: () => void;
 }
 
 const StyledList = styled("dl")({
@@ -48,13 +49,12 @@ const StyledList = styled("dl")({
     }
 });
 
-const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
+const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
     const [ index, setIndex ] = useState(selected);
     const photo = photos[index];
     const { data, isFetching } = useGetPhotoInfoQuery(photo, {skip: photo === undefined});
-    //console.log(photo, data);
 
     useEffect(() => setIndex(selected), [setIndex, selected]);
 
@@ -66,9 +66,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
     const hasNext = index < photos.length - 1;
 
     const handleClose = () => {
-        setIndex(-1);
-        if(onClose !== undefined)
-            onClose();
+        onClose();
     };
 
     const handleBefore = () => {
@@ -100,7 +98,7 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
             PaperProps={{ sx: { position: {sm: "fixed"}, top: {sm: 0} } }}
             onClose={handleClose}
             aria-labelledby="photo-info-title"
-            open={index >= 0}
+            open={open}
             onKeyDown={onKeyDown}
             fullScreen={fullScreen}
             maxWidth="md"
@@ -152,10 +150,10 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
                                 <Typography textAlign="center" variant='h6'>Metadata</Typography>
                                 <Divider />
                                 <StyledList>
-                                    {Object.entries(file.imageinfo.exif).map(([key, value]) => (<>
-                                        <dt key={key}>{key}</dt>
-                                        <dd key={key+"-val"}>{String(value)}</dd>
-                                    </>))}
+                                    {Object.entries(file.imageinfo.exif).map(([key, value]) => [
+                                        (<dt key={key}>{key}</dt>),
+                                        (<dd key={key+"-val"}>{String(value)}</dd>)
+                                    ])}
                                 </StyledList>
                             </>)}
                             <Typography textAlign="center" variant='h6'>File Stat</Typography>
@@ -180,4 +178,4 @@ const PhotoInfo: FC<InfoPanelProps> = ({ photos, selected, onClose }) => {
     );
 }
 
-export default PhotoInfo;
+export default PhotoInfoDialog;

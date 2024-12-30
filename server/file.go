@@ -21,12 +21,12 @@ type File struct {
 	Id          string      `json:"id"`
 	Type        string      `json:"type"`
 	MIME        string      `json:"mime"`
-	Width       int         `json:"width"`                  // Image Width
-	Height      int         `json:"height"`                 // Image Height
-	Date        time.Time   `json:"date"`                   // Image Date taken
-	Location    GPSLocation `json:"-"`                      // Image location
-	Orientation Orientation `json:"-"`                      // Image orientation
-	Size        int64       `json:"-" boltholdIndex:"size"` // Image file size, used to find duplicates
+	Width       int         `json:"width"`  // Image Width
+	Height      int         `json:"height"` // Image Height
+	Date        time.Time   `json:"date"`   // Image Date taken
+	Location    GPSLocation `json:"-"`      // Image location
+	Orientation Orientation `json:"-"`      // Image orientation
+	Size        int64       `json:"-"`      // Image file size
 }
 
 type FileExtendedInfo struct {

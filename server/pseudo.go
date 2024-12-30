@@ -159,6 +159,10 @@ func GetPseudoAlbums(collections map[string]*Collection) []PseudoAlbum {
 }
 
 func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSaveQuery, isAdd bool) error {
+	// Lock album to avoid concurrent edits
+	collection.LockAlbum(album.Name)
+	defer collection.UnlockAlbum(album.Name)
+
 	// Read entries from target album
 	entries, err := readPseudoAlbum(collection, album)
 	if err != nil {
@@ -252,7 +256,7 @@ func (album *Album) GetPhotosForPseudo(collection *Collection, isAdd bool, runni
 				}
 				// Update info about cached photos if there is a change
 				if result {
-					collection.cache.AddPhotoInfo(photo)
+					srcCollection.cache.AddPhotoInfo(photo)
 				}
 
 				photos = append(photos, photo)

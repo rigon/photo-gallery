@@ -23,6 +23,7 @@ export interface AlbumType {
     photos: PhotoType[];
     subalbums: string[];
     pseudo: boolean;
+    count: number;
 }
 
 export interface PhotoType {
@@ -46,10 +47,11 @@ export interface PhotoType {
 
 export interface FileType {
     type: "image" | "video";
-    id: number;
+    id: string;
     mime: string;
     width: number;
     height: number;
+    date: string;
 }
 
 export type PhotoImageType = PhotoType & Image;

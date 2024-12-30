@@ -3,6 +3,11 @@ Photo Gallery
 
 Photo Gallery is a self-hosted performant application to organize your photos. Built with speed in mind with React and Go, you can browse through your photos quick and easy.
 
+## [Live Demo](http://16.171.253.209/)
+<p style="text-align: center;">
+<img src="screenshot.jpg" alt="Photo Gallery" style="text-align: center; width: 100%; max-width: 683px"/>
+</p>
+
 ## Motivation
 
 There are a lot of photo gallery projects out there. However they often have their own unique way of storing data so you don't really have control how it is organized, not just the photos themselves, but also like albums, favorites and other preferences alongside. All of this must be kept transparent and accessible.
@@ -70,6 +75,16 @@ Main features:
 - [ ] Tool for renaming files
 - [ ] Image resizing according with screen
 
+## Quick start
+
+Using docker, run:
+
+    docker run -p 3080:3080 --name photo-gallery rigon/photo-gallery:demo
+
+That's it, enjoy! Just open in your browser [http://localhost:3080](http://localhost:3080).
+
+This image however includes a demo gallery, for your own use please use `rigon/photo-gallery`.
+
 
 ## Build and Run
 
@@ -119,7 +134,7 @@ Server help:
 
 ### Docker
 
-This project is distributed docker ([Photo Gallery Docker Hub page](https://hub.docker.com/r/rigon/photo-gallery)).
+This project is distributed via docker ([Photo Gallery Docker Hub page](https://hub.docker.com/r/rigon/photo-gallery)).
 
 The following example illustrates a case where you have two folders mounted with volumes, one with the collection of photos that is read-only and a recent folder with your still unorganized photos that is writable.
 
@@ -157,11 +172,18 @@ services:
 
 `photo-gallery_data` can be safely deleted, however cached data must be regenerated.
 
-### Port forwarding on Terminus under iOS
+### WebDAV access
 
-- https://support.termius.com/hc/en-us/articles/900006226306-I-can-t-use-the-iOS-app-in-the-background
-- https://support.termius.com/hc/en-us/articles/4402044543897#location
+WebDAV endpoint is like [http://localhost:3080/webdav](http://localhost:3080/webdav) and makes it very easy to access to the photo galleries in the file explorer (just past the URL in the address bar) or to upload photos directly from your phone.
 
+For uploading from your phone, the app [PhotoSync](https://www.photosync-app.com/) makes that task very convinent. However for WebDAV functions you have to purchase it and we do not have any partnership with them.
+When creating a new WebDAV configuration in PhotoSync, make sure you fill the field `Directory` with `/webdav`
+
+Remote access is also possible by configuring Port forwarding over SSH using tools like [Terminus](https://termius.com/).
+See [How to configure Port forwarding in Terminus](https://support.termius.com/hc/en-us/articles/4402386576793-Port-forwarding).
+For iOS is more difficult setting it up, you can find more info
+[here](https://support.termius.com/hc/en-us/articles/900006226306-I-can-t-use-the-iOS-app-in-the-background) and
+[here](https://support.termius.com/hc/en-us/articles/4402044543897#location).
 
 ## Development
 

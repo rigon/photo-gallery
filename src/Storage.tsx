@@ -35,7 +35,7 @@ const Storage: FC = () => {
                 <InfoIcon sx={{ fontSize: 15 }}/>
               </Tooltip></>}
             subheader={
-              <LinearProgress variant="determinate" value={st.percentage} />
+              <LinearProgress variant="determinate" value={st.percentage} aria-label="storage space" />
             }
           />
         </Card>

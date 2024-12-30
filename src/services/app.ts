@@ -17,7 +17,7 @@ const initialState: AppState = {
     favorite: {
         collection: '',
         album: ''
-    }
+    },
 }
 
 export const appSettingsSlice = createSlice({
