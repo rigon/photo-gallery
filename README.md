@@ -78,16 +78,16 @@ Main features:
 - [X] Show storage info
 - [X] Metadata extraction from photos (EXIF)
 - [X] Show photo location in a map
-- [ ] Organize photos:
-  - [ ] Upload new photos
-  - [ ] Move photos
-  - [ ] Delete photos
+- [X] Organize photos in bulk:
+  - [X] Upload new photos
+  - [X] Move photos
+  - [X] Delete photos
   - [X] Save favorites
-  - [ ] Easy selection
+  - [X] Easy selection
+- [X] Search for duplicates
 - [ ] Authentication
 - [ ] Photos timeline with virtual scroll
 - [ ] View all places from photos in a map
-- [ ] Search for duplicates
 - [ ] Tool for renaming files
 - [ ] Image resizing according with screen
 

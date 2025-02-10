@@ -127,6 +127,12 @@ func (c *Cache) AddToListAlbums(albums ...*Album) {
 	}
 }
 
+func (c *Cache) RemoveFromListAlbums(albums ...string) {
+	for _, album := range albums {
+		c.albums.Delete(album)
+	}
+}
+
 func (c *Cache) IsListAlbumsLoaded() bool {
 	var ret = false
 	c.albums.Range(func(key, value any) bool {
@@ -163,6 +169,10 @@ func (c *Cache) SetAlbumFullyScanned(album *Album) error {
 func (c *Cache) IsAlbumFullyScanned(album *Album) bool {
 	var a AlbumSaved
 	return c.store.Get(album.Name, &a) == nil
+}
+func (c *Cache) RemoveAlbumSaved(albumName string) bool {
+	var a AlbumSaved
+	return c.store.Delete(albumName, &a) == nil
 }
 
 func (photo *Photo) Key() string {

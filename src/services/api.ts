@@ -1,6 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { CollectionType, PseudoAlbumType, AlbumType, PhotoType } from "../types";
+import { CollectionType, PseudoAlbumType, AlbumType, PhotoType, MoveConflictMode } from "../types";
 import { changeFavorite } from "./app";
+
+export interface ResponseError {
+    message: string;
+}
 
 export interface QueryAlbums {
     collection?: string;
@@ -23,6 +27,32 @@ export interface QueryPhoto {
     photo?: string;
 }
 
+export interface QueryMovePhotos {
+    collection: CollectionType["name"];
+    album: AlbumType["name"];
+    target: {
+        mode: MoveConflictMode;
+        collection: CollectionType["name"];
+        album: AlbumType["name"];
+        photos: PhotoType["title"][];
+    }
+}
+
+export interface ResponseMovePhotos {
+    moved_photos: number;
+    moved_files: number;
+    skipped: number;
+    renamed: number;
+}
+
+export interface QueryDeletePhotos {
+    collection: CollectionType["name"];
+    album: AlbumType["name"];
+    target: {
+        photos: PhotoType["title"][];
+    }
+}
+
 export interface QuerySaveFavorite {
     collection: CollectionType["name"];
     album: AlbumType["name"];
@@ -33,6 +63,37 @@ export interface QuerySaveFavorite {
         album: AlbumType["name"];
         photos: PhotoType["id"][];
     }
+}
+
+export interface Duplicate {
+    photo: PhotoType;
+    found: {
+        photo: PhotoType;
+        files: {
+            from: number;
+            to: number;
+        }[];
+        // Flags
+        equal: boolean;         // All files were matched
+        partial: boolean;       // Only some files were matched
+        incomplete: boolean;    // Found photos with more files
+        conflict: boolean;      // Combination of Partial and Incomplete
+        samealbum: boolean;     // Photos are in the same album
+    }[];
+}
+export interface ResponseDuplicates {
+    albums: PseudoAlbumType[];
+    keep: Duplicate[];
+    delete: Duplicate[];
+    unique: PhotoType[];
+    conflict: Duplicate[];
+    samealbum: Duplicate[];
+    countKeep: number;
+    countDelete: number;
+    countUnique: number;
+    countConflict: number;
+    countSameAlbum: number;
+    total: number;
 }
 
 const albumId = (arg: { collection: string, album: string }) => arg.collection + ":" + arg.album;
@@ -66,6 +127,37 @@ export const api = createApi({
                 body,
             }),
             invalidatesTags: [ 'Pseudo', 'Albums'],
+        }),
+        deleteAlbum: builder.mutation<void, QueryAlbum>({
+            query: ({ collection, album }) => ({
+                url: `/collections/${collection}/albums/${album}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: (_result, _error, arg) => ['Pseudo', 'Albums', { type: 'Album', id: albumId(arg) }],
+        }),
+        duplicatedPhotos: builder.query<ResponseDuplicates, QueryAlbum>({
+            query: ({ collection, album }) => `/collections/${collection}/albums/${album}/duplicates`
+        }),
+        movePhotos: builder.mutation<ResponseMovePhotos, QueryMovePhotos>({
+            query: ({ collection, album, target }) => ({
+                url: `/collections/${collection}/albums/${album}/photos/move`,
+                method: 'PUT',
+                body: target,
+            }),
+            invalidatesTags: (_result, _error, arg) => [
+                { type: 'Album', id: albumId(arg) },
+                { type: 'Album', id: albumId(arg.target) }
+            ],
+        }),
+        deletePhotos: builder.mutation<void, QueryDeletePhotos>({
+            query: ({ collection, album, target }) => ({
+                url: `/collections/${collection}/albums/${album}/photos`,
+                method: 'DELETE',
+                body: target,
+            }),
+            invalidatesTags: (_result, _error, arg) => [
+                { type: 'Album', id: albumId(arg) },
+            ],
         }),
         getPhotoInfo: builder.query<any[], PhotoType>({
             query: ({collection, album, id }) => `/collections/${collection}/albums/${album}/photos/${id}/info`,
@@ -109,6 +201,12 @@ export const {
     useGetAlbumsQuery,
     useGetAlbumQuery,
     useAddAlbumMutation,
+    useDeleteAlbumMutation,
+    useDuplicatedPhotosQuery,
+    useMovePhotosMutation,
+    useDeletePhotosMutation,
     useGetPhotoInfoQuery,
     useSavePhotoToPseudoMutation,
 } = api;
+
+export default api;

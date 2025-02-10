@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useSelector } from 'react-redux';
 
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import DangerousIcon from '@mui/icons-material/Dangerous';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -13,8 +14,10 @@ import Typography from "@mui/material/Typography";
 
 import PhotoAlbum from "react-photo-album";
 
+import SelectionToolbar from "./SelectionToolbar";
 import Thumb from "./Thumb";
-import { PhotoImageType, urls, AlbumType } from "./types";
+import { SelectionProvider } from "./Selection";
+import { PhotoType, PhotoImageType, urls, AlbumType } from "./types";
 import { useGetAlbumQuery } from "./services/api";
 import { selectZoom } from "./services/app";
 import { useDialog } from "./dialogs";
@@ -68,6 +71,10 @@ const Gallery: FC = () => {
     const handleSubAlbum = (selected: string) => () => {
         setSubAlbum(selected === subAlbum ? "" : selected);
     }
+
+    const handleDeleteAlbum = () => {
+        dialog.deleteAlbum(collection, album);
+    }
     
     // Loading
     if(isFetching)
@@ -90,6 +97,7 @@ const Gallery: FC = () => {
             <Box sx={{ marginTop: "45vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <ReportIcon fontSize="large" sx={{ m: 1 }} />
                 <Typography variant="h6">No photos in this album.</Typography>
+                <Button variant="outlined" color="error" sx={{mt: 10}} onClick={handleDeleteAlbum}>Delete Album</Button>
             </Box>);
 
     // All OK, render Gallery
@@ -106,13 +114,16 @@ const Gallery: FC = () => {
 
     return (<>
         {hasSubAlbums && subAlbumsComponent}
-        <PhotoAlbum
-            photos={photos}
-            layout="rows"
-            targetRowHeight={zoom}
-            rowConstraints={{ singleRowMaxHeight: zoom*2 }}
-            spacing={1}
-            renderPhoto={RenderPhoto} />
+        <SelectionProvider<PhotoType> itemToId={i => i.id}>
+            <PhotoAlbum
+                photos={photos}
+                layout="rows"
+                targetRowHeight={zoom}
+                rowConstraints={{ singleRowMaxHeight: zoom*2 }}
+                spacing={1}
+                renderPhoto={RenderPhoto} />
+            <SelectionToolbar />
+        </SelectionProvider>
     </>);
 }
 

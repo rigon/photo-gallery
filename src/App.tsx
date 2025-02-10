@@ -13,6 +13,7 @@ import Layout from './Layout';
 import Gallery from './Gallery';
 
 import { DialogProvider } from './dialogs';
+import { UploadProvider } from './Upload';
 import { selectTheme } from "./services/app";
 
 function Home() {
@@ -26,7 +27,9 @@ function Home() {
 function MainLayout() {
     return (
         <DialogProvider>
-            <Layout />
+            <UploadProvider>
+                <Layout />
+            </UploadProvider>
         </DialogProvider>
     );
 }
