@@ -112,8 +112,16 @@ func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, 
 				}
 			}
 
+			// Find inconsistent state: filter entries for the file but different path
+			// TODO: modify the structure to make this case inheritably impossible
+			for i := len(photo.Files) - 1; i >= 0; i-- {
+				if photo.Files[i].Id == name && photo.Files[i].Path != fileDir {
+					photo.Files = append(photo.Files[:i], photo.Files[i+1:]...) // Remove
+				}
+			}
+
 			photoFile, err := photo.GetFile(name)
-			if err != nil || photoFile == nil || photoFile.Path != fileDir {
+			if err != nil || photoFile == nil {
 				photoFile = &File{
 					Path: fileDir,
 					Id:   name,
