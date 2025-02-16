@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/mholt/goexif2/exif"
 	"github.com/mholt/goexif2/tiff"
 )
@@ -161,7 +160,7 @@ func (file *File) ExtractExtendedInfo() (info FileExtendedInfo, err error) {
 	}
 	info.FileStat.Name = fileInfo.Name()
 	info.FileStat.Size = fileInfo.Size()
-	info.FileStat.SizeHuman = humanize.IBytes(uint64(fileInfo.Size()))
+	info.FileStat.SizeHuman = FormatBytes(uint64(fileInfo.Size()))
 	info.FileStat.ModTime = fileInfo.ModTime()
 	info.FileStat.Perm = fileInfo.Mode().Perm().String()
 

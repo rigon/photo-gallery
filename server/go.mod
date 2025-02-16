@@ -7,7 +7,6 @@ require (
 	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
 	github.com/bluele/gcache v0.0.2
 	github.com/disintegration/imaging v1.6.2
-	github.com/dustin/go-humanize v1.0.1
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/mholt/goexif2 v0.0.0-20230302025153-4d89d35092b2
 	github.com/shirou/gopsutil v3.21.11+incompatible

@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dustin/go-humanize"
 	"github.com/shirou/gopsutil/disk"
 )
 
@@ -239,9 +238,9 @@ func (collection *Collection) StorageUsage() (CollectionStorage, error) {
 	}
 	percentage := (float64(di.Total-di.Free) / float64(di.Total)) * 100
 	return CollectionStorage{
-		Size:       humanize.IBytes(di.Total),
-		Free:       humanize.IBytes(di.Free),
-		Used:       humanize.IBytes(di.Total - di.Free),
+		Size:       FormatBytes(di.Total),
+		Free:       FormatBytes(di.Free),
+		Used:       FormatBytes(di.Total - di.Free),
 		Percentage: int(math.Round(percentage)),
 	}, nil
 }

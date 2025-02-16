@@ -18,9 +18,10 @@ const Storage: FC = () => {
 
     const st: CollectionStorageType =
         collections.find(c => c.name === collection)?.storage ||
-        {size: "N/A", free: "N/A", used: "N/A", percentage: 100};
+    { size: "N/A", free: "N/A", used: "N/A", percentage: 100 };
     
     return (
+    <Tooltip title={<Typography variant='body2'>Size: {st.size}<br />Used: {st.used}<br />Free: {st.free}</Typography>} arrow placement="top">
         <Card square>
           <CardHeader
             avatar={<CloudIcon />}
@@ -29,16 +30,13 @@ const Storage: FC = () => {
             //     <SettingsIcon />
             //   </IconButton>
             // }
-            title={<>
-              Storage ({st.free} free)
-              <Tooltip title={<Typography variant='body2'>Size: {st.size}<br />Used: {st.used}<br />Free: {st.free}</Typography>} arrow placement="top">
-                <InfoIcon sx={{ fontSize: 15 }}/>
-              </Tooltip></>}
+          title={<><b>Storage</b> ({st.free} free of {st.size})</>}
             subheader={
               <LinearProgress variant="determinate" value={st.percentage} aria-label="storage space" />
             }
           />
         </Card>
+    </Tooltip>
     );
 }
 
