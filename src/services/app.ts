@@ -13,7 +13,7 @@ interface AppState {
 // Define the initial state using that type
 const initialState: AppState = {
     theme: "system",
-    zoom: 150,
+    zoom: 200,
     favorite: {
         collection: '',
         album: ''
