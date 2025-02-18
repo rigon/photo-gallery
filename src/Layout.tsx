@@ -9,10 +9,13 @@ import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
-import MenuIcon from '@mui/icons-material/Menu';
 import Paper from '@mui/material/Paper';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+
+import {
+    IconMenu2
+} from '@tabler/icons-react';
 
 import AlbumList from './AlbumList';
 import AlbumTitle from './AlbumTitle';
@@ -82,7 +85,7 @@ const Layout: FC = () => {
                         onClick={handleDrawerToggle}
                         sx={{ mr: 2, display: { md: 'none' } }}
                     >
-                        <MenuIcon />
+                        <IconMenu2 />
                     </IconButton>
                     <AlbumTitle />
                     <Box sx={{ flexGrow: 1 }} />
@@ -100,7 +103,7 @@ const Layout: FC = () => {
                     sx={{
                         '& .MuiDrawer-paper': {
                             boxSizing: 'border-box',
-                            width: { xs: "70%", md: drawerWidth},
+                            width: { xs: "70%", md: drawerWidth },
                             minWidth: drawerWidth
                         },
                     }}

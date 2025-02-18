@@ -1,9 +1,12 @@
 import { FC, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import FavoriteIcon from '@mui/icons-material/Favorite';
 import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+
+import {
+    IconHeartFilled,
+} from "@tabler/icons-react";
 
 import { useGetPseudoAlbumsQuery } from './services/api';
 import { changeFavorite, selectFavorite } from './services/app';
@@ -15,7 +18,7 @@ const FavoriteMenu: FC = () => {
     const favoriteSelected = useSelector(selectFavorite);
     const { data = [], isFetching } = useGetPseudoAlbumsQuery();
     const [anchorEl, setAnchorEl] = useState<Element | null>(null);
-    
+
     const handleClickListItem = (event: React.MouseEvent<Element, MouseEvent>) => {
         setAnchorEl(event.currentTarget);
     };
@@ -37,7 +40,7 @@ const FavoriteMenu: FC = () => {
             value={item.album}
             selected={favoriteSelected?.collection === item.collection && favoriteSelected?.album === item.album}
             onClick={() => handleMenuItemClick(index)}>
-                <ListItemText primary={item.album} secondary={item.collection} />
+            <ListItemText primary={item.album} secondary={item.collection} />
         </MenuItem>
     ));
 
@@ -47,8 +50,8 @@ const FavoriteMenu: FC = () => {
                 subMenu
                 showTitle
                 onClick={handleClickListItem}
-                icon={<FavoriteIcon />}
-                title={ favoriteSelected?.album || <em>Nothing</em> }
+                icon={<IconHeartFilled />}
+                title={favoriteSelected?.album || <em>Nothing</em>}
                 tooltip="Select an album to bookmark your favorites photos" />
 
             <Menu
@@ -59,7 +62,7 @@ const FavoriteMenu: FC = () => {
                 keepMounted
                 open={Boolean(anchorEl)}
                 onClose={handleCloseMenu}>
-                    { noItems ? info : items }
+                {noItems ? info : items}
             </Menu>
         </>
     );

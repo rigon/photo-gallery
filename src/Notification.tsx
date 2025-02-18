@@ -2,7 +2,9 @@ import { Fragment, useMemo } from "react";
 import { useSnackbar, SnackbarKey, VariantType, OptionsWithExtraProps } from 'notistack';
 
 import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
+import {
+    IconX,
+} from "@tabler/icons-react";
 
 const useNotification = () => {
     const { enqueueSnackbar, closeSnackbar } = useSnackbar();
@@ -11,7 +13,7 @@ const useNotification = () => {
         const action = (key: SnackbarKey) => (
             <Fragment>
                 <IconButton size="small" aria-label="close" color="inherit" onClick={() => { closeSnackbar(key) }}>
-                    <CloseIcon />
+                    <IconX />
                 </IconButton>
             </Fragment>
         );

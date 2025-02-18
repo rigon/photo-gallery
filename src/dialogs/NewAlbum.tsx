@@ -2,7 +2,6 @@ import { FC, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import Button from '@mui/material/Button';
-import CloseIcon from '@mui/icons-material/Close';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -22,6 +21,10 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 
+import {
+    IconX,
+} from "@tabler/icons-react";
+
 import { useGetCollectionsQuery, useAddAlbumMutation, QueryAddAlbum } from "../services/api";
 import useNotification from '../Notification';
 
@@ -39,19 +42,19 @@ interface NewAlbumDialogProps {
 const NewAlbumDialog: FC<NewAlbumDialogProps> = ({ open, onClose }) => {
     const navigate = useNavigate();
     const { collection = "" } = useParams();
-    const [ formData, updateFormData ] = useState<QueryAddAlbum>(defaults);
-    const [ errorName, setErrorName ] = useState<boolean>(false);
+    const [formData, updateFormData] = useState<QueryAddAlbum>(defaults);
+    const [errorName, setErrorName] = useState<boolean>(false);
     const { data: collections = [] } = useGetCollectionsQuery();
-    const [ addAlbum ] = useAddAlbumMutation();
+    const [addAlbum] = useAddAlbumMutation();
     const { successNotification, errorNotification } = useNotification();
 
     useEffect(() => {
         // Clear form data when openning
-        updateFormData({...defaults, collection});
+        updateFormData({ ...defaults, collection });
     }, [open, collection]);
 
     const handleChange = (e: { target: { name: string; value: string; }; }) => {
-      updateFormData({ ...formData, [e.target.name]: e.target.value });
+        updateFormData({ ...formData, [e.target.name]: e.target.value });
     };
     const handleClose = () => {
         onClose();
@@ -62,21 +65,21 @@ const NewAlbumDialog: FC<NewAlbumDialogProps> = ({ open, onClose }) => {
             ...formData,
             name: formData.name.trim()
         }
-        
+
         // Form validation
-        if(!trimmedFormData.name) {
+        if (!trimmedFormData.name) {
             setErrorName(true);
             return;
         }
         setErrorName(false);
-        
+
         try {
             await addAlbum(trimmedFormData).unwrap();
             successNotification(`Album created with name ${trimmedFormData.name}`);
             handleClose();
             navigate(`/${collection}/${trimmedFormData.name}`);
         }
-        catch(error) {
+        catch (error) {
             errorNotification(`Could not create album named ${trimmedFormData.name}!`);
             console.log(error);
         }
@@ -87,7 +90,7 @@ const NewAlbumDialog: FC<NewAlbumDialogProps> = ({ open, onClose }) => {
             <DialogTitle id="form-dialog-title" >
                 Create a new album
                 <IconButton sx={{ position: 'absolute', right: 8, top: 8 }} onClick={handleClose}>
-                    <CloseIcon />
+                    <IconX />
                 </IconButton>
             </DialogTitle>
             <DialogContent>
@@ -107,7 +110,7 @@ const NewAlbumDialog: FC<NewAlbumDialogProps> = ({ open, onClose }) => {
                                 value={formData.collection}
                                 onChange={handleChange}
                             >
-                                { collections.map((collection) => (
+                                {collections.map((collection) => (
                                     <MenuItem key={collection.name} value={collection.name}>{collection.name}</MenuItem>
                                 ))}
                             </Select>

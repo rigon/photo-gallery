@@ -4,7 +4,6 @@ import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import AutoSizer, { Size } from 'react-virtualized-auto-sizer';
 
 import Box from '@mui/material/Box';
-import ClearIcon from '@mui/icons-material/Clear';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import List from '@mui/material/List';
@@ -12,9 +11,13 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import LinearProgress from '@mui/material/LinearProgress';
-import SearchIcon from '@mui/icons-material/Search';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+
+import {
+    IconX,
+    IconSearch,
+} from "@tabler/icons-react";
 
 import { useGetAlbumsQuery } from "./services/api";
 import { AlbumType } from './types';
@@ -24,10 +27,10 @@ interface AlbumListProps {
     onClick: () => void
 }
 
-const AlbumList: FC<AlbumListProps> = ({onClick}) => {
+const AlbumList: FC<AlbumListProps> = ({ onClick }) => {
     const { collection, album } = useParams();
-    const { data = [], isFetching } = useGetAlbumsQuery({collection}, {skip: collection === undefined});
-    const [ searchTerm, setSearchTerm ] = useState<string>("");
+    const { data = [], isFetching } = useGetAlbumsQuery({ collection }, { skip: collection === undefined });
+    const [searchTerm, setSearchTerm] = useState<string>("");
 
     const albums = useMemo(() => {
         if (searchTerm.length < 1)  // Empty search, don't filter
@@ -60,14 +63,14 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
     }
 
     // Render progressbar while loading
-    if(isFetching)
+    if (isFetching)
         return (
             <Box sx={{ width: '100%' }}>
                 <LinearProgress />
             </Box>);
 
     const list = isEmptyList ?
-        (<ListItem><ListItemText><em>Nothing to show</em></ListItemText></ListItem>):
+        (<ListItem><ListItemText><em>Nothing to show</em></ListItemText></ListItem>) :
         (<AutoSizer>
             {({ height, width }: Size) =>
                 <FixedSizeList
@@ -76,7 +79,7 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
                     itemSize={48}
                     itemCount={albums.length}
                     overscanCount={5}>
-                        {renderRow}
+                    {renderRow}
                 </FixedSizeList>
             }
         </AutoSizer>);
@@ -92,16 +95,16 @@ const AlbumList: FC<AlbumListProps> = ({onClick}) => {
             InputProps={{
                 startAdornment: (
                     <InputAdornment position="start">
-                        <SearchIcon />
+                        <IconSearch size={20} />
                     </InputAdornment>),
                 endAdornment: (
                     <InputAdornment position="end">
                         <IconButton edge="end" onClick={clearSearch} aria-label="clear search">
-                            <ClearIcon />
+                            <IconX />
                         </IconButton>
                     </InputAdornment>),
-                }} />
-        <List component="nav" sx={{height: "100%", p: 0}}>
+            }} />
+        <List component="nav" sx={{ height: "100%", p: 0 }}>
             {list}
         </List>
     </>;

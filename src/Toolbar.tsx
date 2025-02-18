@@ -1,11 +1,8 @@
-import React, {FC, useContext, useState, forwardRef } from "react";
+import React, { FC, useContext, useState, forwardRef } from "react";
 import { useTheme, styled } from '@mui/material/styles';
 import { useDispatch } from 'react-redux';
 
 import useMediaQuery from '@mui/material/useMediaQuery';
-import AddAlbumIcon from '@mui/icons-material/AddPhotoAlternate';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import FavoriteMenu from './FavoriteMenu';
@@ -13,20 +10,25 @@ import IconButton from "@mui/material/IconButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
-import MoreIcon from '@mui/icons-material/MoreVert';
 import MenuItem from "@mui/material/MenuItem";
 import ThemeMenu from './ThemeMenu';
 import Tooltip from "@mui/material/Tooltip";
-import ZoomInIcon from "@mui/icons-material/ZoomInRounded";
-import ZoomOutIcon from "@mui/icons-material/ZoomOutRounded";
+
+import {
+    IconPhotoPlus,
+    IconCaretDownFilled,
+    IconCaretRightFilled,
+    IconDotsVertical,
+    IconZoomIn,
+    IconZoomOut,
+} from '@tabler/icons-react';
 
 import { useDialog } from './dialogs';
 import { increaseZoom, decreaseZoom } from "./services/app";
 
 const StyledButton = styled(IconButton)(({ theme }) => ({
     textTransform: "none",
-    borderRadius: 9999,
-    //borderRadius: theme.shape.borderRadius,
+    borderRadius: 9999, // theme.shape.borderRadius,
     fontSize: theme.typography.fontSize,
     fontFamily: theme.typography.fontFamily,
 }));
@@ -58,15 +60,15 @@ export const ToolbarItem = forwardRef<any, ToolbarItemProps>(
                 <MenuItem ref={ref} onClick={onClick} aria-label={ariaLabel}>
                     <ListItemIcon>{icon}</ListItemIcon>
                     <ListItemText>{title}</ListItemText>
-                    {subMenu && <ArrowRightIcon />}
+                    {subMenu && <IconCaretRightFilled size={18} />}
                 </MenuItem>
             </Tooltip>
-        ):(
+        ) : (
             <Tooltip title={tooltip} enterDelay={300}>
                 <StyledButton ref={ref} onClick={onClick} aria-label={ariaLabel} color="inherit">
                     {icon}
-                    {showTitle && <span style={{marginLeft: 4}}>{title}</span>}
-                    {subMenu && <ArrowDropDownIcon sx={{mr: -0.8}} />}
+                    {showTitle && <span style={{ marginLeft: 6 }}>{title}</span>}
+                    {subMenu && <IconCaretDownFilled style={{ marginLeft: 6 }} size={18} />}
                 </StyledButton>
             </Tooltip>
         );
@@ -107,12 +109,12 @@ export const ToolbarProvider: FC<ToolbarMenuProps> = ({ children }) => {
                     aria-haspopup="true"
                     onClick={handleMobileMenuOpen}
                     color="inherit">
-                    
-                    <MoreIcon />
+
+                    <IconDotsVertical />
                 </IconButton>
             </Box>
         </ToolbarContext.Provider>
-    ):(
+    ) : (
         // Expanded toolbar for desktop
         <ToolbarContext.Provider value={{ isCollapsed: false }}>
             <Box sx={{ display: { xs: 'none', lg: 'flex' } }}>
@@ -122,7 +124,7 @@ export const ToolbarProvider: FC<ToolbarMenuProps> = ({ children }) => {
     );
 }
 
-const ToolbarMenu : FC = () => {
+const ToolbarMenu: FC = () => {
     const dispatch = useDispatch();
     const dialog = useDialog();
 
@@ -137,7 +139,7 @@ const ToolbarMenu : FC = () => {
         <ToolbarProvider>
             <ToolbarItem
                 onClick={() => dialog.newAlbum()}
-                icon={<AddAlbumIcon />}
+                icon={<IconPhotoPlus />}
                 title="New album"
                 tooltip="Create a new album"
                 aria-label="create album" />
@@ -149,14 +151,14 @@ const ToolbarMenu : FC = () => {
                 tooltip="Increase Zoom"
                 aria-label="zoom in"
                 onClick={zoomIn}
-                icon={<ZoomInIcon />} />
+                icon={<IconZoomIn />} />
             <ToolbarItem
                 title="Zoom out"
                 tooltip="Decrease Zoom"
                 aria-label="zoom out"
                 onClick={zoomOut}
-                icon={<ZoomOutIcon />} />
-                
+                icon={<IconZoomOut />} />
+
         </ToolbarProvider>
     );
 }

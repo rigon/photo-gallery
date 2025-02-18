@@ -1,7 +1,9 @@
-import { FC, useMemo} from "react";
+import { FC, useMemo } from "react";
 import { useTheme } from '@mui/material/styles';
 
-import PlayIcon from '@mui/icons-material/PlayCircleFilledTwoTone';
+import {
+    IconPlayerPlayFilled,
+} from "@tabler/icons-react";
 
 import { Lightbox as YARL, Render, RenderThumbnailProps } from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -46,19 +48,19 @@ const thumbnailIconClass = cssClass(`${PLUGIN_THUMBNAILS}_thumbnail_${ELEMENT_IC
 
 const renderThumbnail: Render["thumbnail"] = ({ slide }: RenderThumbnailProps) => {
     let src, alt;
-    if("poster" in slide)
+    if ("poster" in slide)
         src = slide.poster;
-    else if("src" in slide)
+    else if ("src" in slide)
         src = slide.src;
 
-    if("alt" in slide)
+    if ("alt" in slide)
         alt = slide.alt;
 
     return (
         <>
             <img alt={alt} src={src} className={thumbnailImageClass} />
-            { slide.type === "video" &&
-                <PlayIcon fontSize="large" className={thumbnailIconClass} />
+            {slide.type === "video" &&
+                <IconPlayerPlayFilled fontSize="large" className={thumbnailIconClass} />
             }
         </>);
 };

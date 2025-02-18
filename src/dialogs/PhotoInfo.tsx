@@ -8,18 +8,21 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import Box from "@mui/material/Box";
 import Button from '@mui/material/Button';
 import CircularProgress from "@mui/material/CircularProgress";
-import CloseIcon from '@mui/icons-material/Close';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Divider from "@mui/material/Divider";
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Grid from "@mui/material/Grid";
 import IconButton from '@mui/material/IconButton';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import Typography from "@mui/material/Typography";
+
+import {
+    IconX,
+    IconChevronDown,
+    IconChevronLeft,
+    IconChevronRight,
+} from "@tabler/icons-react";
 
 import { PhotoType, urls } from "../types";
 import { useGetPhotoInfoQuery } from "../services/api";
@@ -52,14 +55,14 @@ const StyledList = styled("dl")({
 const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-    const [ index, setIndex ] = useState(selected);
+    const [index, setIndex] = useState(selected);
     const photo = photos[index];
-    const { data, isFetching } = useGetPhotoInfoQuery(photo, {skip: photo === undefined});
+    const { data, isFetching } = useGetPhotoInfoQuery(photo, { skip: photo === undefined });
 
     useEffect(() => setIndex(selected), [setIndex, selected]);
 
     // Do not render if is not valid
-    if(photo === undefined || data === undefined)
+    if (photo === undefined || data === undefined)
         return null;
 
     const hasBefore = index > 0;
@@ -70,11 +73,11 @@ const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }
     };
 
     const handleBefore = () => {
-        if(index > 0)
+        if (index > 0)
             setIndex(index - 1);
     }
     const handleNext = () => {
-        if(index < photos.length - 1)
+        if (index < photos.length - 1)
             setIndex(index + 1);
     }
     const onKeyDown = (event: React.KeyboardEvent) => {
@@ -92,10 +95,10 @@ const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }
                 break;
         }
     }
-    
+
     return (
         <Dialog
-            PaperProps={{ sx: { position: {sm: "fixed"}, top: {sm: 0} } }}
+            PaperProps={{ sx: { position: { sm: "fixed" }, top: { sm: 0 } } }}
             onClose={handleClose}
             aria-labelledby="photo-info-title"
             open={open}
@@ -107,15 +110,15 @@ const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }
             <DialogTitle id="photo-info-title">
                 {photo.title}
                 <Box sx={{ position: 'absolute', right: 8, top: 8 }}>
-                    {isFetching && <CircularProgress size="1rem" sx={{ mr: 1 }}/>}
+                    {isFetching && <CircularProgress size="1rem" sx={{ mr: 1 }} />}
                     <IconButton onClick={handleBefore} disabled={!hasBefore} sx={{ ml: 1 }} aria-label="before">
-                        <NavigateBeforeIcon />
+                        <IconChevronLeft />
                     </IconButton>
                     <IconButton onClick={handleNext} disabled={!hasNext} aria-label="next">
-                        <NavigateNextIcon />
+                        <IconChevronRight />
                     </IconButton>
                     <IconButton onClick={handleClose} sx={{ ml: 1 }} aria-label="close">
-                        <CloseIcon />
+                        <IconX />
                     </IconButton>
                 </Box>
             </DialogTitle>
@@ -130,7 +133,7 @@ const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }
                 </Grid>
                 {data.map((file: any) => (
                     <Accordion key={file.filestat.name} defaultExpanded>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <AccordionSummary expandIcon={<IconChevronDown />}>
                             <Typography>{file.filestat.name}</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
@@ -152,7 +155,7 @@ const PhotoInfoDialog: FC<InfoPanelProps> = ({ open, photos, selected, onClose }
                                 <StyledList>
                                     {Object.entries(file.imageinfo.exif).map(([key, value]) => [
                                         (<dt key={key}>{key}</dt>),
-                                        (<dd key={key+"-val"}>{String(value)}</dd>)
+                                        (<dd key={key + "-val"}>{String(value)}</dd>)
                                     ])}
                                 </StyledList>
                             </>)}

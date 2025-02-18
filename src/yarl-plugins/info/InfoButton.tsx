@@ -7,7 +7,9 @@ import {
     useLightboxState,
 } from "yet-another-react-lightbox/core";
 
-import InfoIcon from '@mui/icons-material/Info';
+import {
+    IconInfoCircleFilled,
+} from "@tabler/icons-react";
 
 export const InfoButton: React.FC = () => {
     const {
@@ -18,18 +20,18 @@ export const InfoButton: React.FC = () => {
         info: props,
         labels,
     } = useLightboxProps();
-    
+
     const onClick = props?.onClick;
-    
+
     const showInfo = React.useCallback(() => {
-        if(typeof(onClick) === "function")
+        if (typeof (onClick) === "function")
             onClick(currentIndex);
     }, [currentIndex, onClick]);
 
     return (
         <IconButton
             label={label(labels, "Show photo details")}
-            icon={InfoIcon}
+            icon={IconInfoCircleFilled}
             onClick={showInfo}
         />
     );

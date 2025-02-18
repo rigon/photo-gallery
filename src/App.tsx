@@ -4,10 +4,13 @@ import { useSelector } from 'react-redux';
 import { ThemeProvider, ThemeOptions, createTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Box from '@mui/material/Box';
-import InfoIcon from '@mui/icons-material/Info';
 import Typography from '@mui/material/Typography';
 import { SnackbarProvider } from 'notistack';
 import "@fontsource/pt-sans";
+
+import {
+    IconInfoCircle,
+} from "@tabler/icons-react";
 
 import Layout from './Layout';
 import Gallery from './Gallery';
@@ -18,8 +21,8 @@ import { selectTheme } from "./services/app";
 function Home() {
     return (
         <Box sx={{ marginTop: "45vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <InfoIcon fontSize="large" sx={{m: 1}} />
-            <Typography variant="h6">Select an album from the list on the left.</Typography>
+            <IconInfoCircle size={42} />
+            <Typography variant="h6" sx={{ m: 1 }}>Select an album from the list on the left.</Typography>
         </Box>);
 }
 
