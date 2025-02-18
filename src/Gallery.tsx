@@ -39,10 +39,9 @@ const Gallery: FC = () => {
     const { data = defaultData, isFetching, isSuccess, isError } = useGetAlbumQuery({ collection, album });
     const [subAlbum, setSubAlbum] = useState<string>("");
     const showPhoto = useRef<string | undefined>(photo);
-    const zoom = useSelector(selectZoom);
     const dialog = useDialog();
     const favorite = useFavorite();
-    const selectedFavorite = favorite.get();
+    const zoom = useSelector(selectZoom);
 
     const isEmpty = data.count < 1;
     const hasSubAlbums = data.subalbums?.length > 0;
@@ -137,7 +136,6 @@ const Gallery: FC = () => {
                         showLightbox={showLightbox}
                         showInfo={showInfo}
                         saveFavorite={saveFavorite}
-                        selectedFavorite={selectedFavorite}
                         favoriteStatus={favorite.photo(photo)} />
             }}
         />

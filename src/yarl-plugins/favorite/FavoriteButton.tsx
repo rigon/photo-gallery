@@ -2,7 +2,6 @@ import * as React from "react";
 
 import {
     IconButton,
-    label,
     useLightboxProps,
     useLightboxState,
 } from "yet-another-react-lightbox/core";
@@ -26,7 +25,6 @@ export const FavoriteButton: React.FC = () => {
 
     const {
         favorite: props,
-        labels,
     } = useLightboxProps();
 
     const { onChange } = { ...defaultProps, ...props };
@@ -40,7 +38,7 @@ export const FavoriteButton: React.FC = () => {
 
     return (
         <IconButton
-            label={isFavoriteThis ? label(labels, "Save to favorites") : label(labels, "Remove from favorites")}
+            label={isFavoriteThis ? "Save to favorites" : "Remove from favorites"}
             icon={isFavoriteThis ? IconHeartFilled : IconHeart}
             onClick={toggleFavorite}
         />

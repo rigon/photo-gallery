@@ -16,6 +16,12 @@ declare module "yet-another-react-lightbox" {
             onChange?: (index: number, isFavorite: boolean, slide: Slide) => void;
         };
     }
+
+    interface Labels {
+        // TODO v4: change Fullscreen to lowercase
+        "Save to favorites": string;
+        "Remove from favorites": string;
+    }
 }
 
 export default Favorite;

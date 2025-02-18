@@ -7,7 +7,7 @@ import { PhotoImageType, PhotoType, PseudoAlbumType } from './types';
 import useNotification from "./Notification";
 
 const useFavorite = () => {
-    const favorite = useSelector(selectFavorite);
+    const selectedAlbum = useSelector(selectFavorite);
     const { collection, album } = useParams();
     const [saveFavorite] = useSavePhotoToPseudoMutation();
     const { infoNotification, errorNotification } = useNotification();
@@ -15,11 +15,14 @@ const useFavorite = () => {
     const favoriteStatus = (favorites: PseudoAlbumType[]) => {
         const list = Array.isArray(favorites) ? favorites : [];
         const isFavorite = list.length > 0;
-        const isFavoriteThis = isFavorite && list.some(
-            entry => entry.collection === favorite.collection && entry.album === favorite.album);
+        const isFavoriteThis = isFavorite && selectedAlbum != undefined &&
+            list.some(entry =>
+                entry.collection === selectedAlbum.collection &&
+                entry.album === selectedAlbum.album);
         const isFavoriteAnother = isFavorite && !isFavoriteThis;
 
         return {
+            selectedAlbum,
             isFavorite,         // Photo is favorite
             isFavoriteThis,     // Photo is favorite in selectedFavorite
             isFavoriteAnother,  // Photo is favorite but not in selectedFavorite
@@ -45,12 +48,12 @@ const useFavorite = () => {
     }
 
     const save = async (saveData: QuerySaveFavorite["saveData"], photoIndexes: number[], isFavorite: boolean) => {
-        if (favorite === undefined) {
+        if (selectedAlbum === undefined) {
             errorNotification("No favorite album is selected. Select first from the top toolbar.");
             return;
         }
-        const targetCollection = favorite.collection;
-        const targetAlbum = favorite.album;
+        const targetCollection = selectedAlbum.collection;
+        const targetAlbum = selectedAlbum.album;
 
         try {
             await saveFavorite({
@@ -71,7 +74,7 @@ const useFavorite = () => {
     }
 
     return {
-        get: () => favorite,
+        get: () => selectedAlbum,
         list: (favoriteList: PseudoAlbumType[]) => favoriteStatus(favoriteList),
         photo: (photo: PhotoType) => favoriteStatus(photo.favorite),
         toggle,

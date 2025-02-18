@@ -2,7 +2,6 @@ import * as React from "react";
 
 import {
     IconButton,
-    label,
     useLightboxProps,
     useLightboxState,
 } from "yet-another-react-lightbox/core";
@@ -18,7 +17,6 @@ export const InfoButton: React.FC = () => {
 
     const {
         info: props,
-        labels,
     } = useLightboxProps();
 
     const onClick = props?.onClick;
@@ -30,7 +28,7 @@ export const InfoButton: React.FC = () => {
 
     return (
         <IconButton
-            label={label(labels, "Show photo details")}
+            label={"Show photo details"}
             icon={IconInfoCircleFilled}
             onClick={showInfo}
         />

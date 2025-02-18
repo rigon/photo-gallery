@@ -8,6 +8,11 @@ declare module "yet-another-react-lightbox" {
             onClick?: (index: number) => void;
         };
     }
+
+    interface Labels {
+        // TODO v4: change Fullscreen to lowercase
+        "Show photo details": string;
+    }
 }
 
 export default Info;

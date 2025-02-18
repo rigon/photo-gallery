@@ -45,19 +45,24 @@ interface ThumbProps {
     showInfo(index: number): void;
     saveFavorite(index: number): void;
     // Favorite
-    selectedFavorite: PseudoAlbumType;
     favoriteStatus: {
+        selectedAlbum: PseudoAlbumType;
         isFavorite: boolean;
         isFavoriteThis: boolean;
         isFavoriteAnother: boolean;
     };
 }
 
-const Thumb: FC<ThumbProps> = ({ index, photo, width, height, showLightbox, showInfo, saveFavorite, selectedFavorite, favoriteStatus }) => {
+const Thumb: FC<ThumbProps> = ({ index, photo, width, height, showLightbox, showInfo, saveFavorite, favoriteStatus }) => {
     const { collection } = useParams();
     const [mouseOver, setMouseOver] = useState<boolean>(false);
 
-    const { isFavorite, isFavoriteThis, isFavoriteAnother } = favoriteStatus;
+    const {
+        selectedAlbum: selectedFavorite,
+        isFavorite,
+        isFavoriteThis,
+        isFavoriteAnother
+    } = favoriteStatus;
 
     const onMouseEnter = () => {
         setMouseOver(true);
