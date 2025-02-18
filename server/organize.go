@@ -351,11 +351,13 @@ func (srcAlbum *Album) MovePhotos(mode string, srcCollection *Collection, dstCol
 		// Move thumbnail
 		srcThumbPath := photo.src.ThumbnailPath(srcCollection)
 		dstThumbPath := photo.dst.ThumbnailPath(dstCollection)
-		err := os.Rename(srcThumbPath, dstThumbPath)
-		if err != nil { // If not possible to rename, remove thumbnail for cleanup
-			os.Remove(srcThumbPath)
+		// Ensure the directories exist
+		if err := os.MkdirAll(filepath.Dir(dstThumbPath), os.ModePerm); err == nil {
+			err := os.Rename(srcThumbPath, dstThumbPath)
+			if err != nil { // If not possible to rename, remove thumbnail for cleanup
+				os.Remove(srcThumbPath)
+			}
 		}
-
 		// Move photo info
 		srcCollection.cache.DeletePhotoInfo(photo.src)
 		dstCollection.cache.AddPhotoInfo(photo.dst)
