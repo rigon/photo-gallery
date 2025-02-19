@@ -133,6 +133,7 @@ const Gallery: FC = () => {
                         height={height}
                         width={width}
                         index={index}
+                        hideIcons={zoom < 100}
                         showLightbox={showLightbox}
                         showInfo={showInfo}
                         saveFavorite={saveFavorite}
