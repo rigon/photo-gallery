@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -83,15 +82,18 @@ func (c *Collection) Info() CollectionInfo {
 // For that use Album.GetPhotos()
 func (c *Collection) GetAlbums() ([]*Album, error) {
 	albums := make([]*Album, 0)
-	files, err := ioutil.ReadDir(c.PhotosPath)
+	files, err := os.ReadDir(c.PhotosPath)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, file := range files {
-		album, err := readAlbum(file)
+		fileInfo, err := file.Info()
 		if err == nil {
-			albums = append(albums, album)
+			album, err := readAlbum(fileInfo)
+			if err == nil {
+				albums = append(albums, album)
+			}
 		}
 	}
 	// Save to cache in background
@@ -187,7 +189,7 @@ func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool, runn
 	// ...and save to cache
 	c.cache.SaveAlbum(album)
 	// Set album as fully scanned
-	if len(photosToLoad) < 1 { // only when partial load is not performed
+	if len(photosToLoad) < 1 { // skip on partial scans!
 		c.cache.SetAlbumFullyScanned(album)
 	}
 

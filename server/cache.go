@@ -31,7 +31,7 @@ type Cache struct {
 	wgFlush   sync.WaitGroup
 }
 
-// Flag album as loaded
+// Flag album as fully scanned
 type AlbumSaved struct{}
 
 // Flag album with photos missing thumbnails
@@ -111,6 +111,8 @@ func (c *Cache) End() error {
 	return c.store.Close()
 }
 
+// Cache List Albums
+
 func (c *Cache) SetListAlbums(albums ...*Album) {
 	// Empty map
 	c.albums.Range(func(key, value any) bool {
@@ -120,13 +122,16 @@ func (c *Cache) SetListAlbums(albums ...*Album) {
 
 	c.AddToListAlbums(albums...)
 }
-
 func (c *Cache) AddToListAlbums(albums ...*Album) {
 	for _, album := range albums {
 		c.albums.Store(album.Name, true)
 	}
 }
-
+func (c *Cache) RemoveFromListAlbums(albums ...string) {
+	for _, album := range albums {
+		c.albums.Delete(album)
+	}
+}
 func (c *Cache) IsListAlbumsLoaded() bool {
 	var ret = false
 	c.albums.Range(func(key, value any) bool {
@@ -135,12 +140,13 @@ func (c *Cache) IsListAlbumsLoaded() bool {
 	})
 	return ret
 }
-
 func (c *Cache) IsAlbum(albumName string) bool {
 	// Check if value is present
 	_, present := c.albums.Load(albumName)
 	return present
 }
+
+// Cache Albums
 
 func (c *Cache) GetAlbum(albumName string) (*Album, error) {
 	// Check if value is present
@@ -150,20 +156,43 @@ func (c *Cache) GetAlbum(albumName string) (*Album, error) {
 	}
 	return album.(*Album), nil
 }
-
 func (c *Cache) SaveAlbum(album *Album) error {
 	// Cache album in memory
 	return c.mem.Set(album.Name, album)
 }
 
+// Album Fully Scanned
+
 func (c *Cache) SetAlbumFullyScanned(album *Album) error {
 	return c.store.Upsert(album.Name, AlbumSaved{})
 }
-
 func (c *Cache) IsAlbumFullyScanned(album *Album) bool {
 	var a AlbumSaved
 	return c.store.Get(album.Name, &a) == nil
 }
+func (c *Cache) UnsetAlbumFullyScanned(albumName string) error {
+	return c.store.Delete(albumName, AlbumSaved{})
+}
+func (c *Cache) ResetAlbumsFullyScanned() error {
+	return c.store.DeleteMatching(AlbumSaved{}, nil) // Delete all
+}
+
+// Album Thumbnail queue
+
+func (c *Cache) SetAlbumToThumbQueue(album string) error {
+	return c.store.Upsert(album, AlbumThumbs{album})
+}
+func (c *Cache) TxSetAlbumToThumbQueue(tx *bolt.Tx, album string) error {
+	return c.store.TxUpsert(tx, album, AlbumThumbs{album})
+}
+func (c *Cache) UnsetAlbumFromThumbQueue(albumName string) bool {
+	return c.store.Delete(albumName, AlbumThumbs{}) == nil
+}
+func (c *Cache) ResetAlbumsInThumbQueue() error {
+	return c.store.DeleteMatching(AlbumThumbs{}, nil) // Delete all
+}
+
+// Cache data
 
 func (photo *Photo) Key() string {
 	return PhotoKey(photo.Album, photo.Id)
@@ -195,9 +224,9 @@ func (c *Cache) addInfoBatcher() {
 						log.Println(err)
 					}
 
-					// Add album from the thumbnail queue
+					// Add album to the thumbnail queue
 					if !photo.HasThumb {
-						err = c.store.TxUpsert(tx, photo.Album, AlbumThumbs{photo.Album})
+						err = c.TxSetAlbumToThumbQueue(tx, photo.Album)
 						if err != nil {
 							log.Println(err)
 						}
