@@ -30,6 +30,10 @@ func (collection *Collection) Scan(fullScan bool) {
 	}
 
 	// Full scan
+
+	collection.cache.ResetAlbumsFullyScanned()
+	collection.cache.ResetAlbumsInThumbQueue()
+
 	for _, album := range albums {
 		// Load album
 		album, err = collection.GetAlbumWithPhotos(album.Name, true, true)
@@ -64,7 +68,7 @@ func (collection *Collection) Scan(fullScan bool) {
 	}
 
 	// Clean entries in the cacheDB of deleted albums
-	log.Printf("Clean entries of deleted albums %s...\n", collection.Name)
+	log.Printf("Cleaning entries of deleted albums in %s...\n", collection.Name)
 	var photos []*Photo
 	err = collection.cache.store.Find(&photos, bolthold.Where("Album").MatchFunc(
 		func(album string) (bool, error) {
@@ -116,7 +120,7 @@ func (collection *Collection) CreateThumbnails() {
 			// Update flag to indicate that the thumbnail was generated
 			collection.cache.FlushInfo()
 			// Thumbnails created, remove album from the queue
-			err = collection.cache.store.Delete(albumThumb.Name, albumThumb)
+			err = collection.cache.UnsetAlbumFullyScanned(albumThumb.Name)
 			if err != nil {
 				log.Println(err)
 			}
