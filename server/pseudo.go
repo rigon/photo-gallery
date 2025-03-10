@@ -11,7 +11,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const PSEUDO_ALBUM_EXT = ".PG-ALBUM"
+const PSEUDO_ALBUM_EXT = ".pg-album"
 
 type PseudoAlbum struct {
 	Collection string `json:"collection"`
@@ -114,7 +114,7 @@ func resolveQueryPhotos(query PseudoAlbumSaveQuery) (list []PseudoAlbumEntry, er
 		return nil, err
 	}
 
-	album, err := collection.GetAlbum(query.Album)
+	album, err := collection.GetAlbumNoLoading(query.Album)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func GetPseudoAlbums(collections map[string]*Collection) []PseudoAlbum {
 	pseudos := make([]PseudoAlbum, 0)
 
 	for name, collection := range collections {
-		albums, _ := collection.GetAlbums()
+		albums := collection.GetAlbums()
 		for _, album := range albums {
 			if album.IsPseudo {
 				pseudos = append(pseudos, PseudoAlbum{Collection: name, Album: album.Name})
@@ -209,21 +209,21 @@ func (album *Album) EditPseudoAlbum(collection *Collection, query PseudoAlbumSav
 	}
 
 	// Update in background cached entries that were changed
-	go album.GetPhotosForPseudo(collection, isAdd, false, updated...)
+	go album.LoadPhotosForPseudo(collection, isAdd, false, updated...)
 
 	return nil
 }
 
-func (album *Album) GetPhotosForPseudo(collection *Collection, isAdd bool, runningInBackground bool, entries ...PseudoAlbumEntry) []*Photo {
+func (album *Album) LoadPhotosForPseudo(collection *Collection, isAdd bool, runningInBackground bool, entries ...PseudoAlbumEntry) []*Photo {
 	var photos []*Photo
-	var grouped = make(map[string]map[string][]PseudoAlbumEntry)
+	var grouped = make(map[string]map[string][]string)
 
 	// Group the entries by Collection and Album
 	for _, entry := range entries {
 		if _, ok := grouped[entry.Collection]; !ok {
-			grouped[entry.Collection] = make(map[string][]PseudoAlbumEntry)
+			grouped[entry.Collection] = make(map[string][]string)
 		}
-		grouped[entry.Collection][entry.Album] = append(grouped[entry.Collection][entry.Album], entry)
+		grouped[entry.Collection][entry.Album] = append(grouped[entry.Collection][entry.Album], entry.Photo)
 	}
 
 	for collectionName, collectionAlbums := range grouped {
@@ -234,17 +234,20 @@ func (album *Album) GetPhotosForPseudo(collection *Collection, isAdd bool, runni
 			continue
 		}
 		for albumName, albumPhotos := range collectionAlbums {
-			// Load album with photos
-			srcAlbum, err := srcCollection.GetAlbumWithPhotos(albumName, false, runningInBackground, albumPhotos...)
+			srcAlbum, err := srcCollection.GetAlbumNoLoading(albumName)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			for _, entry := range albumPhotos {
-				// Load photo
-				photo, err := srcAlbum.GetPhoto(entry.Photo)
-				if err != nil {
-					log.Println(err)
+			srcPhotos, err := srcAlbum.ReloadPhotosPartial(collection, runningInBackground, albumPhotos...)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			for _, photoId := range albumPhotos {
+				photo, ok := srcPhotos[photoId]
+				if !ok {
+					log.Println("could not get " + photoId + " from " + albumName)
 					continue
 				}
 
@@ -262,7 +265,7 @@ func (album *Album) GetPhotosForPseudo(collection *Collection, isAdd bool, runni
 				photos = append(photos, photo)
 			}
 		}
-		srcCollection.cache.FlushInfo()
+		srcCollection.cache.FlushInfo(false)
 	}
 
 	return photos

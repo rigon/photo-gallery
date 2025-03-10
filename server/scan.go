@@ -11,71 +11,52 @@ import (
 func (collection *Collection) Scan(fullScan bool) {
 	log.Printf("Scanning collection %s...\n", collection.Name)
 
-	albums, err := collection.GetAlbums()
+	albums, err := collection.LoadAlbums()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	defer collection.cache.FinishFlush()
+	defer collection.cache.FlushInfo(true)
 
 	// Quick scan
 	if !fullScan {
 		for _, album := range albums {
-			if !collection.cache.IsAlbumFullyScanned(album) { // Skip album if it was already scanned
-				collection.GetAlbumWithPhotos(album.Name, true, true)
+			// Skip albums that were saved
+			_, err := album.LoadPhotos(collection, true)
+			if err != nil {
+				log.Println(err)
 			}
 		}
-		return
+		return // Quick scan, stop here!
 	}
 
 	// Full scan
 
-	collection.cache.ResetAlbumsFullyScanned()
+	collection.cache.ResetAlbumsSaved()
 	collection.cache.ResetAlbumsInThumbQueue()
 
 	for _, album := range albums {
-		// Load album
-		album, err = collection.GetAlbumWithPhotos(album.Name, true, true)
+		_, err := album.ReloadPhotos(collection, true)
 		if err != nil {
 			log.Println(err)
-		}
-
-		// Validate if photos have thumbnails
-		for _, photo := range album.photosMap {
-			hasThumb, _ := photo.ThumbnailPresent(collection)
-
-			// Update flag if it is different than stored
-			if photo.HasThumb != hasThumb {
-				photo.HasThumb = hasThumb
-				collection.cache.AddPhotoInfo(photo)
-			}
-		}
-
-		// Validate if all entries in the cacheDB are still valid
-		var photos []*Photo
-		err = collection.cache.store.Find(&photos, bolthold.Where("Album").Eq(album.Name).Index("Album").And("Id").MatchFunc(
-			func(id string) (bool, error) {
-				p, e := album.GetPhoto(id)
-				if e == nil && p != nil {
-					return false, nil
-				}
-				return true, nil
-			}))
-		if err == nil {
-			collection.cache.DeletePhotoInfo(photos...)
 		}
 	}
 
 	// Clean entries in the cacheDB of deleted albums
 	log.Printf("Cleaning entries of deleted albums in %s...\n", collection.Name)
-	var photos []*Photo
-	err = collection.cache.store.Find(&photos, bolthold.Where("Album").MatchFunc(
-		func(album string) (bool, error) {
-			return !collection.cache.IsAlbum(album), nil
+	var photosDelete []*Photo
+	albumsMap := make(map[string]struct{})
+	for _, album := range albums {
+		albumsMap[album.Name] = struct{}{}
+	}
+	err = collection.cache.store.Find(&photosDelete, bolthold.Where("Album").MatchFunc(
+		func(albumName string) (bool, error) {
+			_, ok := albumsMap[albumName]
+			return !ok, nil
 		}))
 	if err == nil {
-		collection.cache.DeletePhotoInfo(photos...)
+		collection.cache.DeletePhotoInfo(photosDelete...)
 	} else {
 		log.Println(err)
 	}
@@ -96,7 +77,7 @@ func (collection *Collection) CreateThumbnails() {
 	// For each album
 	for _, albumThumb := range albums {
 		// Get album
-		album, err := collection.GetAlbum(albumThumb.Name)
+		album, err := collection.GetAlbumBackground(albumThumb.Name)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -118,9 +99,9 @@ func (collection *Collection) CreateThumbnails() {
 		go func(collection *Collection, albumThumb *AlbumThumbs) {
 			wg.Wait()
 			// Update flag to indicate that the thumbnail was generated
-			collection.cache.FlushInfo()
+			collection.cache.FlushInfo(false)
 			// Thumbnails created, remove album from the queue
-			err = collection.cache.UnsetAlbumFullyScanned(albumThumb.Name)
+			err = collection.cache.UnsetAlbumFromThumbQueue(albumThumb.Name)
 			if err != nil {
 				log.Println(err)
 			}

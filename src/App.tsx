@@ -14,6 +14,7 @@ import {
 
 import Layout from './Layout';
 import Gallery from './Gallery';
+import FullGallery from './FullGallery';
 
 import { DialogProvider } from './dialogs';
 import { selectTheme } from "./services/app";
@@ -40,7 +41,7 @@ function Router() {
             <Routes>
                 <Route path="/" element={<MainLayout />}>
                     <Route index element={<Home />} />
-                    <Route path="/:collection" element={<Home />} />
+                    <Route path="/:collection" element={<FullGallery />} />
                     <Route path="/:collection/:album" element={<Gallery />} />
                     <Route path="/:collection/:album/:photo" element={<Gallery />} />
                     <Route path="*" element={<Navigate to="/" />} />

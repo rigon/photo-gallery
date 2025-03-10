@@ -1,199 +1,231 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"io/fs"
 	"log"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+
+	"github.com/timshannon/bolthold"
 )
 
 type Album struct {
-	Name      string            `json:"name"`
-	Count     int               `json:"count"`
-	Date      string            `json:"title"`
-	IsPseudo  bool              `json:"pseudo"`
-	SubAlbums []string          `json:"subalbums"`
-	Photos    []*Photo          `json:"photos"` // used only when marshaling
-	photosMap map[string]*Photo `json:"-"`      // actual place where photos are stored
+	Name      string   `json:"name"`
+	Count     int      `json:"count"`
+	Date      string   `json:"title"`
+	IsPseudo  bool     `json:"pseudo"`
+	SubAlbums []string `json:"subalbums"`
 }
 
-type PhotoFile struct {
-	photoId string
-	file    *File
+func (album *Album) GetPhoto(collection *Collection, photoId string) (*Photo, error) {
+	return collection.cache.GetPhoto(album.Name, photoId)
 }
 
-func (album *Album) GetPhotos(collection *Collection, runningInBackground bool, photosToLoad ...PseudoAlbumEntry) error {
-	subAlbums := make(map[string]bool)
-	album.photosMap = make(map[string]*Photo)
+func (album *Album) LoadPhotos(collection *Collection, runInBackground bool) (map[string]*Photo, error) {
+	return album.loadPhotosOpts(collection, false, false, runInBackground)
+}
+func (album *Album) ReloadPhotos(collection *Collection, runInBackground bool) (map[string]*Photo, error) {
+	return album.loadPhotosOpts(collection, true, false, runInBackground)
+}
+func (album *Album) ReloadPhotosPartial(collection *Collection, runInBackground bool, idsToLoad ...string) (map[string]*Photo, error) {
+	return album.loadPhotosOpts(collection, false, false, runInBackground, idsToLoad...)
+}
+func (album *Album) ForceReloadPhotos(collection *Collection, runInBackground bool) (map[string]*Photo, error) {
+	return album.loadPhotosOpts(collection, false, true, runInBackground)
+}
+func (album *Album) loadPhotosOpts(collection *Collection, skipCached bool, forceUpdate bool, runInBackground bool, idsToLoad ...string) (map[string]*Photo, error) {
+	collection.LockAlbum(album.Name)
+	defer collection.UnlockAlbum(album.Name)
 
-	// Convert photosToLoad to a map for improved performance
-	photosToLoadMap := make(map[string]bool)
-	for _, entry := range photosToLoad {
-		key := entry.Collection + ":" + entry.Album + ":" + entry.Photo
-		photosToLoadMap[key] = true
+	// Skip albums that are cached, except if not skipCached or forceUpdate
+	saved := collection.cache.IsCachedAlbumSaved(album.Name)
+	if saved && skipCached && !forceUpdate {
+		return nil, nil
 	}
+
+	// Load only some photos?
+	isPartial := len(idsToLoad) > 0
+
+	// Convert ids to maps for improved performance
+	idsToLoadMap := make(map[string]struct{})
+	for _, id := range idsToLoad {
+		idsToLoadMap[id] = struct{}{}
+	}
+
+	subAlbums := make(map[string]struct{})
+	photosMap := make(map[string]*Photo)
 
 	if album.IsPseudo {
 		// Read pseudo album
 		log.Printf("Scanning pseudo-album %s[%s]...", collection.Name, album.Name)
 		pseudos, err := readPseudoAlbum(collection, album)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
+		// TODO: idsToLoadMap
+
 		// Get photos from pseudos
-		photos := album.GetPhotosForPseudo(collection, true, runningInBackground, pseudos...)
+		photos := album.LoadPhotosForPseudo(collection, true, runInBackground, pseudos...)
 
 		// Iterate over entries in the pseudo album
-		for _, srcPhoto := range photos {
-			photo := srcPhoto.CopyForPseudoAlbum()
-			album.photosMap[photo.Id] = photo
-			subAlbums[photo.SubAlbum] = true
+		for _, photo := range photos {
+			photosMap[photo.Id] = photo
+			subAlbums[photo.SubAlbum] = struct{}{}
 		}
 	} else {
 		// Read album (i.e. folder) contents
 		log.Printf("Scanning folder for album %s[%s]...", collection.Name, album.Name)
-		var updatedPhotos = make(map[string]int)
-		var updatedFiles []PhotoFile
-		dir := filepath.Join(collection.PhotosPath, album.Name)
-		err := filepath.WalkDir(dir, func(fileDir string, file fs.DirEntry, err error) error {
+
+		// Count number of photos
+		album.Count = 0
+
+		root := filepath.Join(collection.PhotosPath, album.Name)
+		err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 			// Iterate over folder items
 			if err != nil {
 				return err
 			}
 			// Skip folders
-			if file.IsDir() {
+			if d.IsDir() {
 				return nil
 			}
 			// Get parameters
-			name, ext := file.Name(), filepath.Ext(file.Name())
-			removedDir := strings.TrimPrefix(fileDir, dir+string(filepath.Separator))
-			fileId := strings.ToLower(strings.ReplaceAll(strings.TrimSuffix(removedDir, ext), string(filepath.Separator), "|"))
+			name, ext := d.Name(), filepath.Ext(d.Name())
+			// TODO: review relative paths: path can be absolute and root relative
+			removedDir := strings.TrimPrefix(path, root+string(filepath.Separator))
+			id := strings.ToLower(strings.ReplaceAll(strings.TrimSuffix(removedDir, ext), string(filepath.Separator), "|"))
 
 			// Load only the selected photos
-			if len(photosToLoad) > 0 {
-				keyToFind := collection.Name + ":" + album.Name + ":" + fileId
-				if _, found := photosToLoadMap[keyToFind]; !found {
+			if isPartial {
+				if _, ok := idsToLoadMap[id]; !ok {
 					return nil // Entry not found in the map, skip
 				}
 			}
 
-			photo, photoExists := album.photosMap[fileId]
-			if !photoExists {
+			photo, ok := photosMap[id]
+			if !ok {
 				title := strings.TrimSuffix(name, ext)
 				subAlbum := strings.TrimSuffix(strings.TrimSuffix(removedDir, name), string(filepath.Separator))
-				// Retrive photo info from cache if present
-				photo, err = collection.cache.GetPhotoInfo(album.Name, fileId)
-				if err != nil || photo == nil || photo.Id != fileId || photo.Title != title || photo.SubAlbum != subAlbum {
-					// Create a new photo for photos not in cache or outdated data
-					photo = &Photo{
-						Id:         fileId,
-						Title:      title,
-						Collection: collection.Name,
-						Album:      album.Name,
-						SubAlbum:   subAlbum,
-						Favorite:   []PseudoAlbum{},
-					}
+				// Create a new photo for photos not in cache or with refreshed data
+				photo = &Photo{
+					Id:         id,
+					Title:      title,
+					Collection: collection.Name,
+					Album:      album.Name,
+					SubAlbum:   subAlbum,
+					Favorite:   []PseudoAlbum{},
 				}
-				album.photosMap[fileId] = photo
+
+				photosMap[id] = photo
 				// Map of sub-albums
 				if subAlbum != "" {
-					subAlbums[subAlbum] = true
+					subAlbums[subAlbum] = struct{}{}
 				}
 			}
 
-			// Find inconsistent state: filter entries for the file but different path
-			// TODO: modify the structure to make this case inheritably impossible
-			for i := len(photo.Files) - 1; i >= 0; i-- {
-				if photo.Files[i].Id == name && photo.Files[i].Path != fileDir {
-					photo.Files = append(photo.Files[:i], photo.Files[i+1:]...) // Remove
+			photoFile := &File{
+				Path: path,
+				Id:   name,
+			}
+			photo.Files = append(photo.Files, photoFile)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		idsNoUpdateNeeded := make(map[string]struct{})
+		err = collection.cache.store.ForEach(bolthold.Where("Album").Eq(album.Name).Index("Album"), func(photo *Photo) error {
+			if isPartial {
+				// Skip entries not in the map
+				if _, ok := idsToLoadMap[photo.Id]; !ok {
+					idsNoUpdateNeeded[photo.Id] = struct{}{} // Do not Extract Info
+					return nil
 				}
 			}
 
-			photoFile, err := photo.GetFile(name)
-			if err != nil || photoFile == nil {
-				photoFile = &File{
-					Path: fileDir,
-					Id:   name,
+			_, ok := photosMap[photo.Id]
+			if ok {
+				// Remove entries from being updated that are already cached
+				if !forceUpdate {
+					photosMap[photo.Id] = photo              // Replace entry with the cached one
+					idsNoUpdateNeeded[photo.Id] = struct{}{} // Do not Extract Info
+					album.Count++
 				}
-				photo.Files = append(photo.Files, photoFile)
-				// Add photo to the list of updated photos
-				updatedPhotos[fileId]++
-				updatedFiles = append(updatedFiles, PhotoFile{fileId, photoFile})
+			} else {
+				// Chached entry not found in the current scan (i.e. deleted externally)
+				collection.cache.DeletePhotoInfo(photo)
 			}
 			return nil
 		})
 		if err != nil {
-			return err
+			log.Println(err)
 		}
-
-		// Extract missing file info
-		processedFiles := AddExtractInfoWork(collection, album, runningInBackground, updatedFiles...)
 
 		// Determine photo info after processing all files
-		for photoId := range processedFiles {
-			updatedPhotos[photoId]--
-			if updatedPhotos[photoId] <= 0 { // Files for this photo were processed
-				photo := album.photosMap[photoId]
-				// Fill photo info
-				photo.FillInfo(collection)
-				// Update cache
-				collection.cache.AddPhotoInfo(photo)
+		var wgAll sync.WaitGroup
+		var count = 0
+		var total = len(photosMap) - len(idsNoUpdateNeeded)
+		var addToThumbsQueue = false
+		for id, photo := range photosMap {
+			if _, ok := idsNoUpdateNeeded[id]; ok {
+				continue // No updated needed
 			}
+
+			count++
+			wgAll.Add(1)
+
+			// Extract file info
+			log.Printf("Extracting photo info %s[%s] %d/%d: %s", collection.Name, album.Name, count, total, photo.Id)
+			wg := AddExtractInfoWork(runInBackground, photo.Files...)
+
+			go func(wg *sync.WaitGroup, photo *Photo, count int) {
+				defer wgAll.Done()
+				wg.Wait()
+
+				// Fill photo info after files of this photo were processed
+				err := photo.FillInfo(collection)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				switch photo.Type {
+				case "image", "video", "live":
+					// Update cache
+					collection.cache.AddPhotoInfo(photo)
+				default:
+					// Skip photos without a recognized type
+					log.Printf("photo with unrecognized format: [%s]%s: %s\n", photo.Collection, photo.Album, photo.Id)
+				}
+				// If any photo does not have thumbnail
+				addToThumbsQueue = addToThumbsQueue || !photo.HasThumb
+			}(wg, photo, count)
 		}
-		if runningInBackground {
-			collection.cache.FinishFlush()
-		} else {
-			collection.cache.FlushInfo()
+		wgAll.Wait()
+		collection.cache.FlushInfo(!runInBackground)
+
+		// Album with photos that need a thumbnail generated
+		if addToThumbsQueue {
+			collection.cache.SetAlbumToThumbQueue(album.Name)
 		}
 	}
 
+	// Set album photo count
+	album.Count = len(photosMap)
+
 	// List of sub-albums
+	album.SubAlbums = []string{}
 	for key := range subAlbums {
 		album.SubAlbums = append(album.SubAlbums, key)
 	}
 	sort.Strings(album.SubAlbums)
 
-	return nil
-}
-
-func (album *Album) GetPhoto(photoName string) (photo *Photo, err error) {
-	photo, ok := album.photosMap[strings.ToLower(photoName)]
-	if !ok {
-		return nil, errors.New("photo not found in album: [" + album.Name + "] " + photoName)
+	if !isPartial {
+		collection.cache.SaveAlbum(album)
 	}
-	return photo, nil
-}
-
-// Custom marshaler in order to transform photo map into a slice
-func (album Album) MarshalJSON() ([]byte, error) {
-	var photos []*Photo
-	// Convert map to slice, strip invalid photos
-	for _, photo := range album.photosMap {
-		switch photo.Type {
-		case "image", "video", "live":
-			photos = append(photos, photo)
-		}
-		// Skip photos without a recognized type
-	}
-
-	// Sort photos by date (ascending), by title if not possible
-	sort.Slice(photos, func(i, j int) bool {
-		if photos[i].Date.IsZero() || photos[j].Date.IsZero() || photos[i].Date.Equal(photos[j].Date) {
-			return photos[i].Title < photos[j].Title
-		}
-		return photos[i].Date.Sub(photos[j].Date) < 0
-	})
-
-	// Avoid cyclic marshaling
-	type AlbumAlias Album
-	alias := AlbumAlias(album)
-	alias.Photos = photos
-	alias.Count = len(photos)
-
-	// Marshal the preprocessed struct to JSON
-	return json.Marshal(alias)
+	return photosMap, nil
 }

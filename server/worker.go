@@ -29,7 +29,6 @@ type ActiveWorkers struct {
 var (
 	chThumbs chan *ThumbWork
 	chInfo   chan *InfoWork
-	wgThumbs sync.WaitGroup
 	// Suspend background work
 	bgWg    sync.WaitGroup
 	bgTimer = time.NewTimer(0)
@@ -74,44 +73,31 @@ func ResumeBackgroundWork() {
 	bgReset = true
 	bgWg.Done()
 }
-func WaitBackgroundWork(runningInBackground bool) {
-	if runningInBackground {
-		bgWg.Wait()
-		if bgReset {
-			bgWg.Add(1)
-			<-bgTimer.C
-			bgReset = false
-			bgWg.Done()
-		}
+func WaitBackgroundWork() {
+	bgWg.Wait()
+	if bgReset {
+		bgWg.Add(1)
+		<-bgTimer.C
+		bgReset = false
+		bgWg.Done()
 	}
 }
 
-func AddExtractInfoWork(collection *Collection, album *Album, runningInBackground bool, files ...PhotoFile) <-chan string {
-	ch := make(chan string)
-	size := len(files)
+func AddExtractInfoWork(runningInBackground bool, files ...*File) *sync.WaitGroup {
+	var wg sync.WaitGroup
+	var size = len(files)
 
-	go func() {
-		var wgList sync.WaitGroup
-		wgList.Add(size)
-		for i, file := range files {
-			var wg sync.WaitGroup
-			wg.Add(1)
-			WaitBackgroundWork(runningInBackground)
-			log.Printf("Extracting photo info %s[%s] %d/%d: %s", collection.Name, album.Name, i+1, size, file.file.Id)
-			w := new(InfoWork)
-			w.file = file.file
-			w.wg = &wg
-			chInfo <- w
-			go func(id string) {
-				wg.Wait()
-				ch <- id
-				wgList.Done()
-			}(file.photoId)
+	wg.Add(size)
+	for _, file := range files {
+		if runningInBackground {
+			WaitBackgroundWork()
 		}
-		wgList.Wait()
-		close(ch)
-	}()
-	return ch
+		w := new(InfoWork)
+		w.file = file
+		w.wg = &wg
+		chInfo <- w
+	}
+	return &wg
 }
 
 func AddThumbForeground(collection *Collection, album *Album, photo *Photo, writer io.Writer) {
@@ -126,8 +112,6 @@ func AddThumbForeground(collection *Collection, album *Album, photo *Photo, writ
 	w.wg = &wg
 	chThumbs <- &w
 	wg.Wait()
-	// Update flag to indicate that the thumbnail was generated
-	collection.cache.FinishFlush()
 }
 
 func AddThumbsBackground(collection *Collection, album *Album, photos ...*Photo) *sync.WaitGroup {
@@ -136,8 +120,8 @@ func AddThumbsBackground(collection *Collection, album *Album, photos ...*Photo)
 
 	wg.Add(size)
 	for i, photo := range photos {
-		WaitBackgroundWork(true)
-		log.Printf("Background thumbnail %s[%s] %d/%d: %s %s", collection.Name, album.Name, i+1, size, photo.Title, photo.SubAlbum)
+		WaitBackgroundWork()
+		log.Printf("Background thumbnail %s[%s] %d/%d: %s %s", collection.Name, album.Name, i+1, size, photo.Id, photo.SubAlbum)
 		w := new(ThumbWork)
 		w.collection = collection
 		w.album = album

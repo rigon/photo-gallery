@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -43,8 +45,8 @@ func albums(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Get all albums from the disk
-	albums, err := collection.GetAlbums()
+	// Get all albums from disk
+	albums, err := collection.LoadAlbums()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -52,17 +54,42 @@ func albums(c echo.Context) error {
 	return c.JSON(http.StatusOK, albums)
 }
 
-func album(c echo.Context) error {
+func allPhotos(c echo.Context) error {
 	collectionName := c.Param("collection")
-	albumName := c.Param("album")
+	page := c.QueryParam("page")
+	after, err := strconv.Atoi(page)
+	if err != nil {
+		after = 0
+	}
 
 	collection, err := GetCollection(collectionName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Fetch album from disk
-	album, err := collection.GetAlbumWithPhotos(albumName, true, false)
+	photos, err := collection.cache.GetCollectionPhotosPaged(after)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if len(photos) < 1 {
+		return echo.NewHTTPError(http.StatusNotFound, "no more photos")
+	}
+
+	return c.JSON(http.StatusOK, photos)
+}
+
+func album(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+
+	// Get collection
+	collection, err := GetCollection(collectionName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Get album and load photos if needed
+	album, err := collection.GetAlbum(albumName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -73,6 +100,7 @@ func album(c echo.Context) error {
 func addAlbum(c echo.Context) error {
 	var albumQuery AddAlbumQuery
 
+	// Get collection
 	collection, err := GetCollection(c.Param("collection"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
@@ -90,24 +118,71 @@ func addAlbum(c echo.Context) error {
 	return c.JSON(http.StatusCreated, map[string]bool{"ok": true})
 }
 
-func thumb(c echo.Context) error {
+func photos(c echo.Context) error {
 	collectionName := c.Param("collection")
 	albumName := c.Param("album")
-	photoName := c.Param("photo")
+	page := c.QueryParam("page")
+	after, err := strconv.Atoi(page)
+	if err != nil {
+		after = 0
+	}
 
+	// Get collection
 	collection, err := GetCollection(collectionName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Fetch album with photos including info
-	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
+	// Get photos paged
+	photos, err := collection.cache.GetPhotosPaged(albumName, after)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	if len(photos) < 1 {
+		return echo.NewHTTPError(http.StatusNotFound, "no more photos")
+	}
+
+	// Embed thumbnails in response for faster loading
+	// TODO: use HTTP2
+	for _, photo := range photos {
+		if photo.HasThumb {
+			hasThumb, thumbPath := photo.ThumbnailPresent(collection)
+			if hasThumb {
+				data, err := os.ReadFile(thumbPath)
+				if err == nil {
+					thumb := base64.StdEncoding.EncodeToString(data)
+					photo.Src = "data:image/jpg;base64," + thumb
+					continue
+				}
+			}
+		}
+		// Send URL if thumbnail is not present
+		src := fmt.Sprintf("/api/collections/%s/albums/%s/photos/%s/thumb", photo.Collection, photo.Album, photo.Id)
+		photo.Src = src
+	}
+
+	return c.JSON(http.StatusOK, photos)
+}
+
+func thumb(c echo.Context) error {
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
+	photoName := c.Param("photo")
+
+	// Get collection
+	collection, err := GetCollection(collectionName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Find photo
-	photo, err := album.GetPhoto(photoName)
+	// Get album
+	album, err := collection.GetAlbum(albumName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+
+	// Get photo
+	photo, err := album.GetPhoto(collection, photoName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -115,6 +190,8 @@ func thumb(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, "image/jpeg")
 	c.Response().Header().Set(echo.HeaderCacheControl, HeaderCacheControl)
 	AddThumbForeground(collection, album, photo, c.Response())
+	// Update flag to indicate that the thumbnail was generated
+	collection.cache.FlushInfo(false)
 	return nil
 }
 
@@ -123,19 +200,20 @@ func info(c echo.Context) error {
 	albumName := c.Param("album")
 	photoName := c.Param("photo")
 
+	// Get collection
 	collection, err := GetCollection(collectionName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Fetch album with photos including info
-	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
+	// Get album
+	album, err := collection.GetAlbum(albumName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Find photo
-	photo, err := album.GetPhoto(photoName)
+	// Get photo
+	photo, err := album.GetPhoto(collection, photoName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -154,19 +232,20 @@ func file(c echo.Context) error {
 	photoName := c.Param("photo")
 	fileName := c.Param("file")
 
+	// Get collection
 	collection, err := GetCollection(collectionName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Fetch photo from cache
-	album, err := collection.GetAlbumWithPhotos(albumName, false, false)
+	// Get album
+	album, err := collection.GetAlbum(albumName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	// Find photo
-	photo, err := album.GetPhoto(photoName)
+	// Get photo
+	photo, err := album.GetPhoto(collection, photoName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -189,19 +268,21 @@ func file(c echo.Context) error {
 }
 
 func saveToPseudo(c echo.Context) error {
-	var query PseudoAlbumSaveQuery
+	collectionName := c.Param("collection")
+	albumName := c.Param("album")
 
 	// Decode body
+	var query PseudoAlbumSaveQuery
 	if err := c.Bind(&query); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	collection, err := GetCollection(c.Param("collection"))
+	collection, err := GetCollection(collectionName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	album, err := collection.GetAlbum(c.Param("album"))
+	album, err := collection.GetAlbum(albumName)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
@@ -225,6 +306,35 @@ func saveToPseudo(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
 }
 
+func postServerStartActions(config *CmdArgs) {
+	// Load albums for all collections
+	for _, collection := range config.collections {
+		collection.LoadAlbums()
+	}
+
+	// Cache albums and thumbnails in background
+	if !config.disableScan {
+		log.Println("Start scanning for photos in background...")
+		// First cache all albums
+		for _, collection := range config.collections {
+			collection.Scan(config.fullScan)
+		}
+		// Clean thumbnails of deleted photos
+		if config.fullScan {
+			for _, collection := range config.collections {
+				collection.CleanupThumbnails()
+			}
+		}
+		// Then create thumbnails
+		if config.cacheThumbnails {
+			for _, collection := range config.collections {
+				collection.CreateThumbnails()
+			}
+		}
+		log.Println("Background scan complete!")
+	}
+}
+
 func main() {
 	config = ParseCmdArgs()
 	serverAddr := config.host + ":" + strconv.Itoa(config.port)
@@ -237,30 +347,6 @@ func main() {
 			log.Fatal(err)
 		}
 		defer collection.cache.End()
-	}
-
-	// Cache albums and thumbnails in background
-	if !config.disableScan {
-		go func() {
-			log.Println("Start scanning for photos in background...")
-			// First cache all albums
-			for _, collection := range config.collections {
-				collection.Scan(config.fullScan)
-			}
-			// Clean thumbnails of deleted photos
-			if config.fullScan {
-				for _, collection := range config.collections {
-					collection.CleanupThumbnails()
-				}
-			}
-			// Then create thumbnails
-			if config.cacheThumbnails {
-				for _, collection := range config.collections {
-					collection.CreateThumbnails()
-				}
-			}
-			log.Println("Background scan complete!")
-		}()
 	}
 
 	// Server
@@ -327,7 +413,9 @@ func main() {
 	api.GET("/collections", collections)
 	api.GET("/collections/:collection/albums", albums)
 	api.PUT("/collections/:collection/albums", addAlbum)
+	api.GET("/collections/:collection/photos", allPhotos)
 	api.GET("/collections/:collection/albums/:album", album)
+	api.GET("/collections/:collection/albums/:album/photos", photos)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/thumb", thumb)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/info", info)
 	api.GET("/collections/:collection/albums/:album/photos/:photo/files/:file", file)
@@ -372,6 +460,9 @@ func main() {
 		}
 	}()
 
+	// Actions to be run after server starts
+	go postServerStartActions(&config)
+
 	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
 	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
 	log.Println("Press Ctrl-C to stop the server")
@@ -379,7 +470,8 @@ func main() {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	log.Println("Shutting down the server...")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// TODO stopping the server should stop any work being done, not waiting for the timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 	if err := e.Shutdown(ctx); err != nil {
 		e.Logger.Fatal(err)

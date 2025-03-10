@@ -77,9 +77,12 @@ func (c *Collection) Info() CollectionInfo {
 	return CollectionInfo{Name: c.Name, Storage: st}
 }
 
-// Lists all albums, however photos are not loaded together.
-// For that use Album.GetPhotos()
-func (c *Collection) GetAlbums() ([]*Album, error) {
+func (collection *Collection) GetAlbums() []*Album {
+	return collection.cache.GetCachedAlbums()
+}
+
+// Load all albums from disk
+func (c *Collection) LoadAlbums() ([]*Album, error) {
 	albums := make([]*Album, 0)
 	files, err := os.ReadDir(c.PhotosPath)
 	if err != nil {
@@ -95,105 +98,88 @@ func (c *Collection) GetAlbums() ([]*Album, error) {
 			}
 		}
 	}
-	// Save to cache in background
-	c.cache.SetListAlbums(albums...)
+	// Load cached album
+	go c.cache.LoadCachedAlbums(albums...)
+
 	return albums, nil
-}
-
-func (c *Collection) IsAlbum(albumName string) bool {
-	// Cache list of albums if not cached
-	if !c.cache.IsListAlbumsLoaded() {
-		c.GetAlbums()
-	}
-	// Check if album exists (must be cached)
-	return c.cache.IsAlbum(albumName)
-}
-
-// Get album, however photos are not loaded together.
-// For that use Album.GetPhotos()
-func (c *Collection) GetAlbum(albumName string) (*Album, error) {
-	// Check if album exists
-	if !c.IsAlbum(albumName) {
-		return nil, errors.New("album not found: " + albumName)
-	}
-	// Check for regular album (i.e. folder)
-	filename := filepath.Join(c.PhotosPath, albumName)
-	file, err := os.Stat(filename)
-	if err == nil { // no error
-		return readAlbum(file)
-	}
-	// Check for pseudo album (i.e. file)
-	filename = filepath.Join(c.PhotosPath, albumName+PSEUDO_ALBUM_EXT)
-	file, err = os.Stat(filename)
-	if err == nil { // no error
-		return readAlbum(file)
-	}
-	// error
-	return nil, errors.New("album not found")
 }
 
 func readAlbum(file fs.FileInfo) (*Album, error) {
 	var album Album
 	filename := file.Name()
-	// Albums (do not show hidden folders)
-	if file.IsDir() && !strings.HasPrefix(filename, ".") {
+
+	// Skip hidden files
+	if strings.HasPrefix(filename, ".") {
+		return nil, errors.New("album not found")
+	}
+
+	// Album
+	if file.IsDir() {
 		album.Name = filename
 		album.Date = file.ModTime().String()
 		album.IsPseudo = false
 		return &album, nil
 	}
-	// Pseudo Albums
-	if file.Mode().IsRegular() && strings.HasSuffix(strings.ToUpper(filename), PSEUDO_ALBUM_EXT) {
+
+	// Pseudo-album
+	lowerName := strings.ToLower(filename)
+	if file.Mode().IsRegular() && strings.HasSuffix(lowerName, PSEUDO_ALBUM_EXT) {
 		album.Name = filename[:len(filename)-len(PSEUDO_ALBUM_EXT)]
 		album.Date = file.ModTime().String()
 		album.IsPseudo = true
 		return &album, nil
 	}
+
 	// Error
 	return nil, errors.New("album not found")
 }
 
-// Get album with photos
-func (c *Collection) GetAlbumWithPhotos(albumName string, forceUpdate bool, runningInBackground bool, photosToLoad ...PseudoAlbumEntry) (*Album, error) {
-	if !forceUpdate {
-		// Check if album is in cache
-		cachedAlbum, err := c.cache.GetAlbum(albumName)
-		if err == nil { // Is cached
-			return cachedAlbum, nil
-		}
-
-		// If we try to get the cached album whilst another scan is in progress, it will fail.
-		// So we try again but locking until the running scan is completed.
-		// That way we do not need to lock getting albums from the cache in the first attempt.
-		c.LockAlbum(albumName)
-		cachedAlbum, err = c.cache.GetAlbum(albumName)
-		c.UnlockAlbum(albumName)
-		if err == nil { // Is cached
-			return cachedAlbum, nil
-		}
+func (collection *Collection) GetAlbum(albumName string) (*Album, error) {
+	return collection.getAlbumOpts(albumName, true, false)
+}
+func (collection *Collection) GetAlbumBackground(albumName string) (*Album, error) {
+	return collection.getAlbumOpts(albumName, true, true)
+}
+func (collection *Collection) GetAlbumNoLoading(albumName string) (*Album, error) {
+	return collection.getAlbumOpts(albumName, false, false)
+}
+func (collection *Collection) getAlbumOpts(albumName string, loadPhotos bool, runningInBackground bool) (*Album, error) {
+	album, present := collection.cache.GetCachedAlbum(albumName)
+	if !present {
+		return nil, errors.New("album not found: " + albumName)
 	}
-
-	// Lock album to avoid concurrent scans
-	c.LockAlbum(albumName)
-	defer c.UnlockAlbum(albumName)
-
-	// If not in cache, read from disk
-	album, err := c.GetAlbum(albumName)
-	if err != nil {
-		return nil, err
+	if loadPhotos {
+		album.LoadPhotos(collection, runningInBackground)
 	}
-
-	// Get photos from the disk
-	album.GetPhotos(c, runningInBackground, photosToLoad...)
-	// ...and save to cache
-	c.cache.SaveAlbum(album)
-	// Set album as fully scanned
-	if len(photosToLoad) < 1 { // skip on partial scans!
-		c.cache.SetAlbumFullyScanned(album)
-	}
-
 	return album, nil
 }
+
+// // Regular album (i.e. folder)
+// filename := filepath.Join(collection.PhotosPath, albumName)
+// file, err := os.Stat(filename)
+// if err == nil { // Found, read album
+// 	album, err = readAlbum(file)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// } else {
+// 	// Pseudo album (i.e. file)
+// 	filename = filepath.Join(collection.PhotosPath, albumName+PSEUDO_ALBUM_EXT)
+// 	file, err = os.Stat(filename)
+// 	if err == nil { // Found, read album
+// 		album, err = readAlbum(file)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	} else {
+// 		return nil, errors.New("album not found: " + albumName)
+// 	}
+// }
+
+// // Load album
+// if loadPhotos {
+// 	album.LoadPhotos(collection, false, false)
+// }
 
 func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 	name := info.Name
@@ -227,8 +213,12 @@ func (c *Collection) AddAlbum(info AddAlbumQuery) error {
 	}
 
 	// Save to cache
-	c.cache.AddToListAlbums(&Album{Name: info.Name})
+	//c.cache.AddToListAlbums(&Album{Name: info.Name})
 	return nil
+}
+
+func (collection *Collection) GetPhoto(album *Album, photoId string) (*Photo, error) {
+	return collection.cache.GetPhoto(album.Name, photoId)
 }
 
 func (collection *Collection) StorageUsage() (CollectionStorage, error) {

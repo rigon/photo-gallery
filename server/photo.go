@@ -18,8 +18,9 @@ type Photo struct {
 	Title      string        `json:"title"`
 	Type       string        `json:"type"`
 	Collection string        `json:"collection"`
+	Src        string        `json:"src"`
 	Album      string        `json:"album" boltholdIndex:"Album"`
-	SubAlbum   string        `json:"subalbum"`
+	SubAlbum   string        `json:"subalbum" boltholdIndex:"SubAlbum"`
 	Favorite   []PseudoAlbum `json:"favorite"`
 	Width      int           `json:"width"`
 	Height     int           `json:"height"`
