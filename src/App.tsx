@@ -1,113 +1,126 @@
-import { useMemo } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { ThemeProvider, ThemeOptions, createTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import Box from '@mui/material/Box';
-import InfoIcon from '@mui/icons-material/Info';
-import Typography from '@mui/material/Typography';
-import { SnackbarProvider } from 'notistack';
-import "@fontsource/pt-sans";
+import { CssVarsProvider } from '@mui/joy/styles';
+import CssBaseline from '@mui/joy/CssBaseline';
+import Box from '@mui/joy/Box';
+import Sidebar from './components/Sidebar';
+import Main from './components/Main';
+import Toolbar from './components/Toolbar';
 
-import Layout from './Layout';
-import Gallery from './Gallery';
+import theme from './theme';
 
-import { DialogProvider } from './dialogs';
-import { selectTheme } from "./services/app";
+import PhotoAlbum from 'react-photo-album';
+import { album, photos } from './data';
+import { Typography, Chip, ListItemContent, ListItemButton, Sheet } from '@mui/joy';
+import { IconCheck, IconChevronDown, IconLibraryPhoto } from '@tabler/icons-react';
+import Toggler from './components/Toggler';
 
-function Home() {
-    return (
-        <Box sx={{ marginTop: "45vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <InfoIcon fontSize="large" sx={{m: 1}} />
-            <Typography variant="h6">Select an album from the list on the left.</Typography>
-        </Box>);
+export default function JoyMessagesTemplate() {
+  return (
+    <CssVarsProvider disableTransitionOnChange theme={theme}>
+      <CssBaseline />
+      <Box sx={{ display: 'flex', minHeight: '100dvh' }}>
+        {/* <Header /> */}
+        <Sidebar />
+        <Box
+          component="main"
+          className="MainContent"
+          sx={{
+            // gap: 4,
+            // px: { xs: 2, md: 6 },
+            // pt: {
+            //   xs: 'calc(12px + var(--Header-height))',
+            //   sm: 'calc(12px + var(--Header-height))',
+            //   md: 1,
+            // },
+            // pb: { xs: 2, sm: 2, md: 3 },
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+            height: '100dvh',
+            overflowY: 'scroll',
+          }}
+        >
+          <Toolbar />
+          <Main />
+
+          {/* <AccordionGroup size="lg" variant="soft">
+            <Accordion defaultExpanded>
+              <AccordionSummary sx={{gap: 1}}>
+                  <SvgIcon sx={{ml: 1 }} color="inherit"><IconLibraryPhoto /></SvgIcon>
+                  <ListItemContent>
+                    <Typography level="title-md">Sub-Albums</Typography>
+                  </ListItemContent>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box
+                  role="group"
+                  aria-labelledby="fav-movie"
+                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, px: 1, py: 1 }}
+                >
+                  {album.subalbums.map((subalbum) => {
+                    return (
+                      <Chip
+                        variant="solid"
+                        // color='neutral'
+                        // startDecorator={<IconCheck size={16} />}
+                      >
+                        {subalbum}
+                      </Chip>
+                    );
+                  })}
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          </AccordionGroup> */}
+
+          {/* <List size="md">
+            <ListItem nested> */}
+              <Toggler defaultExpanded renderToggle={({ open, setOpen }) => (
+                  <ListItemButton variant='soft' onClick={() => setOpen(!open)} sx={{ py: 1, px: { xs: 2, md: 3 }}}>
+                    <ListItemContent>
+                      <Typography
+                        level="title-md"
+                        // textTransform="uppercase"
+                        fontWeight="lg"
+                        startDecorator={<IconLibraryPhoto size={22} />}
+                        endDecorator={<IconChevronDown
+                          size={16}
+                          style={{
+                            transform: (open ? 'rotate(180deg)' : 'none')
+                          }}
+                      />}>
+                        Sub-Albums
+                      </Typography>
+                    </ListItemContent>
+                      
+                  </ListItemButton>
+                )}
+              >
+                <Box>
+                  <Sheet variant="soft" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pt: 1, pb: 2, px: { xs: 2, md: 3 }}}>
+                    {album.subalbums.map((subalbum) => {
+                      const checked = subalbum.length < 5;
+                      return (
+                        <Chip
+                          size="lg"
+                          variant="outlined"
+                          color={ checked ? 'primary' : 'neutral'}
+                          startDecorator={checked && <IconCheck size={16} />}
+                          onClick={() => {}}
+                        >
+                          {subalbum}
+                        </Chip>
+                      );
+                    })}
+                  </Sheet>
+                </Box>
+              </Toggler>
+            {/* </ListItem>
+          </List> */}
+
+          <PhotoAlbum photos={photos} layout="rows" spacing={1} />
+        </Box>
+      </Box>
+    </CssVarsProvider>
+  );
 }
-
-function MainLayout() {
-    return (
-        <DialogProvider>
-            <Layout />
-        </DialogProvider>
-    );
-}
-
-function Router() {
-    return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<MainLayout />}>
-                    <Route index element={<Home />} />
-                    <Route path="/:collection" element={<Home />} />
-                    <Route path="/:collection/:album" element={<Gallery />} />
-                    <Route path="/:collection/:album/:photo" element={<Gallery />} />
-                    <Route path="*" element={<Navigate to="/" />} />
-                </Route>
-            </Routes>
-        </BrowserRouter>
-    );
-}
-
-const baseTheme: ThemeOptions = {
-    typography: {
-        fontFamily: 'PT Sans, sans-serif',
-    },
-};
-
-const lightTheme: ThemeOptions = {
-    ...baseTheme,
-    palette: {
-        mode: 'light',
-        primary: {
-            main: '#1976d2',
-        },
-        secondary: {
-            main: '#1e87e5',
-        },
-    },
-};
-
-const darkTheme: ThemeOptions = {
-    ...baseTheme,
-    palette: {
-        mode: 'dark',
-        primary: {
-            main: '#4cc2ff',
-        },
-        secondary: {
-            main: '#3f525e',
-        },
-        background: {
-            default: '#202020',
-            paper: '#272727',
-        },
-    },
-    components: {
-        MuiAppBar: {
-            styleOverrides: {
-                root: {
-                    backgroundColor: '#314049',
-                    backgroundImage: 'none',
-                },
-            },
-        },
-    },
-};
-
-function App() {
-    const themeSetting = useSelector(selectTheme);
-    let darkMode = useMediaQuery('(prefers-color-scheme: dark)');
-    if (themeSetting === "light") darkMode = false;
-    if (themeSetting === "dark") darkMode = true;
-
-    const theme = useMemo(() => createTheme(darkMode ? darkTheme : lightTheme), [darkMode]);
-
-    return (
-        <ThemeProvider theme={theme}>
-            <SnackbarProvider>
-                <Router />
-            </SnackbarProvider>
-        </ThemeProvider>
-    );
-}
-
-export default App;

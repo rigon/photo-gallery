@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { useTheme, styled } from '@mui/material/styles';
+import { useTheme, styled } from '@mui/joy/styles';
 
 import { LatLngExpression, icon as LeafletIcon } from "leaflet";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
@@ -39,10 +39,10 @@ const Map: FC<MapProps> = ({ mark, height, width }) => {
 
     const StyledMapContainer = (isDark ? DarkMapContainer: MapContainer);
     return (
-        <StyledMapContainer style={{ height: height || "100%", width: width || "100%"}} center={mark} zoom={9} scrollWheelZoom={true}>
+        <StyledMapContainer style={{ height: height || "100%", width: width || "100%"}} center={mark} zoom={9} scrollWheelZoom={false} zoomControl={false}>
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://retina-tiles.p.rapidapi.com/local/osm@2x/v1/{z}/{x}/{y}.png?rapidapi-key=036e2f2406mshc837ebb7019e97cp166125jsn8182b9dea823"/>
+                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <Marker
                 position={mark}
                 icon={makerIcon}
