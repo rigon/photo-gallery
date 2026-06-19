@@ -95,6 +95,9 @@ func (file *File) ExtractInfo() error {
 		case ".mov", ".mp4", ".mpeg", ".avi":
 			file.Type = "video"
 			file.MIME = "video/mp4" // FIXME: force MP4 for the browser to be happy and play the video
+		case ".mkv":
+			file.Type = "video"
+			file.MIME = "video/x-matroska"
 		default:
 			log.Printf("Unknown file type - ext: %s, mime: %s\n", file.Ext(), file.Type)
 			// TODO: handle unknown file types
